@@ -65,7 +65,7 @@ Logikbibliothek erhält in einem zitierten Term wörtliche Strings.
 `@if` wertet nur den gewählten Zweig aus; `@and` und `@or` stoppen
 gegebenenfalls vor späteren Operanden. `@quote` wertet seinen JSON-Operanden
 überhaupt nicht aus. `@try` fängt nur `EvaluationError` und Unterklassen.
-Ein Ressourcenlimit bleibt ein Fehler. Deklarationen, die vor einem Fehler
+Ein Ressourcenlimit und ein `SecurityError` bleiben Fehler. Deklarationen, die vor einem Fehler
 bereits erfolgt sind, werden nicht zurückgerollt.
 
 ## Bindung und Effekte
@@ -74,6 +74,8 @@ Eine `@let`-Bindung ist lokal. Ein Deklarationsobjekt verändert seine
 aktuelle Umgebung; auf oberster Ebene bleibt diese Änderung in der
 Interpreter-Sitzung bestehen. Das ist ein beobachtbarer Sitzungseffekt.
 Externe Datei-, Netzwerk- und Geräteeffekte enthält der Kern nicht.
+Die [Host-Policy](SECURITY.md) prüft registrierte native Operationen bei
+jedem tatsächlichen Aufruf, auch innerhalb von Closures und über `@apply`.
 Optimierungen dürfen beobachtbare Deklarationen und Aufrufe nicht umordnen.
 
 Ein allgemeines `@seq` gehört bislang nicht zum Kern. Das bloße Umschreiben
