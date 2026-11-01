@@ -2,7 +2,7 @@
 
 **fjson** ist die Grundlage für eine in JSON geschriebene Implementierung von FJ@. Das reine Python-Modul wertet einen definierten Sprachkern aus: Referenzen, Funktionen, Funktionsaufrufe, lexikalische Bindungen und die unten beschriebenen besonderen Formen.
 
-> **Stand:** Version 0.2 implementiert den in [GRAMMAR.ebnf](GRAMMAR.ebnf) und diesem README beschriebenen Kern. [SEMANTICS.md](SEMANTICS.md) legt Auswertungsreihenfolge, Bindungen und Laufzeitwerte genauer fest. Die Prolog-artigen `!X`-Werte sind ein Prototyp; Unifikation und Suche folgen erst in einer Logikbibliothek.
+> **Stand:** Version 0.3 enthält den kompakten Sprachkern aus [GRAMMAR.ebnf](GRAMMAR.ebnf) und eine erste [Logikbibliothek](LOGIC.md). [SEMANTICS.md](SEMANTICS.md) legt Auswertungsreihenfolge, Bindungen und Laufzeitwerte genauer fest. Die Suche ist derzeit auf endliche Goal-Bäume beschränkt.
 
 ## Grundidee
 
@@ -90,7 +90,7 @@ Für Bedingungen gilt: `false`, `null`, `0`, `""`, `[]` und `{}` sind falsch; an
 
 `@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. `@try` fängt `EvaluationError` und dessen Unterklassen ab, aber keinen `ResourceLimitError`; ohne Ersatz liefert es `{"error": "Klassenname", "message": "Text"}`. Bereits erfolgte Deklarationen werden durch `@try` nicht zurückgerollt.
 
-Operationen wie `@plus` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Version 0.2 bietet `@plus`, `@minus`, `@times`, `@divide`, `@eq` und `@le` als eingebaute Funktionen. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
+Operationen wie `@plus` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Version 0.3 bietet `@plus`, `@minus`, `@times`, `@divide`, `@eq`, `@le` sowie die Logikfunktionen `@unify`, `@choice`, `@conj` und `@run` als eingebaute Funktionen. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
 
 ## Auswertung und Aufrufe
 
@@ -123,7 +123,20 @@ assert fjson("!X") is not x
 assert fjson(["@quote", "!X"]) == "!X"
 ```
 
-`@quote` verhindert auch in verschachtelten JSON-Werten die Umwandlung: `["@quote", ["parent", "alice", "!X"]]` enthält danach den wörtlichen String `"!X"`. Für eine spätere Logikbibliothek kann ein nicht zitierter Term wie `["parent", "alice", "!X"]` einen echten Variablenwert enthalten. `!_` als anonyme Variable sowie Unifikation, Occurs-Check und Backtracking sind noch nicht implementiert.
+`@quote` verhindert auch in verschachtelten JSON-Werten die Umwandlung: `["@quote", ["parent", "alice", "!X"]]` enthält danach den wörtlichen String `"!X"`. Ein nicht zitierter Term wie `["parent", "alice", "!X"]` enthält einen echten Variablenwert. `!_` als anonyme Variable ist noch nicht implementiert.
+
+### Logikbibliothek
+
+`@unify` baut ein Goal für zwei Terme auf. `@choice` und `@conj` kombinieren Goals; `@run` sucht bis zur angegebenen Anzahl von Lösungen und liefert die Werte eines Abfrageterms:
+
+```json
+["@run", 2, "!X",
+  ["@choice",
+    ["@unify", "!X", "alice"],
+    ["@unify", "!X", "bob"]]]
+```
+
+Ergebnis: `["alice", "bob"]`. Die Bibliothek vereinigt Listen und Objekte strukturell, prüft den Occurs-Check und trennt Suchzweige. Jeder Funktionsaufruf gibt seinen inneren `!`-Namen einen frischen Geltungsbereich; so lassen sich Variablen einer mehrfach verwendeten Klausel frisch erzeugen. Die genaue Semantik, weitere ausführbare Beispiele und die Grenzen der derzeit tiefenorientierten Suche stehen in [LOGIC.md](LOGIC.md).
 
 Ein minimales Programm zum Binden und Aufrufen der Funktion soll so aussehen:
 
@@ -137,7 +150,7 @@ Erwartetes Ergebnis: `42`.
 
 ## Verhältnis zum bisherigen FJ@
 
-Der implementierte Sprachkern orientiert sich am bisherigen FJ@-Entwurf. Funktionen können übergeben und zurückgegeben werden; Aufrufe haben genau eine kanonische Präfixform. `fj@nice` kann später Pipeline-, Infix- und Postfixschreibweisen in diese Form übersetzen. Diese Schreibweisen werden vom Basisinterpreter nicht erkannt. Weitergehende Metafunktionsregeln, Effekte, Tensoroperationen und die größere FJ@-Standardbibliothek gehören noch nicht zu Version 0.2.
+Der implementierte Sprachkern orientiert sich am bisherigen FJ@-Entwurf. Funktionen können übergeben und zurückgegeben werden; Aufrufe haben genau eine kanonische Präfixform. `fj@nice` kann später Pipeline-, Infix- und Postfixschreibweisen in diese Form übersetzen. Diese Schreibweisen werden vom Basisinterpreter nicht erkannt. Weitergehende Metafunktionsregeln, Effekte, Tensoroperationen und die größere FJ@-Standardbibliothek gehören noch nicht zu Version 0.3.
 
 `@plus` ist der Name für die Addition, wie im bisherigen FJ@-Entwurf. `@add` ist kein eingebauter Alias.
 
@@ -172,20 +185,20 @@ Aus dem Repository-Verzeichnis lässt sich eine JSON-Datei ausführen:
 
 ```powershell
 python -m fjson examples/inc.json
+python -m fjson examples/parent.json
 python -B -m unittest discover -s tests
 ```
 
-Das Kommando gibt das Ergebnis als JSON aus. Closures und logische Variablen sind Laufzeitwerte und nicht selbst JSON-serialisierbar; eine Datei mit einem solchen Ergebnis kann daher nicht als JSON ausgegeben werden. `@quote` erhält JSON-Quellwerte als Daten. Die Auswertung ist durch konfigurierbare Schritt- und Tiefengrenzen beschränkt.
+Das Kommando gibt das Ergebnis als JSON aus. Closures, logische Variablen und Goals sind Laufzeitwerte und nicht selbst JSON-serialisierbar; eine Datei mit einem solchen Ergebnis kann daher nicht als JSON ausgegeben werden. `@run` liefert für gebundene JSON-Terme dagegen JSON-kompatible Lösungen. `@quote` erhält JSON-Quellwerte als Daten. Die Auswertung ist durch konfigurierbare Schritt- und Tiefengrenzen beschränkt.
 
 ## Nächste Schritte
 
-1. Eine Logikbibliothek mit Unifikation, Occurs-Check, frischen Klauselvariablen und Suche auf den `LogicVar`-Werten aufbauen.
-2. Bibliotheksfunktionen wie `@map`, `@filter`, `@compose` und `@curry` auf dem Sprachkern aufbauen.
+1. Bibliotheksfunktionen wie `@map`, `@filter`, `@compose` und `@curry` auf dem Sprachkern aufbauen.
+2. Die Logikbibliothek um verzögerte rekursive Goals und faire Suche erweitern; anonyme Variablen und Klauseldatenbanken gesondert spezifizieren.
 3. Die weitergehenden FJ@-Metafunktionsregeln getrennt vom Präfixkern spezifizieren und testen; syntaktische Varianten für `fj@nice` entwerfen.
 4. Effekte, Fähigkeiten und numerische Kerne getrennt vom reinen Sprachkern ergänzen.
 
 ## Lizenz
 
 Dieses Repository steht unter der [GNU General Public License Version 3](LICENSE).
-
 
