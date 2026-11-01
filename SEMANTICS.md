@@ -1,4 +1,4 @@
-# fjson 0.2: Auswertungssemantik
+# fjson 0.3: Auswertungssemantik
 
 Dieses Dokument beschreibt das Verhalten des kleinen Python-Interpreters.
 [GRAMMAR.ebnf](GRAMMAR.ebnf) beschreibt die Quellsyntax. Die folgende
@@ -9,7 +9,7 @@ ohne ausdrückliche Sprachänderung vertauschen.
 
 JSON ist das portable Quellformat. Die Python-API nimmt dieselben Werte als
 `dict`, `list`, `str`, Zahl, `bool` und `None` entgegen. Zusätzlich kann
-sie bereits erzeugte Laufzeitwerte (`Native`, `Closure`, `LogicVar`) wieder
+sie bereits erzeugte Laufzeitwerte (`Native`, `Closure`, `LogicVar`, `Goal`) wieder
 entgegennehmen, ohne sie als Quelltext neu auszuwerten. Diese Werte sind nicht
 selbst JSON-serialisierbar. Eine JSON-Ausgabe verlangt daher ein
 JSON-kompatibles Ergebnis.
@@ -30,11 +30,11 @@ Standardwerte einer Funktion werden schon bei ihrer Erzeugung ausgewertet;
 ein dort erzeugter logischer Variablenwert bleibt deshalb als Standardwert
 über spätere Funktionsaufrufe hinweg derselbe Wert.
 
-Das ist zunächst nur ein Werte- und Geltungsbereichsprototyp. Unifikation,
-Occurs-Check, frische Klauselvariablen, Suche und Backtracking sind noch
-keine Funktionen dieser Version. Insbesondere hat `@quote` keine zweite
-Auswertungsebene: Eine Logikbibliothek erhält in einem zitierten Term
-wörtliche Strings.
+Die [Logikbibliothek](LOGIC.md) verwendet diese Werte für Unifikation mit
+Occurs-Check und eine begrenzte, tiefenorientierte Suche. Funktionsaufrufe
+erzeugen frische innere Klauselvariablen; faire oder verzögerte rekursive
+Suche fehlt noch. `@quote` hat keine zweite Auswertungsebene: Die
+Logikbibliothek erhält in einem zitierten Term wörtliche Strings.
 
 ## Reihenfolge
 
@@ -85,4 +85,3 @@ nachweislich dieselbe Semantik hat.
 
 Die Python-Tests in [tests/test_interpreter.py](tests/test_interpreter.py)
 prüfen diese Regeln an ausführbaren Beispielen.
-
