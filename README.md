@@ -8,7 +8,7 @@
 
 Ein FJ@-Programm ist ein JSON-Wert. JSON-Zahlen, boolesche Werte, `null` und gewöhnliche Strings können Daten sein. Ein String, der mit `@` beginnt, ist dagegen ein **Bezeichner**: Er verweist auf eine Variable, ein Symbol oder eine Funktion. Beispielsweise bezeichnet `"@x"` einen gebundenen Wert und `"@add"` eine Funktion. Ein unbekannter Bezeichner löst einen Fehler aus.
 
-JSON-Arrays dienen sowohl als Daten als auch als Ausdrücke. Der Auswerter entscheidet anhand der definierten Sprachformen und aufrufbaren Werte, ob ein Array einen Aufruf darstellt. Ein Array ohne passenden Aufruf bleibt ein Datenarray; es ist keine implizite Folge, die nur ihren letzten Wert liefert.
+JSON-Arrays dienen sowohl als Daten als auch als Ausdrücke. Ein nicht zitiertes Array mit einem `@`-Namen an erster Stelle ist eine besondere Form oder ein **Präfixaufruf**. Ein unbekannter Name, ein nicht aufrufbarer Wert oder eine falsche Argumentzahl ist ein Fehler. Alle anderen Arrays werden elementweise als Datenarrays ausgewertet; sie sind keine impliziten Folgen, die nur ihren letzten Wert liefern.
 
 Ein nichtleeres JSON-Objekt, dessen Schlüssel alle `@`-Bezeichner sind, ist eine **Deklaration**. Seine Werte werden in Schlüsselreihenfolge ausgewertet und in der aktuellen Umgebung gebunden. Das Objekt liefert den Wert seiner letzten Deklaration. Auf oberster Ebene bleiben die Namen für spätere Aufrufe derselben Interpreter-Instanz erhalten. Ein Objekt ohne `@`-Schlüssel ist ein Datenobjekt; auch `{}` ist ein Datenobjekt. Gemischte Schlüssel sind ein Fehler. `@quote` macht ein Deklarationsobjekt stattdessen zu unveränderten Daten.
 
@@ -77,7 +77,6 @@ Einige Formen müssen vom Auswerter selbst erkannt werden. Eine gewöhnliche Fun
 | `@if` | Wertet die Bedingung und anschließend nur den gewählten Zweig aus. |
 | `@and`, `@or` | Werten Operanden von links nach rechts mit Kurzschluss aus und liefern den jeweils entscheidenden Wert. |
 | `@try` | Fängt Auswertungsfehler ab; ein optionaler Ersatz-Ausdruck wird nur im Fehlerfall ausgewertet. Ohne Ersatz entsteht ein Fehlerobjekt. Ressourcenlimits bleiben Fehler. |
-| `@pipe` | Führt einen Wert durch Stufen: ein einzelner Name ruft eine einstellige Funktion auf, `[argument, ..., name]` setzt den aktuellen Wert als letztes Argument ein. |
 
 Ein Deklarationsobjekt kann mehrere Namen in einem Schritt binden. Spätere Werte können frühere Namen verwenden:
 
@@ -88,8 +87,6 @@ Ein Deklarationsobjekt kann mehrere Namen in einem Schritt binden. Spätere Wert
 Erwartetes Ergebnis: `42`. Bei einer fortbestehenden Interpreter-Sitzung bleiben `@x` und `@answer` für spätere Auswertungen gebunden. `@let` verwendet dasselbe Prinzip der geordneten Bindungen, begrenzt die Namen aber auf seinen lokalen Rumpf. Die Werte eines Deklarationsobjekts werden nacheinander ausgewertet; wenn ein späterer Wert fehlschlägt, bleiben frühere Bindungen bestehen.
 
 Für Bedingungen gilt: `false`, `null`, `0`, `""`, `[]` und `{}` sind falsch; andere Werte sind wahr. `@if` wertet den nicht gewählten Zweig nicht aus. `@and` und `@or` liefern einen Operandenwert statt ihn in einen booleschen Wert umzuwandeln. Ohne Operanden liefern sie `true` beziehungsweise `false`.
-
-`@pipe` setzt bei einer Vorlagenstufe den laufenden Wert als letztes Argument ein. So liefert `["@pipe", 41, [1, "@add"]]` den Wert `42`. Eine einzelne Stufe `"@inc"` ruft dagegen `@inc` mit dem laufenden Wert als einzigem Argument auf.
 
 `@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. `@try` fängt `EvaluationError` und dessen Unterklassen ab, aber keinen `ResourceLimitError`; ohne Ersatz liefert es `{"error": "Klassenname", "message": "Text"}`. Bereits erfolgte Deklarationen werden durch `@try` nicht zurückgerollt.
 
@@ -110,7 +107,7 @@ Der Python-Auswerter setzt diese Grundregeln um:
 | `{"@n": 1}` | Wert in der aktuellen Umgebung deklarieren |
 | `["@quote", "@x"]` | `"@x"` als Datenwert zurückgeben, ohne die Referenz aufzulösen |
 
-`@quote` wird benötigt, wenn ein mit `@` beginnender String oder ein Deklarationsobjekt selbst als Daten behandelt werden soll. Ausdrücke werden sonst gemäß ihren Sprachregeln ausgewertet. Ein Funktionsaufruf wertet seine Argumente aus und bindet sie in der Reihenfolge der Parameter. Ein gewöhnliches Array ohne passenden aufrufbaren Wert wird als Datenarray elementweise ausgewertet. Für dreiteilige Arrays prüft der Auswerter zuerst die Infixposition, dann Präfix und schließlich Postfix. Ein aufrufbarer Wert mit falscher Argumentzahl führt zu einem Fehler. `@define` und `@do` sind keine Sprachformen dieses Kerns.
+`@quote` wird benötigt, wenn ein mit `@` beginnender String, ein Array mit führendem `@`-String oder ein Deklarationsobjekt selbst als Daten behandelt werden soll. Ein Funktionsaufruf wertet seine Argumente aus und bindet sie in der Reihenfolge der Parameter. Nur die erste Arrayposition kann einen Aufruf bezeichnen; spätere `@`-Werte werden nie als Infix- oder Postfixoperatoren interpretiert. `@define`, `@do` und `@pipe` sind keine Sprachformen dieses Kerns.
 
 Ein minimales Programm zum Binden und Aufrufen der Funktion soll so aussehen:
 
@@ -124,7 +121,7 @@ Erwartetes Ergebnis: `42`.
 
 ## Verhältnis zum bisherigen FJ@
 
-Der implementierte Sprachkern orientiert sich am bisherigen FJ@-Entwurf. Funktionen können übergeben und zurückgegeben werden; Aufrufe in Präfix-, Infix- und Postfixposition werden anhand der Argumentzahl erkannt. Weitergehende Metafunktionsregeln, Effekte, Tensoroperationen und die größere FJ@-Standardbibliothek gehören noch nicht zu Version 0.1.
+Der implementierte Sprachkern orientiert sich am bisherigen FJ@-Entwurf. Funktionen können übergeben und zurückgegeben werden; Aufrufe haben genau eine kanonische Präfixform. `fj@nice` kann später Pipeline-, Infix- und Postfixschreibweisen in diese Form übersetzen. Diese Schreibweisen werden vom Basisinterpreter nicht erkannt. Weitergehende Metafunktionsregeln, Effekte, Tensoroperationen und die größere FJ@-Standardbibliothek gehören noch nicht zu Version 0.1.
 
 Das Beispiel hier verwendet `@add`; `@plus` ist als kompatibler Alias derselben Operation vorhanden.
 
@@ -167,7 +164,7 @@ Das Kommando gibt das Ergebnis als JSON aus. Funktionswerte und ihre eingefangen
 ## Nächste Schritte
 
 1. Bibliotheksfunktionen wie `@map`, `@filter`, `@compose` und `@curry` auf dem Sprachkern aufbauen.
-2. Die weitergehenden FJ@-Metafunktionsregeln und ihre Aufrufmehrdeutigkeiten spezifizieren und testen.
+2. Die weitergehenden FJ@-Metafunktionsregeln getrennt vom Präfixkern spezifizieren und testen; syntaktische Varianten für `fj@nice` entwerfen.
 3. Effekte, Fähigkeiten und numerische Kerne getrennt vom reinen Sprachkern ergänzen.
 
 ## Lizenz
