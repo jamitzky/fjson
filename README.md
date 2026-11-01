@@ -2,11 +2,11 @@
 
 **fjson** ist die Grundlage für eine in JSON geschriebene Implementierung von FJ@. Das reine Python-Modul wertet einen definierten Sprachkern aus: Referenzen, Funktionen, Funktionsaufrufe, lexikalische Bindungen und die unten beschriebenen besonderen Formen.
 
-> **Stand:** Version 0.1 implementiert den in [GRAMMAR.ebnf](GRAMMAR.ebnf) und diesem README beschriebenen Kern. Sie ist noch keine vollständige Implementierung aller FJ@-Bibliotheksfunktionen und Metafunktionsregeln.
+> **Stand:** Version 0.2 implementiert den in [GRAMMAR.ebnf](GRAMMAR.ebnf) und diesem README beschriebenen Kern. [SEMANTICS.md](SEMANTICS.md) legt Auswertungsreihenfolge, Bindungen und Laufzeitwerte genauer fest. Die Prolog-artigen `!X`-Werte sind ein Prototyp; Unifikation und Suche folgen erst in einer Logikbibliothek.
 
 ## Grundidee
 
-Ein FJ@-Programm ist ein JSON-Wert. JSON-Zahlen, boolesche Werte, `null` und gewöhnliche Strings können Daten sein. Ein String, der mit `@` beginnt, ist dagegen ein **Bezeichner**: Er verweist auf eine Variable, ein Symbol oder eine Funktion. Beispielsweise bezeichnet `"@x"` einen gebundenen Wert und `"@plus"` eine Funktion. Ein unbekannter Bezeichner löst einen Fehler aus.
+Ein FJ@-Programm ist ein JSON-Wert. JSON-Zahlen, boolesche Werte, `null` und gewöhnliche Strings können Daten sein. Ein String, der mit `@` beginnt, ist dagegen ein **Bezeichner**: Er verweist auf eine Variable, ein Symbol oder eine Funktion. Beispielsweise bezeichnet `"@x"` einen gebundenen Wert und `"@plus"` eine Funktion. Ein unbekannter Bezeichner löst einen Fehler aus. Ein String wie `"!X"` bezeichnet einen logischen Variablenwert; dessen Namensbereich wird unten erklärt.
 
 JSON-Arrays dienen sowohl als Daten als auch als Ausdrücke. Ein nicht zitiertes Array mit einem `@`-Namen an erster Stelle ist eine besondere Form oder ein **Präfixaufruf**. Ein unbekannter Name, ein nicht aufrufbarer Wert oder eine falsche Argumentzahl ist ein Fehler. Alle anderen Arrays werden elementweise als Datenarrays ausgewertet; sie sind keine impliziten Folgen, die nur ihren letzten Wert liefern.
 
@@ -90,7 +90,7 @@ Für Bedingungen gilt: `false`, `null`, `0`, `""`, `[]` und `{}` sind falsch; an
 
 `@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. `@try` fängt `EvaluationError` und dessen Unterklassen ab, aber keinen `ResourceLimitError`; ohne Ersatz liefert es `{"error": "Klassenname", "message": "Text"}`. Bereits erfolgte Deklarationen werden durch `@try` nicht zurückgerollt.
 
-Operationen wie `@plus` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Version 0.1 bietet `@plus`, `@minus`, `@times`, `@divide`, `@eq` und `@le` als eingebaute Funktionen. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
+Operationen wie `@plus` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Version 0.2 bietet `@plus`, `@minus`, `@times`, `@divide`, `@eq` und `@le` als eingebaute Funktionen. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
 
 ## Auswertung und Aufrufe
 
@@ -109,6 +109,22 @@ Der Python-Auswerter setzt diese Grundregeln um:
 
 `@quote` wird benötigt, wenn ein mit `@` beginnender String, ein Array mit führendem `@`-String oder ein Deklarationsobjekt selbst als Daten behandelt werden soll. Ein Funktionsaufruf wertet seine Argumente aus und bindet sie in der Reihenfolge der Parameter. Nur die erste Arrayposition kann einen Aufruf bezeichnen; spätere `@`-Werte werden nie als Infix- oder Postfixoperatoren interpretiert. `@define`, `@do` und `@pipe` sind keine Sprachformen dieses Kerns.
 
+### Logische Variablen: `!X`
+
+`"!X"`, `"!Person"` und `"!X_2"` erzeugen logische Variablenwerte. Die Form lautet `![A-Z][A-Za-z0-9_]*`; andere `!`-Strings bleiben normale Strings. Wiederholte Vorkommen desselben Namens innerhalb einer Auswertung sind derselbe Wert. Ein neuer oberster Interpreter-Aufruf und jeder Aufruf einer `@function` erzeugen einen frischen Namensbereich. `@let` und `@letrec` teilen den umgebenden Namensbereich. Bereits erzeugte Werte behalten ihre Identität, wenn sie gespeichert oder übergeben werden.
+
+```python
+from fjson import Interpreter, LogicVar
+
+fjson = Interpreter()
+x, again = fjson(["!X", "!X"])
+assert isinstance(x, LogicVar) and x is again
+assert fjson("!X") is not x
+assert fjson(["@quote", "!X"]) == "!X"
+```
+
+`@quote` verhindert auch in verschachtelten JSON-Werten die Umwandlung: `["@quote", ["parent", "alice", "!X"]]` enthält danach den wörtlichen String `"!X"`. Für eine spätere Logikbibliothek kann ein nicht zitierter Term wie `["parent", "alice", "!X"]` einen echten Variablenwert enthalten. `!_` als anonyme Variable sowie Unifikation, Occurs-Check und Backtracking sind noch nicht implementiert.
+
 Ein minimales Programm zum Binden und Aufrufen der Funktion soll so aussehen:
 
 ```json
@@ -121,7 +137,7 @@ Erwartetes Ergebnis: `42`.
 
 ## Verhältnis zum bisherigen FJ@
 
-Der implementierte Sprachkern orientiert sich am bisherigen FJ@-Entwurf. Funktionen können übergeben und zurückgegeben werden; Aufrufe haben genau eine kanonische Präfixform. `fj@nice` kann später Pipeline-, Infix- und Postfixschreibweisen in diese Form übersetzen. Diese Schreibweisen werden vom Basisinterpreter nicht erkannt. Weitergehende Metafunktionsregeln, Effekte, Tensoroperationen und die größere FJ@-Standardbibliothek gehören noch nicht zu Version 0.1.
+Der implementierte Sprachkern orientiert sich am bisherigen FJ@-Entwurf. Funktionen können übergeben und zurückgegeben werden; Aufrufe haben genau eine kanonische Präfixform. `fj@nice` kann später Pipeline-, Infix- und Postfixschreibweisen in diese Form übersetzen. Diese Schreibweisen werden vom Basisinterpreter nicht erkannt. Weitergehende Metafunktionsregeln, Effekte, Tensoroperationen und die größere FJ@-Standardbibliothek gehören noch nicht zu Version 0.2.
 
 `@plus` ist der Name für die Addition, wie im bisherigen FJ@-Entwurf. `@add` ist kein eingebauter Alias.
 
@@ -159,13 +175,14 @@ python -m fjson examples/inc.json
 python -B -m unittest discover -s tests
 ```
 
-Das Kommando gibt das Ergebnis als JSON aus. Funktionswerte und ihre eingefangenen Umgebungen sind Laufzeitwerte des Interpreters und nicht selbst JSON-serialisierbar; eine Datei, deren Ergebnis nur eine Closure ist, kann daher nicht als JSON ausgegeben werden. `@quote` erhält JSON-Quellwerte als Daten. Die Auswertung ist durch konfigurierbare Schritt- und Tiefengrenzen beschränkt.
+Das Kommando gibt das Ergebnis als JSON aus. Closures und logische Variablen sind Laufzeitwerte und nicht selbst JSON-serialisierbar; eine Datei mit einem solchen Ergebnis kann daher nicht als JSON ausgegeben werden. `@quote` erhält JSON-Quellwerte als Daten. Die Auswertung ist durch konfigurierbare Schritt- und Tiefengrenzen beschränkt.
 
 ## Nächste Schritte
 
-1. Bibliotheksfunktionen wie `@map`, `@filter`, `@compose` und `@curry` auf dem Sprachkern aufbauen.
-2. Die weitergehenden FJ@-Metafunktionsregeln getrennt vom Präfixkern spezifizieren und testen; syntaktische Varianten für `fj@nice` entwerfen.
-3. Effekte, Fähigkeiten und numerische Kerne getrennt vom reinen Sprachkern ergänzen.
+1. Eine Logikbibliothek mit Unifikation, Occurs-Check, frischen Klauselvariablen und Suche auf den `LogicVar`-Werten aufbauen.
+2. Bibliotheksfunktionen wie `@map`, `@filter`, `@compose` und `@curry` auf dem Sprachkern aufbauen.
+3. Die weitergehenden FJ@-Metafunktionsregeln getrennt vom Präfixkern spezifizieren und testen; syntaktische Varianten für `fj@nice` entwerfen.
+4. Effekte, Fähigkeiten und numerische Kerne getrennt vom reinen Sprachkern ergänzen.
 
 ## Lizenz
 
