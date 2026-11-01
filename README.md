@@ -1,0 +1,2 @@
+# fjson
+functional json
