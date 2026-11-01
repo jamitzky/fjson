@@ -46,16 +46,11 @@ if-form          = '[', '"@if"', ',', expression, ',', expression, ',',
 and-form         = '[', '"@and"', { ',', expression }, ']' ;
 or-form          = '[', '"@or"', { ',', expression }, ']' ;
 try-form         = '[', '"@try"', ',', expression, [ ',', expression ], ']' ;
-pipe-form        = '[', '"@pipe"', ',', expression, { ',', stage }, ']' ;
-stage            = binding-name | postfix-template ;
-postfix-template = '[', expression, { ',', expression }, ',', binding-name, ']' ;
 apply-form       = '[', '"@apply"', ',', expression, ',', expression, ']' ;
 
-(* A non-reserved array may be a call or ordinary array data. It is never
-   implicitly a sequence that returns only its final element. *)
+(* A non-reserved array beginning with a name is a prefix call. Other arrays
+   are data, never implicit sequences returning only their final element. *)
 prefix-call      = '[', name, { ',', expression }, ']' ;
-infix-call       = '[', expression, ',', name, ',', expression, ']' ;
-postfix-call     = '[', expression, { ',', expression }, ',', name, ']' ;
 
 (* Semantic dispatch rules, part of the language definition:
    1. A nonempty object with only @ binding names is a declaration object.
@@ -66,10 +61,10 @@ postfix-call     = '[', expression, { ',', expression }, ',', name, ']' ;
       kind as source data without evaluation.
    2. A reserved name at array position 0 selects its form. Wrong shape is
       an error; it never falls back to ordinary array data.
-   3. In other arrays, try infix for length 3, then prefix, then postfix.
-      A position qualifies only if its name resolves to a callable accepting
-      that argument count. If a callable occurs but no position qualifies,
-      report an arity error. Otherwise evaluate array elements as data.
+   3. Any other array beginning with an @ name is a prefix call. An unknown
+      name, non-callable value or wrong argument count is an error. Arrays
+      without a leading @ name are evaluated elementwise as data. Literal
+      arrays with a leading @ string require @quote.
    4. A string beginning with @ is a reference. An unknown reference is an
       error, including when encountered inside ordinary array or object data.
       @quote is required to preserve source with @-prefixed strings.
