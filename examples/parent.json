@@ -1,0 +1,4 @@
+["@run", 1, "!X",
+  ["@unify",
+    ["parent", "alice", "!X"],
+    ["parent", "alice", "bob"]]]
