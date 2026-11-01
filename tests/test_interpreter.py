@@ -10,12 +10,12 @@ class InterpreterTests(unittest.TestCase):
     def test_readme_function_and_defaults(self):
         self.assertEqual(
             self.fj.run('["@let", {"@inc": ["@function", {"@x": 1}, '
-                        '["@add", "@x", 1]]}, ["@add", ["@inc"], ["@inc", 41]]]'),
+                        '["@plus", "@x", 1]]}, ["@plus", ["@inc"], ["@inc", 41]]]'),
             44,
         )
         self.assertEqual(
             self.fj.run('["@let", {"@inc": ["@function", ["@x"], '
-                        '["@add", "@x", 1]]}, ["@inc", 41]]'),
+                        '["@plus", "@x", 1]]}, ["@inc", 41]]'),
             42,
         )
 
@@ -23,7 +23,7 @@ class InterpreterTests(unittest.TestCase):
         fjson = Interpreter()
         program = [
             "@let",
-            {"@inc": ["@function", ["@x"], ["@add", "@x", 1]]},
+            {"@inc": ["@function", ["@x"], ["@plus", "@x", 1]]},
             ["@inc", 41],
         ]
         self.assertEqual(fjson(program), 42)
@@ -32,15 +32,15 @@ class InterpreterTests(unittest.TestCase):
         self.assertEqual(fjson([True, None]), [True, None])
 
     def test_declarations_persist_and_are_ordered(self):
-        self.fj.run('{"@inc": ["@function", {"@x": 1}, ["@add", "@x", 1]]}')
+        self.fj.run('{"@inc": ["@function", {"@x": 1}, ["@plus", "@x", 1]]}')
         self.assertEqual(self.fj.run('["@inc"]'), 2)
         self.assertEqual(self.fj.run('["@inc", 41]'), 42)
-        self.assertEqual(self.fj.run('{"@x": 41, "@y": ["@add", "@x", 1]}'), 42)
+        self.assertEqual(self.fj.run('{"@x": 41, "@y": ["@plus", "@x", 1]}'), 42)
         self.assertEqual(self.fj.run('"@y"'), 42)
 
     def test_nested_declaration_uses_current_scope(self):
         self.assertEqual(
-            self.fj.run('["@let", {"@x": 41}, {"@answer": ["@add", "@x", 1]}]'),
+            self.fj.run('["@let", {"@x": 41}, {"@answer": ["@plus", "@x", 1]}]'),
             42,
         )
         with self.assertRaises(ResolutionError):
@@ -53,7 +53,7 @@ class InterpreterTests(unittest.TestCase):
     def test_default_evaluated_once_at_definition(self):
         self.fj.run('{"@n": 3}')
         self.fj.run('{"@f": ["@function", '
-                    '{"@x": ["@add", "@n", 1]}, "@x"]}')
+                    '{"@x": ["@plus", "@n", 1]}, "@x"]}')
         self.fj.run('{"@n": 99}')
         self.assertEqual(self.fj.run('["@f"]'), 4)
         self.assertEqual(self.fj.run('["@f", 7]'), 7)
@@ -61,7 +61,7 @@ class InterpreterTests(unittest.TestCase):
     def test_lexical_closure_and_let_order(self):
         self.assertEqual(
             self.fj.run('["@let", {"@n": 1, "@f": '
-                        '["@function", ["@x"], ["@add", "@x", "@n"]]}, '
+                        '["@function", ["@x"], ["@plus", "@x", "@n"]]}, '
                         '["@f", 41]]'),
             42,
         )
@@ -96,10 +96,9 @@ class InterpreterTests(unittest.TestCase):
             self.fj.run('"@"')
 
     def test_prefix_is_the_only_call_position(self):
-        self.assertEqual(self.fj.run('["@add", 40, 2]'), 42)
         self.assertEqual(self.fj.run('["@plus", 40, 2]'), 42)
-        infix_data = self.fj.run('[40, "@add", 2]')
-        postfix_data = self.fj.run('[40, 2, "@add"]')
+        infix_data = self.fj.run('[40, "@plus", 2]')
+        postfix_data = self.fj.run('[40, 2, "@plus"]')
         self.assertEqual([infix_data[0], infix_data[2]], [40, 2])
         self.assertEqual(postfix_data[:2], [40, 2])
         self.assertIs(infix_data[1], postfix_data[2])
@@ -107,7 +106,9 @@ class InterpreterTests(unittest.TestCase):
         with self.assertRaises(EvaluationError):
             self.fj.run('["@x", 1]')
         with self.assertRaises(ResolutionError):
-            self.fj.run('["@pipe", 41, [1, "@add"]]')
+            self.fj.run('["@pipe", 41, [1, "@plus"]]')
+        with self.assertRaises(ResolutionError):
+            self.fj.run('["@add", 40, 2]')
 
     def test_short_circuit_and_conditional(self):
         self.assertEqual(self.fj.run('["@if", true, 42, "@missing"]'), 42)
@@ -117,7 +118,7 @@ class InterpreterTests(unittest.TestCase):
         self.assertFalse(self.fj.run('["@or"]'))
 
     def test_apply_does_not_reinterpret_values(self):
-        self.assertEqual(self.fj.run('["@apply", "@add", [40, 2]]'), 42)
+        self.assertEqual(self.fj.run('["@apply", "@plus", [40, 2]]'), 42)
         self.assertEqual(
             self.fj.run('["@apply", ["@function", ["@x"], "@x"], '
                         '[["@quote", ["@missing", 2]]]]'),
@@ -135,7 +136,7 @@ class InterpreterTests(unittest.TestCase):
 
     def test_errors_and_json_input(self):
         with self.assertRaises(ArityError):
-            self.fj.run('["@add", 1]')
+            self.fj.run('["@plus", 1]')
         with self.assertRaises(EvaluationError):
             self.fj.run('["@function", ["@x", "@x"], "@x"]')
         with self.assertRaises(EvaluationError):
@@ -145,7 +146,7 @@ class InterpreterTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.fj.run('NaN')
         with self.assertRaises(EvaluationError):
-            self.fj.run('["@add", true, 1]')
+            self.fj.run('["@plus", true, 1]')
         with self.assertRaises(EvaluationError):
             self.fj.run('{"@x": 1, "ordinary": 2}')
         with self.assertRaises(EvaluationError):
