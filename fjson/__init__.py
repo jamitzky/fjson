@@ -10,17 +10,23 @@ from .interpreter import (
     SecurityError,
 )
 from .logic import LogicVar
-from .security import CapabilityPolicy, Effect
+from .adapters import HttpsScope, PathScope, ProcessScope, install_host_adapters
+from .security import CapabilityGrant, CapabilityPolicy, Effect
 
 __all__ = [
     "ArityError",
+    "CapabilityGrant",
     "CapabilityPolicy",
     "Effect",
+    "HttpsScope",
     "EvaluationError",
     "FjsonError",
     "Interpreter",
     "LogicVar",
+    "PathScope",
+    "ProcessScope",
     "ResolutionError",
     "ResourceLimitError",
     "SecurityError",
+    "install_host_adapters",
 ]
