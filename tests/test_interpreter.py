@@ -1,4 +1,3 @@
-import json
 import unittest
 
 from fjson import ArityError, EvaluationError, Interpreter, ResolutionError, ResourceLimitError
@@ -28,24 +27,34 @@ class InterpreterTests(unittest.TestCase):
             ["@inc", 41],
         ]
         self.assertEqual(fjson(program), 42)
-        self.assertEqual(fjson(["@define", "@answer", 42]), 42)
+        self.assertEqual(fjson({"@answer": 42}), 42)
         self.assertEqual(fjson("@answer"), 42)
         self.assertEqual(fjson([True, None]), [True, None])
 
-    def test_define_persists_and_do_sequences(self):
+    def test_declarations_persist_and_are_ordered(self):
+        self.fj.run('{"@inc": ["@function", {"@x": 1}, ["@add", "@x", 1]]}')
+        self.assertEqual(self.fj.run('["@inc"]'), 2)
+        self.assertEqual(self.fj.run('["@inc", 41]'), 42)
+        self.assertEqual(self.fj.run('{"@x": 41, "@y": ["@add", "@x", 1]}'), 42)
+        self.assertEqual(self.fj.run('"@y"'), 42)
+
+    def test_nested_declaration_uses_current_scope(self):
         self.assertEqual(
-            self.fj.run('["@do", ["@define", "@inc", '
-                        '["@function", {"@x": 1}, ["@add", "@x", 1]]], '
-                        '["@inc", 41]]'),
+            self.fj.run('["@let", {"@x": 41}, {"@answer": ["@add", "@x", 1]}]'),
             42,
         )
-        self.assertEqual(self.fj.run('["@inc"]'), 2)
+        with self.assertRaises(ResolutionError):
+            self.fj.run('"@answer"')
+        self.assertEqual(
+            self.fj.run('{"record": ["@quote", {"@answer": 42}]}'),
+            {"record": {"@answer": 42}},
+        )
 
     def test_default_evaluated_once_at_definition(self):
-        self.fj.run('["@define", "@n", 3]')
-        self.fj.run('["@define", "@f", ["@function", '
-                    '{"@x": ["@add", "@n", 1]}, "@x"]]')
-        self.fj.run('["@define", "@n", 99]')
+        self.fj.run('{"@n": 3}')
+        self.fj.run('{"@f": ["@function", '
+                    '{"@x": ["@add", "@n", 1]}, "@x"]}')
+        self.fj.run('{"@n": 99}')
         self.assertEqual(self.fj.run('["@f"]'), 4)
         self.assertEqual(self.fj.run('["@f", 7]'), 7)
 
@@ -78,6 +87,9 @@ class InterpreterTests(unittest.TestCase):
         self.assertEqual(self.fj.run('["@quote", ["@missing", 2]]'), ["@missing", 2])
         self.assertEqual(self.fj.run('[1, 2, {"key": 3}]'), [1, 2, {"key": 3}])
         self.assertEqual(self.fj.run('["@quote", "@name"]'), "@name")
+        self.assertEqual(self.fj.run('["@quote", {"@x": 1}]'), {"@x": 1})
+        with self.assertRaises(ResolutionError):
+            self.fj.run('"@x"')
         with self.assertRaises(ResolutionError):
             self.fj.run('"@missing"')
         with self.assertRaises(ResolutionError):
@@ -106,8 +118,8 @@ class InterpreterTests(unittest.TestCase):
 
     def test_pipe_template(self):
         self.assertEqual(self.fj.run('["@pipe", 41, [1, "@add"]]'), 42)
-        self.fj.run('["@define", "@inc", ["@function", ["@x"], '
-                    '["@add", "@x", 1]]]')
+        self.fj.run('{"@inc": ["@function", ["@x"], '
+                    '["@add", "@x", 1]]}')
         self.assertEqual(self.fj.run('["@pipe", 40, "@inc", "@inc"]'), 42)
 
     def test_try_catches_language_errors_not_resource_limits(self):
@@ -132,6 +144,19 @@ class InterpreterTests(unittest.TestCase):
             self.fj.run('NaN')
         with self.assertRaises(EvaluationError):
             self.fj.run('["@add", true, 1]')
+        with self.assertRaises(EvaluationError):
+            self.fj.run('{"@x": 1, "ordinary": 2}')
+        with self.assertRaises(EvaluationError):
+            self.fj.run('{"@if": 1}')
+        with self.assertRaises(ResolutionError):
+            self.fj.run('["@define", "@x", 1]')
+        with self.assertRaises(ResolutionError):
+            self.fj.run('["@do", 1, 2]')
+
+    def test_noncall_arrays_remain_data(self):
+        self.assertEqual(self.fj.run('[1, 2, 3]'), [1, 2, 3])
+        self.assertEqual(self.fj.run('[{"@x": 1}, "@x"]'), [1, 1])
+        self.assertEqual(self.fj.run('"@x"'), 1)
 
 
 if __name__ == "__main__":
