@@ -1,8 +1,8 @@
 """Interpreter for the documented FJ@ JSON core.
 
 Only the Python standard library is used. Source programs are JSON values;
-closures, native functions and logic variables are runtime values and are not
-JSON serializable.
+closures, native functions, logic variables and goals are runtime values and
+are not JSON serializable.
 """
 
 from __future__ import annotations
@@ -12,6 +12,16 @@ import json
 import math
 from dataclasses import dataclass
 from typing import Any, Callable
+
+from .logic import (
+    ChoiceGoal,
+    ConjGoal,
+    Goal,
+    LogicScope,
+    LogicVar,
+    UnifyGoal,
+    search,
+)
 
 
 class FjsonError(Exception):
@@ -52,23 +62,6 @@ def _is_logic_name(value: Any) -> bool:
         "A" <= char <= "Z" or "a" <= char <= "z" or
         "0" <= char <= "9" or char == "_" for char in value[2:]
     ))
-
-
-@dataclass(eq=False, frozen=True)
-class LogicVar:
-    """A logic variable identified by object identity, not by its name."""
-
-    name: str
-
-
-class LogicScope:
-    def __init__(self) -> None:
-        self.variables: dict[str, LogicVar] = {}
-
-    def resolve(self, name: str) -> LogicVar:
-        if name not in self.variables:
-            self.variables[name] = LogicVar(name)
-        return self.variables[name]
 
 
 class Environment:
@@ -183,6 +176,10 @@ class Interpreter:
             "@divide": _binary_number("@divide", lambda a, b: a / b),
             "@le": _binary_number("@le", lambda a, b: a <= b),
             "@eq": Native("@eq", 2, _json_equal),
+            "@unify": Native("@unify", 2, UnifyGoal),
+            "@choice": Native("@choice", 2, self._logic_choice),
+            "@conj": Native("@conj", 2, self._logic_conj),
+            "@run": Native("@run", 3, self._logic_run),
         }
         self.global_env.values.update(builtins)
 
@@ -222,7 +219,7 @@ class Interpreter:
             if isinstance(expression, float) and not math.isfinite(expression):
                 raise EvaluationError("non-finite number")
             return expression
-        if isinstance(expression, (LogicVar, Native, Closure)):
+        if isinstance(expression, (LogicVar, Goal, Native, Closure)):
             return expression
         if isinstance(expression, dict):
             if any(not isinstance(key, str) for key in expression):
@@ -356,3 +353,21 @@ class Interpreter:
             raise EvaluationError("binding name must be a non-reserved @ name")
         return name
 
+    @staticmethod
+    def _logic_choice(left: Any, right: Any) -> Goal:
+        if not isinstance(left, Goal) or not isinstance(right, Goal):
+            raise EvaluationError("@choice expects two goals")
+        return ChoiceGoal(left, right)
+
+    @staticmethod
+    def _logic_conj(left: Any, right: Any) -> Goal:
+        if not isinstance(left, Goal) or not isinstance(right, Goal):
+            raise EvaluationError("@conj expects two goals")
+        return ConjGoal(left, right)
+
+    def _logic_run(self, limit: Any, query: Any, goal: Any) -> list[Any]:
+        if type(limit) is not int or limit < 0:
+            raise EvaluationError("@run expects a nonnegative integer limit")
+        if not isinstance(goal, Goal):
+            raise EvaluationError("@run expects a goal")
+        return search(goal, query, limit, lambda: self._tick(0))
