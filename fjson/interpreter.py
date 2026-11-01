@@ -158,10 +158,14 @@ class Interpreter:
         expression = json.loads(
             source, object_pairs_hook=_unique_object, parse_constant=_reject_constant
         )
+        return self(expression)
+
+    def __call__(self, expression: Any) -> Any:
+        """Evaluate a JSON-compatible Python value in this session."""
         return self.eval(expression)
 
     def eval(self, expression: Any) -> Any:
-        """Evaluate a value already parsed from JSON."""
+        """Evaluate a JSON-compatible Python value (also available via call)."""
         self.steps = 0
         return self._eval(expression, self.global_env, 0)
 
