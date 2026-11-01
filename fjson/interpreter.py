@@ -143,14 +143,13 @@ class Interpreter:
         self.steps = 0
         self.global_env = Environment()
         builtins = {
-            "@add": _binary_number("@add", lambda a, b: a + b),
+            "@plus": _binary_number("@plus", lambda a, b: a + b),
             "@minus": _binary_number("@minus", lambda a, b: a - b),
             "@times": _binary_number("@times", lambda a, b: a * b),
             "@divide": _binary_number("@divide", lambda a, b: a / b),
             "@le": _binary_number("@le", lambda a, b: a <= b),
             "@eq": Native("@eq", 2, _json_equal),
         }
-        builtins["@plus"] = builtins["@add"]
         self.global_env.values.update(builtins)
 
     def run(self, source: str) -> Any:
