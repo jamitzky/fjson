@@ -5,6 +5,7 @@ from .interpreter import (
     EvaluationError,
     FjsonError,
     Interpreter,
+    LogicVar,
     ResolutionError,
     ResourceLimitError,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "EvaluationError",
     "FjsonError",
     "Interpreter",
+    "LogicVar",
     "ResolutionError",
     "ResourceLimitError",
 ]
