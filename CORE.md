@@ -45,10 +45,10 @@ Externe Datei-, Prozess-, Netzwerk- und Geräteeffekte gehören nicht zur
 Sprache selbst. Der Host registriert solche Funktionen und vergibt Rechte.
 Quellcode kann keine Rechte erzeugen oder erweitern. Jeder tatsächliche
 Aufruf muss die vom Host gesetzte Policy und die Ressourcenlimits prüfen,
-auch wenn er über eine Closure oder `@apply` erfolgt. Ein künftiger
-`SecurityError` darf von `@try` nicht als gewöhnlicher `EvaluationError`
-behandelt werden. Diese Host-Schnittstelle wird gesondert spezifiziert;
-ihre Einführung ändert keine der oben festgelegten Quellformen.
+auch wenn er über eine Closure oder `@apply` erfolgt. `SecurityError` wird
+von `@try` nicht als gewöhnlicher `EvaluationError` behandelt. Die
+[Host-Schnittstelle](SECURITY.md) ist gesondert spezifiziert; ihre
+Einführung ändert keine der oben festgelegten Quellformen.
 
 Neue Bibliotheksfunktionen und strengere Host-Policies sind mit dem Kern
 vereinbar. Eine Änderung an Parsing, Namensauflösung, Bindung oder
