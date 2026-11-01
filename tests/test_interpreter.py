@@ -95,11 +95,19 @@ class InterpreterTests(unittest.TestCase):
         with self.assertRaises(ResolutionError):
             self.fj.run('"@"')
 
-    def test_fixities_and_ambiguous_infix_precedence(self):
+    def test_prefix_is_the_only_call_position(self):
         self.assertEqual(self.fj.run('["@add", 40, 2]'), 42)
-        self.assertEqual(self.fj.run('[40, "@add", 2]'), 42)
-        self.assertEqual(self.fj.run('[40, 2, "@add"]'), 42)
         self.assertEqual(self.fj.run('["@plus", 40, 2]'), 42)
+        infix_data = self.fj.run('[40, "@add", 2]')
+        postfix_data = self.fj.run('[40, 2, "@add"]')
+        self.assertEqual([infix_data[0], infix_data[2]], [40, 2])
+        self.assertEqual(postfix_data[:2], [40, 2])
+        self.assertIs(infix_data[1], postfix_data[2])
+        self.fj({"@x": 1})
+        with self.assertRaises(EvaluationError):
+            self.fj.run('["@x", 1]')
+        with self.assertRaises(ResolutionError):
+            self.fj.run('["@pipe", 41, [1, "@add"]]')
 
     def test_short_circuit_and_conditional(self):
         self.assertEqual(self.fj.run('["@if", true, 42, "@missing"]'), 42)
@@ -115,12 +123,6 @@ class InterpreterTests(unittest.TestCase):
                         '[["@quote", ["@missing", 2]]]]'),
             ["@missing", 2],
         )
-
-    def test_pipe_template(self):
-        self.assertEqual(self.fj.run('["@pipe", 41, [1, "@add"]]'), 42)
-        self.fj.run('{"@inc": ["@function", ["@x"], '
-                    '["@add", "@x", 1]]}')
-        self.assertEqual(self.fj.run('["@pipe", 40, "@inc", "@inc"]'), 42)
 
     def test_try_catches_language_errors_not_resource_limits(self):
         self.assertEqual(self.fj.run('["@try", "@missing", 42]'), 42)
