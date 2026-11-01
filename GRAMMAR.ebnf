@@ -31,6 +31,7 @@ name             = ? JSON string with decoded content matching @ followed by
                      one or more Unicode characters ? ;
 binding-name     = ? name other than a reserved form name ? ;
 binding-object   = "{", [ binding, { ",", binding } ], "}" ;
+declaration-object = "{", binding, { ",", binding }, "}" ;
 binding          = binding-name, ":", expression ;
 required-params  = "[", [ binding-name, { ",", binding-name } ], "]" ;
 default-params   = binding-object ;
@@ -38,12 +39,10 @@ params           = required-params | default-params ;
 
 quote-form       = '[', '"@quote"', ',', json-value, ']' ;
 function-form    = '[', '"@function"', ',', params, ',', expression, ']' ;
-define-form      = '[', '"@define"', ',', binding-name, ',', expression, ']' ;
 let-form         = '[', '"@let"', ',', binding-object, ',', expression, ']' ;
 letrec-form      = '[', '"@letrec"', ',', binding-object, ',', expression, ']' ;
 if-form          = '[', '"@if"', ',', expression, ',', expression, ',',
                    expression, ']' ;
-do-form          = '[', '"@do"', { ',', expression }, ']' ;
 and-form         = '[', '"@and"', { ',', expression }, ']' ;
 or-form          = '[', '"@or"', { ',', expression }, ']' ;
 try-form         = '[', '"@try"', ',', expression, [ ',', expression ], ']' ;
@@ -52,23 +51,30 @@ stage            = binding-name | postfix-template ;
 postfix-template = '[', expression, { ',', expression }, ',', binding-name, ']' ;
 apply-form       = '[', '"@apply"', ',', expression, ',', expression, ']' ;
 
-(* A non-reserved array may be a call or ordinary array data. The interpreter
-   resolves callable positions after JSON parsing. *)
+(* A non-reserved array may be a call or ordinary array data. It is never
+   implicitly a sequence that returns only its final element. *)
 prefix-call      = '[', name, { ',', expression }, ']' ;
 infix-call       = '[', expression, ',', name, ',', expression, ']' ;
 postfix-call     = '[', expression, { ',', expression }, ',', name, ']' ;
 
 (* Semantic dispatch rules, part of the language definition:
-   1. A reserved name at array position 0 selects its form. Wrong shape is
+   1. A nonempty object with only @ binding names is a declaration object.
+      Its values are evaluated in key order in the current environment,
+      each name is bound, and the last value is returned. A mixed object
+      containing both @ keys and ordinary keys is an error. An object with
+      no @ keys is data; the empty object is data. @quote preserves either
+      kind as source data without evaluation.
+   2. A reserved name at array position 0 selects its form. Wrong shape is
       an error; it never falls back to ordinary array data.
-   2. In other arrays, try infix for length 3, then prefix, then postfix.
+   3. In other arrays, try infix for length 3, then prefix, then postfix.
       A position qualifies only if its name resolves to a callable accepting
       that argument count. If a callable occurs but no position qualifies,
       report an arity error. Otherwise evaluate array elements as data.
-   3. A string beginning with @ is a reference. An unknown reference is an
+   4. A string beginning with @ is a reference. An unknown reference is an
       error, including when encountered inside ordinary array or object data.
       @quote is required to preserve source with @-prefixed strings.
-   4. Object member order is significant for @let and default-params. JSON
-      duplicate member names are rejected by the text loader.
+   5. Object member order is significant for declarations, @let and
+      default-params. JSON duplicate member names are rejected by the
+      text loader.
 *)
 
