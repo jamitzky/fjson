@@ -22,7 +22,7 @@ from .logic import (
     UnifyGoal,
     search,
 )
-from .security import CapabilityPolicy, Effect
+from .security import CapabilityGrant, CapabilityPolicy, Effect
 
 
 class FjsonError(Exception):
@@ -99,6 +99,7 @@ class Native:
     function: Callable[..., Any]
     effects: frozenset[Effect] = frozenset()
     operation_id: str | None = None
+    scope_type: type | None = None
 
     def __post_init__(self) -> None:
         if not _is_name(self.name) or type(self.arity) is not int or self.arity < 0 or not callable(self.function):
@@ -113,6 +114,10 @@ class Native:
             not isinstance(self.operation_id, str) or not self.operation_id
         ):
             raise ValueError("operation ID must be a nonempty string")
+        if self.scope_type is not None and (
+            not isinstance(self.scope_type, type) or self.operation_id is None
+        ):
+            raise ValueError("scoped native requires a scope type and operation ID")
 
 
 @dataclass
@@ -213,6 +218,7 @@ class Interpreter:
     def register_native(
         self, name: str, arity: int, function: Callable[..., Any], *,
         operation_id: str, effects: frozenset[Effect],
+        scope_type: type | None = None,
     ) -> None:
         """Register a host function; JSON programs cannot call this method."""
         if not _is_name(name) or name in _SPECIAL:
@@ -222,7 +228,7 @@ class Interpreter:
         if not operation_id:
             raise ValueError("host operation requires an operation ID")
         self.global_env.values[name] = Native(
-            name, arity, function, effects, operation_id
+            name, arity, function, effects, operation_id, scope_type
         )
 
     def run(self, source: str) -> Any:
@@ -318,6 +324,14 @@ class Interpreter:
                 missing = sorted(effect.value for effect in
                                  function.effects - self.policy.allowed_effects)
                 raise SecurityError(f"effect denied for {function.name}: {', '.join(missing)}")
+            if function.scope_type is not None:
+                for grant in self.policy.grants:
+                    if (isinstance(grant, CapabilityGrant) and
+                            grant.operation_id == function.operation_id and
+                            isinstance(grant.scope, function.scope_type) and
+                            grant.scope.permits(tuple(values))):
+                        return function.function(grant.scope, *values)
+                raise SecurityError(f"capability denied: {function.operation_id}")
             if (function.operation_id is not None and
                     function.operation_id not in self.policy.grants):
                 raise SecurityError(f"capability denied: {function.operation_id}")
