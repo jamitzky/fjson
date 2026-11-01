@@ -2,7 +2,7 @@
 
 **fjson** ist die Grundlage für eine in JSON geschriebene Implementierung von FJ@. Das reine Python-Modul wertet einen definierten Sprachkern aus: Referenzen, Funktionen, Funktionsaufrufe, lexikalische Bindungen und die unten beschriebenen besonderen Formen.
 
-> **Stand:** Version 0.3 enthält den kompakten Sprachkern aus [GRAMMAR.ebnf](GRAMMAR.ebnf) und eine erste [Logikbibliothek](LOGIC.md). [SEMANTICS.md](SEMANTICS.md) legt Auswertungsreihenfolge, Bindungen und Laufzeitwerte genauer fest. Die Suche ist derzeit auf endliche Goal-Bäume beschränkt.
+> **Stand:** Der Sprachkern 0.3 ist [eingefroren](CORE.md). Seine Quellformen stehen in [GRAMMAR.ebnf](GRAMMAR.ebnf), seine Auswertung in [SEMANTICS.md](SEMANTICS.md). Die erste [Logikbibliothek](LOGIC.md) sucht derzeit über bereits aufgebaute Goal-Bäume.
 
 ## Grundidee
 
@@ -150,7 +150,7 @@ Erwartetes Ergebnis: `42`.
 
 ## Verhältnis zum bisherigen FJ@
 
-Der implementierte Sprachkern orientiert sich am bisherigen FJ@-Entwurf. Funktionen können übergeben und zurückgegeben werden; Aufrufe haben genau eine kanonische Präfixform. `fj@nice` kann später Pipeline-, Infix- und Postfixschreibweisen in diese Form übersetzen. Diese Schreibweisen werden vom Basisinterpreter nicht erkannt. Weitergehende Metafunktionsregeln, Effekte, Tensoroperationen und die größere FJ@-Standardbibliothek gehören noch nicht zu Version 0.3.
+Der [eingefrorene Sprachkern](CORE.md) orientiert sich am bisherigen FJ@-Entwurf. Funktionen können übergeben und zurückgegeben werden; Aufrufe haben genau eine kanonische Präfixform. `fj@nice` kann später Pipeline-, Infix- und Postfixschreibweisen in diese Form übersetzen. Diese Schreibweisen werden vom Basisinterpreter nicht erkannt. Weitergehende Metafunktionsregeln, externe Effekte, Tensoroperationen und die größere FJ@-Standardbibliothek gehören noch nicht zu Version 0.3. Rechte für externe Funktionen werden künftig vom Host vergeben, ohne neue Sprachformen einzuführen.
 
 `@plus` ist der Name für die Addition, wie im bisherigen FJ@-Entwurf. `@add` ist kein eingebauter Alias.
 
