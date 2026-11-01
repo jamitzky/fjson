@@ -5,10 +5,10 @@ from .interpreter import (
     EvaluationError,
     FjsonError,
     Interpreter,
-    LogicVar,
     ResolutionError,
     ResourceLimitError,
 )
+from .logic import LogicVar
 
 __all__ = [
     "ArityError",
@@ -19,4 +19,3 @@ __all__ = [
     "ResolutionError",
     "ResourceLimitError",
 ]
-
