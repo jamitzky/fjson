@@ -1,4 +1,4 @@
-(* fjson, version 0.2. This is the concrete JSON syntax plus the shapes of
+(* fjson core, version 0.3 (frozen). This is the concrete JSON syntax plus the shapes of
    reserved forms. Parsing JSON and recognizing a form are separate steps.
    The semantic dispatch rules below the grammar resolve overlapping arrays. *)
 
@@ -80,4 +80,3 @@ prefix-call      = '[', name, { ',', expression }, ']' ;
       default-params. JSON duplicate member names are rejected by the
       text loader.
 *)
-
