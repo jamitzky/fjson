@@ -22,6 +22,7 @@ from .logic import (
     UnifyGoal,
     search,
 )
+from .security import CapabilityPolicy, Effect
 
 
 class FjsonError(Exception):
@@ -42,6 +43,10 @@ class ArityError(EvaluationError):
 
 class ResourceLimitError(FjsonError):
     """Evaluation exceeded a configured limit."""
+
+
+class SecurityError(FjsonError):
+    """A host operation is outside the current capability policy."""
 
 
 _UNBOUND = object()
@@ -92,6 +97,22 @@ class Native:
     name: str
     arity: int
     function: Callable[..., Any]
+    effects: frozenset[Effect] = frozenset()
+    operation_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if not _is_name(self.name) or type(self.arity) is not int or self.arity < 0 or not callable(self.function):
+            raise ValueError("invalid native operation")
+        if not isinstance(self.effects, frozenset) or any(
+            not isinstance(effect, Effect) for effect in self.effects
+        ):
+            raise TypeError("native effects must be a frozenset of Effect values")
+        if self.effects and not self.operation_id:
+            raise ValueError("effectful native operation requires an operation ID")
+        if self.operation_id is not None and (
+            not isinstance(self.operation_id, str) or not self.operation_id
+        ):
+            raise ValueError("operation ID must be a nonempty string")
 
 
 @dataclass
@@ -162,11 +183,17 @@ def _reject_constant(value: str) -> Any:
 class Interpreter:
     """Persistent FJ@ session with lexical scope and bounded evaluation."""
 
-    def __init__(self, *, max_steps: int = 100_000, max_depth: int = 500) -> None:
+    def __init__(
+        self, *, max_steps: int = 100_000, max_depth: int = 500,
+        policy: CapabilityPolicy | None = None,
+    ) -> None:
         if max_steps < 1 or max_depth < 1:
             raise ValueError("evaluation limits must be positive")
+        if policy is not None and not isinstance(policy, CapabilityPolicy):
+            raise TypeError("policy must be a CapabilityPolicy")
         self.max_steps = max_steps
         self.max_depth = max_depth
+        self.policy = policy if policy is not None else CapabilityPolicy()
         self.steps = 0
         self.global_env = Environment()
         builtins = {
@@ -182,6 +209,21 @@ class Interpreter:
             "@run": Native("@run", 3, self._logic_run),
         }
         self.global_env.values.update(builtins)
+
+    def register_native(
+        self, name: str, arity: int, function: Callable[..., Any], *,
+        operation_id: str, effects: frozenset[Effect],
+    ) -> None:
+        """Register a host function; JSON programs cannot call this method."""
+        if not _is_name(name) or name in _SPECIAL:
+            raise ValueError("native name must be a non-reserved @ name")
+        if name in self.global_env.values:
+            raise ValueError(f"native name already registered: {name}")
+        if not operation_id:
+            raise ValueError("host operation requires an operation ID")
+        self.global_env.values[name] = Native(
+            name, arity, function, effects, operation_id
+        )
 
     def run(self, source: str) -> Any:
         """Parse JSON text and evaluate it in this persistent session."""
@@ -272,6 +314,13 @@ class Interpreter:
                 raise ArityError(f"wrong number of arguments: {len(values)}")
             raise EvaluationError("value is not callable")
         if isinstance(function, Native):
+            if not function.effects.issubset(self.policy.allowed_effects):
+                missing = sorted(effect.value for effect in
+                                 function.effects - self.policy.allowed_effects)
+                raise SecurityError(f"effect denied for {function.name}: {', '.join(missing)}")
+            if (function.operation_id is not None and
+                    function.operation_id not in self.policy.grants):
+                raise SecurityError(f"capability denied: {function.operation_id}")
             return function.function(*values)
         local = Environment(function.environment, LogicScope())
         for index, name in enumerate(function.names):
