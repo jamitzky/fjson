@@ -28,6 +28,26 @@ Die allgemeine Form des ersten Kerns ist:
 
 Die Parameterliste enthält unterschiedliche Bezeichner, die mit `@` beginnen. `@function` wertet den Rumpf beim Erzeugen der Funktion noch nicht aus. Die Funktion ist ein Wert: Sie kann gebunden, übergeben und zurückgegeben werden.
 
+### Parameter mit Standardwerten
+
+Statt einer Liste kann `@function` ein JSON-Objekt als Parameterspezifikation erhalten. Jeder Schlüssel ist ein Parametername, der zugehörige Wert sein Standardausdruck:
+
+```json
+["@function", {"@x": 1}, ["@add", "@x", 1]]
+```
+
+Ohne Argument wird `@x` auf `1` gesetzt und die Funktion liefert `2`. Mit einem Argument überschreibt dieses den Standardwert; mit `41` liefert die Funktion `42`. Ein ausführbares Beispiel für beide Aufrufe:
+
+```json
+["@let",
+  {"@inc": ["@function", {"@x": 1}, ["@add", "@x", 1]]},
+  ["@add", ["@inc"], ["@inc", 41]]]
+```
+
+Erwartetes Ergebnis: `44`.
+
+Die Listenform bezeichnet weiterhin Pflichtparameter; in der Objektform haben alle Parameter einen Standardwert. Bei mehreren Objekteinträgen ist ihre Reihenfolge im JSON-Quelltext die Positionsreihenfolge der Argumente. Der Python-Lader muss diese Reihenfolge erhalten. Standardausdrücke werden einmal bei der Erzeugung der Funktion in der dortigen lexikalischen Umgebung ausgewertet, bevor ein Aufruf sie gegebenenfalls überschreibt. Eine Mischung aus Pflichtparametern und Parametern mit Standardwerten ist in diesem ersten Format noch nicht festgelegt.
+
 ### Lexikalische Closures
 
 Eine Funktion merkt sich die Umgebung, in der sie erzeugt wurde. Dadurch können freie Bezeichner im Rumpf auch später noch auf ihre ursprünglichen Bindungen zugreifen. Dieser lexikalische Geltungsbereich macht `@function` zur Grundlage für Funktionen höherer Ordnung.
@@ -50,7 +70,8 @@ Der erste Python-Auswerter soll mindestens diese Regeln umsetzen:
 | --- | --- |
 | `42`, `true`, `null`, `"text"` | Literale Werte |
 | `"@x"` | Referenz auf eine Bindung oder eingebaute Funktion |
-| `["@function", ["@x"], rumpf]` | Funktion mit lexikalischer Umgebung erzeugen |
+| `["@function", ["@x"], rumpf]` | Funktion mit Pflichtparameter erzeugen |
+| `["@function", {"@x": 1}, rumpf]` | Funktion mit Standardwert für `@x` erzeugen |
 | `["@add", 41, 1]` | Funktion mit zwei Argumenten aufrufen |
 | `["@let", {"@n": 1}, rumpf]` | Lokale Bindung für einen Rumpf |
 | `["@quote", "@x"]` | `"@x"` als Datenwert zurückgeben, ohne die Referenz aufzulösen |
@@ -91,7 +112,7 @@ Funktionswerte und ihre eingefangenen Umgebungen sind Laufzeitwerte des Interpre
 ## Nächste Implementierungsschritte
 
 1. Bezeichnerauflösung, literale Werte und klare Fehler für unbekannte Namen.
-2. `@function`, Aufrufe, Parameterprüfung und lexikalische Closures.
+2. `@function`, Aufrufe, Pflichtparameter, Standardwerte, Parameterprüfung und lexikalische Closures.
 3. `@add`, `@let` und `@quote` samt ausführbarer Tests für die Beispiele oben.
 4. Weitere FJ@-Formen mit dokumentierten Kompatibilitätsregeln und Tests.
 
