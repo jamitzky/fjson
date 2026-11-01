@@ -13,6 +13,9 @@ und einen Grant für seine genaue interne Operations-ID. Ohne Policy sind
 alle Host-Aufrufe gesperrt. Der Interpreter prüft beim tatsächlichen
 Aufruf, auch über Closures oder `@apply`. Eine Ablehnung ist ein
 `SecurityError`, den `@try` nicht abfängt.
+Argumente werden gemäß der Kernsemantik vor dem Aufruf ausgewertet. Ein
+später verweigerter Aufruf rollt bereits erlaubte Effekte seiner Argumente
+nicht zurück.
 
 Unscoped Host-Funktionen, die mit `register_native` ohne `scope_type`
 registriert wurden, verwenden einen String-Grant für die ganze
