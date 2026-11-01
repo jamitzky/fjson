@@ -1,6 +1,13 @@
 import unittest
 
-from fjson import ArityError, EvaluationError, Interpreter, ResolutionError, ResourceLimitError
+from fjson import (
+    ArityError,
+    EvaluationError,
+    Interpreter,
+    LogicVar,
+    ResolutionError,
+    ResourceLimitError,
+)
 
 
 class InterpreterTests(unittest.TestCase):
@@ -160,6 +167,51 @@ class InterpreterTests(unittest.TestCase):
         self.assertEqual(self.fj.run('[1, 2, 3]'), [1, 2, 3])
         self.assertEqual(self.fj.run('[{"@x": 1}, "@x"]'), [1, 1])
         self.assertEqual(self.fj.run('"@x"'), 1)
+
+    def test_logic_variable_identity_and_quote(self):
+        first, again = self.fj(["!X", "!X"])
+        self.assertIsInstance(first, LogicVar)
+        self.assertIs(first, again)
+        self.assertIsNot(first, self.fj("!X"))
+        self.assertEqual(self.fj(["@quote", "!X"]), "!X")
+        self.assertEqual(self.fj(["@quote", ["!X", "!X"]]), ["!X", "!X"])
+        self.assertEqual(self.fj("!x"), "!x")
+        self.assertEqual(self.fj("!_"), "!_")
+
+    def test_logic_variables_are_fresh_per_function_invocation(self):
+        self.fj({"@make": ["@function", [], ["!X", "!X"]]})
+        first = self.fj(["@make"])
+        second = self.fj(["@make"])
+        self.assertIs(first[0], first[1])
+        self.assertIsNot(first[0], second[0])
+        self.assertEqual(self.fj(["@let", {"@x": "!X"},
+                                  ["@eq", "@x", "!X"]]), True)
+
+    def test_runtime_logic_value_can_cross_python_calls(self):
+        value = self.fj("!X")
+        self.assertIs(self.fj(value), value)
+        self.assertTrue(self.fj(["@eq", value, value]))
+        self.assertIsNot(self.fj("!X"), value)
+
+    def test_record_and_call_order_and_no_rollback(self):
+        self.assertEqual(
+            self.fj({"first": {"@x": 41}, "second": ["@plus", "@x", 1]}),
+            {"first": 41, "second": 42},
+        )
+        self.assertEqual(
+            self.fj(["@plus", {"@y": 41}, ["@plus", "@y", 1]]),
+            83,
+        )
+        self.assertEqual(
+            self.fj(["@apply", ["@function", ["@x"], ["@plus", "@x", 1]],
+                     [41]]),
+            42,
+        )
+        self.assertEqual(
+            self.fj(["@try", {"@kept": 7, "@bad": "@missing"}, 0]),
+            0,
+        )
+        self.assertEqual(self.fj("@kept"), 7)
 
 
 if __name__ == "__main__":
