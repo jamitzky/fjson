@@ -35,8 +35,8 @@ class ResourceLimitError(FjsonError):
 
 _UNBOUND = object()
 _SPECIAL = frozenset({
-    "@quote", "@function", "@define", "@let", "@letrec", "@if",
-    "@do", "@and", "@or", "@try", "@pipe", "@apply",
+    "@quote", "@function", "@let", "@letrec", "@if",
+    "@and", "@or", "@try", "@pipe", "@apply",
 })
 
 
@@ -187,6 +187,19 @@ class Interpreter:
                 raise EvaluationError("non-finite number")
             return expression
         if isinstance(expression, dict):
+            if any(not isinstance(key, str) for key in expression):
+                raise EvaluationError("object keys must be strings")
+            declaration_keys = [key for key in expression if isinstance(key, str)
+                                and key.startswith("@")]
+            if declaration_keys:
+                if len(declaration_keys) != len(expression):
+                    raise EvaluationError("declaration object cannot mix @ names and data keys")
+                names = [self._binding_name(key) for key in expression]
+                result = None
+                for name, value_expr in expression.items():
+                    result = self._eval(value_expr, env, depth + 1)
+                    env.values[name] = result
+                return result
             return {key: self._eval(value, env, depth + 1)
                     for key, value in expression.items()}
         if not isinstance(expression, list):
@@ -267,12 +280,6 @@ class Interpreter:
                 if isinstance(parameters, dict) else None
             )
             return Closure(names, defaults, expr[2], env)
-        if head == "@define":
-            self._length(expr, 3)
-            name = self._binding_name(expr[1])
-            value = self._eval(expr[2], env, depth + 1)
-            env.values[name] = value
-            return value
         if head in ("@let", "@letrec"):
             self._length(expr, 3)
             bindings = expr[1]
@@ -289,11 +296,6 @@ class Interpreter:
             self._length(expr, 4)
             branch = 2 if self._eval(expr[1], env, depth + 1) else 3
             return self._eval(expr[branch], env, depth + 1)
-        if head == "@do":
-            result = None
-            for item in expr[1:]:
-                result = self._eval(item, env, depth + 1)
-            return result
         if head in ("@and", "@or"):
             result: Any = head == "@and"
             for item in expr[1:]:
