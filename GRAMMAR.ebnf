@@ -1,0 +1,74 @@
+(* fjson, version 0.1. This is the concrete JSON syntax plus the shapes of
+   reserved forms. Parsing JSON and recognizing a form are separate steps.
+   The semantic dispatch rules below the grammar resolve overlapping arrays. *)
+
+program          = expression ;
+expression       = json-value ;
+json-value       = object | array | string | number | "true" | "false" | "null" ;
+object           = "{", [ member, { ",", member } ], "}" ;
+member           = string, ":", json-value ;
+array            = "[", [ json-value, { ",", json-value } ], "]" ;
+
+(* JSON lexical rules. Unescaped excludes quote, backslash and U+0000..U+001F.
+   Unicode input and escape decoding follow RFC 8259. *)
+string           = '"', { unescaped | escape }, '"' ;
+unescaped        = ? Unicode scalar except quote, backslash and U+0000..U+001F ? ;
+escape           = backslash, ( '"' | backslash | "/" | "b" | "f" | "n" | "r" | "t"
+                            | "u", hex, hex, hex, hex ) ;
+backslash        = ? U+005C ? ;
+hex              = digit | "A" | "B" | "C" | "D" | "E" | "F"
+                         | "a" | "b" | "c" | "d" | "e" | "f" ;
+number           = [ "-" ], integer, [ ".", digit, { digit } ],
+                   [ ( "e" | "E" ), [ "+" | "-" ], digit, { digit } ] ;
+integer          = "0" | nonzero, { digit } ;
+digit            = "0" | nonzero ;
+nonzero          = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+(* The following are structural refinements of array and object. A name is a
+   JSON string whose decoded content starts with @ and has at least one more
+   character. Reserved names cannot be used as binding names. *)
+name             = ? JSON string with decoded content matching @ followed by
+                     one or more Unicode characters ? ;
+binding-name     = ? name other than a reserved form name ? ;
+binding-object   = "{", [ binding, { ",", binding } ], "}" ;
+binding          = binding-name, ":", expression ;
+required-params  = "[", [ binding-name, { ",", binding-name } ], "]" ;
+default-params   = binding-object ;
+params           = required-params | default-params ;
+
+quote-form       = '[', '"@quote"', ',', json-value, ']' ;
+function-form    = '[', '"@function"', ',', params, ',', expression, ']' ;
+define-form      = '[', '"@define"', ',', binding-name, ',', expression, ']' ;
+let-form         = '[', '"@let"', ',', binding-object, ',', expression, ']' ;
+letrec-form      = '[', '"@letrec"', ',', binding-object, ',', expression, ']' ;
+if-form          = '[', '"@if"', ',', expression, ',', expression, ',',
+                   expression, ']' ;
+do-form          = '[', '"@do"', { ',', expression }, ']' ;
+and-form         = '[', '"@and"', { ',', expression }, ']' ;
+or-form          = '[', '"@or"', { ',', expression }, ']' ;
+try-form         = '[', '"@try"', ',', expression, [ ',', expression ], ']' ;
+pipe-form        = '[', '"@pipe"', ',', expression, { ',', stage }, ']' ;
+stage            = binding-name | postfix-template ;
+postfix-template = '[', expression, { ',', expression }, ',', binding-name, ']' ;
+apply-form       = '[', '"@apply"', ',', expression, ',', expression, ']' ;
+
+(* A non-reserved array may be a call or ordinary array data. The interpreter
+   resolves callable positions after JSON parsing. *)
+prefix-call      = '[', name, { ',', expression }, ']' ;
+infix-call       = '[', expression, ',', name, ',', expression, ']' ;
+postfix-call     = '[', expression, { ',', expression }, ',', name, ']' ;
+
+(* Semantic dispatch rules, part of the language definition:
+   1. A reserved name at array position 0 selects its form. Wrong shape is
+      an error; it never falls back to ordinary array data.
+   2. In other arrays, try infix for length 3, then prefix, then postfix.
+      A position qualifies only if its name resolves to a callable accepting
+      that argument count. If a callable occurs but no position qualifies,
+      report an arity error. Otherwise evaluate array elements as data.
+   3. A string beginning with @ is a reference. An unknown reference is an
+      error, including when encountered inside ordinary array or object data.
+      @quote is required to preserve source with @-prefixed strings.
+   4. Object member order is significant for @let and default-params. JSON
+      duplicate member names are rejected by the text loader.
+*)
+
