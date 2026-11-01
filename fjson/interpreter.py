@@ -36,7 +36,7 @@ class ResourceLimitError(FjsonError):
 _UNBOUND = object()
 _SPECIAL = frozenset({
     "@quote", "@function", "@let", "@letrec", "@if",
-    "@and", "@or", "@try", "@pipe", "@apply",
+    "@and", "@or", "@try", "@apply",
 })
 
 
@@ -208,32 +208,18 @@ class Interpreter:
             return []
         if isinstance(expression[0], str) and expression[0] in _SPECIAL:
             return self._special(expression, env, depth + 1)
-
-        # FJ@ prefers infix for three-element arrays, then prefix, then postfix.
-        candidates: list[tuple[int, list[Any]]] = []
-        if len(expression) == 3:
-            candidates.append((1, [expression[0], expression[2]]))
-        candidates.append((0, expression[1:]))
-        if len(expression) > 1:
-            candidates.append((len(expression) - 1, expression[:-1]))
-        wrong_arity = False
-        for position, arguments in candidates:
-            word = expression[position]
-            if not isinstance(word, str) or not _is_name(word):
-                continue
-            try:
-                function = env.resolve(word)
-            except ResolutionError:
-                continue
-            if isinstance(function, (Native, Closure)) and not self._accepts(
-                function, len(arguments)
-            ):
-                wrong_arity = True
-            if self._accepts(function, len(arguments)):
-                values = [self._eval(arg, env, depth + 1) for arg in arguments]
-                return self._invoke(function, values, depth + 1)
-        if wrong_arity:
-            raise ArityError("no callable in the array accepts its argument count")
+        if expression[0] == "@":
+            raise ResolutionError("invalid reference: @")
+        if _is_name(expression[0]):
+            function = env.resolve(expression[0])
+            if not isinstance(function, (Native, Closure)):
+                raise EvaluationError(f"reference is not callable: {expression[0]}")
+            if not self._accepts(function, len(expression) - 1):
+                raise ArityError(
+                    f"{expression[0]} does not accept {len(expression) - 1} arguments"
+                )
+            values = [self._eval(arg, env, depth + 1) for arg in expression[1:]]
+            return self._invoke(function, values, depth + 1)
         return [self._eval(item, env, depth + 1) for item in expression]
 
     @staticmethod
@@ -319,21 +305,6 @@ class Interpreter:
             if not isinstance(values, list):
                 raise EvaluationError("@apply expects an argument array")
             return self._invoke(function, values, depth + 1)
-        if head == "@pipe":
-            if len(expr) < 2:
-                raise ArityError("@pipe expects an initial value")
-            current = self._eval(expr[1], env, depth + 1)
-            for stage in expr[2:]:
-                if _is_name(stage):
-                    function = env.resolve(stage)
-                    current = self._invoke(function, [current], depth + 1)
-                elif isinstance(stage, list) and len(stage) >= 2 and _is_name(stage[-1]):
-                    function = env.resolve(stage[-1])
-                    values = [self._eval(item, env, depth + 1) for item in stage[:-1]]
-                    current = self._invoke(function, [*values, current], depth + 1)
-                else:
-                    raise EvaluationError("invalid @pipe stage")
-            return current
         raise EvaluationError(f"unknown special form: {head}")
 
     @staticmethod
