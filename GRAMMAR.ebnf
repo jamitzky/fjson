@@ -1,4 +1,4 @@
-(* fjson, version 0.1. This is the concrete JSON syntax plus the shapes of
+(* fjson, version 0.2. This is the concrete JSON syntax plus the shapes of
    reserved forms. Parsing JSON and recognizing a form are separate steps.
    The semantic dispatch rules below the grammar resolve overlapping arrays. *)
 
@@ -29,6 +29,8 @@ nonzero          = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
    character. Reserved names cannot be used as binding names. *)
 name             = ? JSON string with decoded content matching @ followed by
                      one or more Unicode characters ? ;
+logic-variable   = ? JSON string with decoded content matching
+                     ![A-Z][A-Za-z0-9_]* ? ;
 binding-name     = ? name other than a reserved form name ? ;
 binding-object   = "{", [ binding, { ",", binding } ], "}" ;
 declaration-object = "{", binding, { ",", binding }, "}" ;
@@ -68,7 +70,13 @@ prefix-call      = '[', name, { ',', expression }, ']' ;
    4. A string beginning with @ is a reference. An unknown reference is an
       error, including when encountered inside ordinary array or object data.
       @quote is required to preserve source with @-prefixed strings.
-   5. Object member order is significant for declarations, @let and
+   5. A logic-variable string evaluates to a LogicVar runtime value. Equal
+      names share identity within one top-level evaluation and within one
+      function invocation. Each new top-level evaluation or function call
+      uses a fresh logic-variable scope; @let and @letrec share the enclosing
+      scope. Passing a LogicVar value preserves identity. @quote preserves
+      the raw !-string instead.
+   6. Object member order is significant for declarations, @let and
       default-params. JSON duplicate member names are rejected by the
       text loader.
 *)
