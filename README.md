@@ -8,7 +8,9 @@
 
 Ein FJ@-Programm ist ein JSON-Wert. JSON-Zahlen, boolesche Werte, `null` und gewöhnliche Strings können Daten sein. Ein String, der mit `@` beginnt, ist dagegen ein **Bezeichner**: Er verweist auf eine Variable, ein Symbol oder eine Funktion. Beispielsweise bezeichnet `"@x"` einen gebundenen Wert und `"@add"` eine Funktion. Ein unbekannter Bezeichner löst einen Fehler aus.
 
-JSON-Arrays dienen sowohl als Daten als auch als Ausdrücke. Der Auswerter muss anhand der definierten Sprachformen und aufrufbaren Werte entscheiden, ob ein Array einen Aufruf darstellt. JSON-Objektschlüssel bleiben gewöhnliche Strings.
+JSON-Arrays dienen sowohl als Daten als auch als Ausdrücke. Der Auswerter entscheidet anhand der definierten Sprachformen und aufrufbaren Werte, ob ein Array einen Aufruf darstellt. Ein Array ohne passenden Aufruf bleibt ein Datenarray; es ist keine implizite Folge, die nur ihren letzten Wert liefert.
+
+Ein nichtleeres JSON-Objekt, dessen Schlüssel alle `@`-Bezeichner sind, ist eine **Deklaration**. Seine Werte werden in Schlüsselreihenfolge ausgewertet und in der aktuellen Umgebung gebunden. Das Objekt liefert den Wert seiner letzten Deklaration. Auf oberster Ebene bleiben die Namen für spätere Aufrufe derselben Interpreter-Instanz erhalten. Ein Objekt ohne `@`-Schlüssel ist ein Datenobjekt; auch `{}` ist ein Datenobjekt. Gemischte Schlüssel sind ein Fehler. `@quote` macht ein Deklarationsobjekt stattdessen zu unveränderten Daten.
 
 ## Der erste Baustein: `@function`
 
@@ -64,36 +66,32 @@ Das Ergebnis ist eine Funktion, die `@n` mit dem Wert `1` festhält. Wird sie sp
 
 ## Sprachkern: besondere Formen
 
-Einige Formen müssen vom Auswerter selbst erkannt werden. Eine gewöhnliche Funktion bekommt bereits ausgewertete Argumente und kann daher weder eine Bindung anlegen noch die Auswertung eines Zweigs verhindern. Die folgenden `@`-Namen sind deshalb für den Sprachkern reserviert:
+Einige Formen müssen vom Auswerter selbst erkannt werden. Eine gewöhnliche Funktion bekommt bereits ausgewertete Argumente und kann daher weder eine Bindung anlegen noch die Auswertung eines Zweigs verhindern. Neben Deklarationsobjekten sind die folgenden `@`-Namen für den Sprachkern reserviert:
 
 | Form | Auswertungsregel |
 | --- | --- |
 | `@quote` | Gibt den folgenden JSON-Wert unverändert zurück; Referenzen und Aufrufe darin werden nicht ausgewertet. |
 | `@function` | Erzeugt eine lexikalische Closure aus Parametern und einem noch nicht ausgewerteten Rumpf. |
-| `@define` | Wertet einen Ausdruck aus, bindet das Ergebnis unter einem `@`-Namen in der aktuellen Umgebung und gibt den Wert zurück. Der Name selbst wird nicht als Referenz ausgewertet. |
 | `@let` | Erzeugt eine lokale Umgebung, wertet ihre Bindungen aus und wertet darin den Rumpf aus. |
 | `@letrec` | Legt alle lokalen Namen vor der Auswertung der Bindungen an, damit sich Funktionen rekursiv und gegenseitig aufrufen können. |
 | `@if` | Wertet die Bedingung und anschließend nur den gewählten Zweig aus. |
-| `@do` | Wertet mehrere Ausdrücke der Reihe nach in derselben Umgebung aus und liefert den letzten Wert. |
 | `@and`, `@or` | Werten Operanden von links nach rechts mit Kurzschluss aus und liefern den jeweils entscheidenden Wert. |
 | `@try` | Fängt Auswertungsfehler ab; ein optionaler Ersatz-Ausdruck wird nur im Fehlerfall ausgewertet. Ohne Ersatz entsteht ein Fehlerobjekt. Ressourcenlimits bleiben Fehler. |
 | `@pipe` | Führt einen Wert durch Stufen: ein einzelner Name ruft eine einstellige Funktion auf, `[argument, ..., name]` setzt den aktuellen Wert als letztes Argument ein. |
 
-`@define` macht einen Wert für folgende Ausdrücke derselben Umgebung verfügbar. Zusammen mit `@do` entsteht so ein vollständiges Programm in einem JSON-Ausdruck:
+Ein Deklarationsobjekt kann mehrere Namen in einem Schritt binden. Spätere Werte können frühere Namen verwenden:
 
 ```json
-["@do",
-  ["@define", "@inc", ["@function", {"@x": 1}, ["@add", "@x", 1]]],
-  ["@inc", 41]]
+{"@x": 41, "@answer": ["@add", "@x", 1]}
 ```
 
-Erwartetes Ergebnis: `42`. Bei einer fortbestehenden Interpreter-Sitzung bleibt `@inc` auch für spätere Auswertungen gebunden. `@let` begrenzt eine Bindung dagegen auf seinen lokalen Rumpf. Wie im bisherigen FJ@ werden `@let`-Bindungen in der Reihenfolge ihrer JSON-Objektschlüssel ausgewertet; spätere Bindungen können frühere verwenden.
+Erwartetes Ergebnis: `42`. Bei einer fortbestehenden Interpreter-Sitzung bleiben `@x` und `@answer` für spätere Auswertungen gebunden. `@let` verwendet dasselbe Prinzip der geordneten Bindungen, begrenzt die Namen aber auf seinen lokalen Rumpf. Die Werte eines Deklarationsobjekts werden nacheinander ausgewertet; wenn ein späterer Wert fehlschlägt, bleiben frühere Bindungen bestehen.
 
 Für Bedingungen gilt: `false`, `null`, `0`, `""`, `[]` und `{}` sind falsch; andere Werte sind wahr. `@if` wertet den nicht gewählten Zweig nicht aus. `@and` und `@or` liefern einen Operandenwert statt ihn in einen booleschen Wert umzuwandeln. Ohne Operanden liefern sie `true` beziehungsweise `false`.
 
 `@pipe` setzt bei einer Vorlagenstufe den laufenden Wert als letztes Argument ein. So liefert `["@pipe", 41, [1, "@add"]]` den Wert `42`. Eine einzelne Stufe `"@inc"` ruft dagegen `@inc` mit dem laufenden Wert als einzigem Argument auf.
 
-`@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. `@try` fängt `EvaluationError` und dessen Unterklassen ab, aber keinen `ResourceLimitError`; ohne Ersatz liefert es `{"error": "Klassenname", "message": "Text"}`. Bereits erfolgte `@define`-Bindungen werden durch `@try` nicht zurückgerollt.
+`@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. `@try` fängt `EvaluationError` und dessen Unterklassen ab, aber keinen `ResourceLimitError`; ohne Ersatz liefert es `{"error": "Klassenname", "message": "Text"}`. Bereits erfolgte Deklarationen werden durch `@try` nicht zurückgerollt.
 
 Operationen wie `@add` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Version 0.1 bietet `@add` (auch `@plus`), `@minus`, `@times`, `@divide`, `@eq` und `@le` als eingebaute Funktionen. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
 
@@ -109,10 +107,10 @@ Der Python-Auswerter setzt diese Grundregeln um:
 | `["@function", {"@x": 1}, rumpf]` | Funktion mit Standardwert für `@x` erzeugen |
 | `["@add", 41, 1]` | Funktion mit zwei Argumenten aufrufen |
 | `["@let", {"@n": 1}, rumpf]` | Lokale Bindung für einen Rumpf |
-| `["@define", "@n", 1]` | Wert in der aktuellen Umgebung deklarieren |
+| `{"@n": 1}` | Wert in der aktuellen Umgebung deklarieren |
 | `["@quote", "@x"]` | `"@x"` als Datenwert zurückgeben, ohne die Referenz aufzulösen |
 
-`@quote` wird benötigt, wenn ein mit `@` beginnender String oder ein Ausdruck selbst als Daten behandelt werden soll. Ausdrücke werden sonst gemäß ihren Sprachregeln ausgewertet. Ein Funktionsaufruf wertet seine Argumente aus und bindet sie in der Reihenfolge der Parameter. Ein gewöhnliches Array ohne passenden aufrufbaren Wert wird als Datenarray elementweise ausgewertet. Für dreiteilige Arrays prüft der Auswerter zuerst die Infixposition, dann Präfix und schließlich Postfix. Ein aufrufbarer Wert mit falscher Argumentzahl führt zu einem Fehler.
+`@quote` wird benötigt, wenn ein mit `@` beginnender String oder ein Deklarationsobjekt selbst als Daten behandelt werden soll. Ausdrücke werden sonst gemäß ihren Sprachregeln ausgewertet. Ein Funktionsaufruf wertet seine Argumente aus und bindet sie in der Reihenfolge der Parameter. Ein gewöhnliches Array ohne passenden aufrufbaren Wert wird als Datenarray elementweise ausgewertet. Für dreiteilige Arrays prüft der Auswerter zuerst die Infixposition, dann Präfix und schließlich Postfix. Ein aufrufbarer Wert mit falscher Argumentzahl führt zu einem Fehler. `@define` und `@do` sind keine Sprachformen dieses Kerns.
 
 Ein minimales Programm zum Binden und Aufrufen der Funktion soll so aussehen:
 
@@ -146,6 +144,13 @@ result = fjson([
 assert result == 42
 ```
 
+Eine globale Deklaration und ihre spätere Verwendung sind zwei Aufrufe derselben Instanz:
+
+```python
+fjson({"@inc": ["@function", ["@x"], ["@add", "@x", 1]]})
+assert fjson(["@inc", 41]) == 42
+```
+
 Python prüft dabei bereits die Syntax des Python-Quelltexts. Der Interpreter prüft zusätzlich, ob der übergebene Wert eine gültige FJ@-Form ist. In Python-Programmen schreibt man `True`, `False` und `None` statt `true`, `false` und `null`.
 
 Für JSON-Text und `.json`-Dateien gibt es weiterhin `fjson.run(source)`. Diese Methode verwendet `json.loads` und weist doppelte Objektschlüssel zurück; ein eigener `json.loads`-Aufruf ist dafür nicht nötig. `fjson.eval(value)` bleibt als gleichwertige Methode für bereits eingelesene Werte verfügbar.
@@ -157,7 +162,7 @@ python -m fjson examples/inc.json
 python -B -m unittest discover -s tests
 ```
 
-Das Kommando gibt das Ergebnis als JSON aus. Funktionswerte und ihre eingefangenen Umgebungen sind Laufzeitwerte des Interpreters und nicht selbst JSON-serialisierbar. `@quote` erhält JSON-Quellwerte als Daten. Die Auswertung ist durch konfigurierbare Schritt- und Tiefengrenzen beschränkt.
+Das Kommando gibt das Ergebnis als JSON aus. Funktionswerte und ihre eingefangenen Umgebungen sind Laufzeitwerte des Interpreters und nicht selbst JSON-serialisierbar; eine Datei, deren Ergebnis nur eine Closure ist, kann daher nicht als JSON ausgegeben werden. `@quote` erhält JSON-Quellwerte als Daten. Die Auswertung ist durch konfigurierbare Schritt- und Tiefengrenzen beschränkt.
 
 ## Nächste Schritte
 
