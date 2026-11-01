@@ -2,7 +2,7 @@
 
 **fjson** ist die Grundlage für eine in JSON geschriebene Implementierung von FJ@. Das reine Python-Modul wertet einen definierten Sprachkern aus: Referenzen, Funktionen, Funktionsaufrufe, lexikalische Bindungen und die unten beschriebenen besonderen Formen.
 
-> **Stand:** Der Sprachkern 0.3 ist [eingefroren](CORE.md). Seine Quellformen stehen in [GRAMMAR.ebnf](GRAMMAR.ebnf), seine Auswertung in [SEMANTICS.md](SEMANTICS.md). Die erste [Logikbibliothek](LOGIC.md) sucht derzeit über bereits aufgebaute Goal-Bäume.
+> **Stand:** Paketversion 0.4 enthält den [eingefrorenen Sprachkern 0.3](CORE.md), die erste [Logikbibliothek](LOGIC.md) und eine [Host-Policy für Effekte und Capabilities](SECURITY.md). Quellformen und Auswertungsregeln stehen in [GRAMMAR.ebnf](GRAMMAR.ebnf) und [SEMANTICS.md](SEMANTICS.md).
 
 ## Grundidee
 
@@ -90,7 +90,7 @@ Für Bedingungen gilt: `false`, `null`, `0`, `""`, `[]` und `{}` sind falsch; an
 
 `@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. `@try` fängt `EvaluationError` und dessen Unterklassen ab, aber keinen `ResourceLimitError`; ohne Ersatz liefert es `{"error": "Klassenname", "message": "Text"}`. Bereits erfolgte Deklarationen werden durch `@try` nicht zurückgerollt.
 
-Operationen wie `@plus` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Version 0.3 bietet `@plus`, `@minus`, `@times`, `@divide`, `@eq`, `@le` sowie die Logikfunktionen `@unify`, `@choice`, `@conj` und `@run` als eingebaute Funktionen. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
+Operationen wie `@plus` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Das Paket bietet `@plus`, `@minus`, `@times`, `@divide`, `@eq`, `@le` sowie die Logikfunktionen `@unify`, `@choice`, `@conj` und `@run` als eingebaute Funktionen. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
 
 ## Auswertung und Aufrufe
 
@@ -150,9 +150,20 @@ Erwartetes Ergebnis: `42`.
 
 ## Verhältnis zum bisherigen FJ@
 
-Der [eingefrorene Sprachkern](CORE.md) orientiert sich am bisherigen FJ@-Entwurf. Funktionen können übergeben und zurückgegeben werden; Aufrufe haben genau eine kanonische Präfixform. `fj@nice` kann später Pipeline-, Infix- und Postfixschreibweisen in diese Form übersetzen. Diese Schreibweisen werden vom Basisinterpreter nicht erkannt. Weitergehende Metafunktionsregeln, externe Effekte, Tensoroperationen und die größere FJ@-Standardbibliothek gehören noch nicht zu Version 0.3. Rechte für externe Funktionen werden künftig vom Host vergeben, ohne neue Sprachformen einzuführen.
+Der [eingefrorene Sprachkern](CORE.md) orientiert sich am bisherigen FJ@-Entwurf. Funktionen können übergeben und zurückgegeben werden; Aufrufe haben genau eine kanonische Präfixform. `fj@nice` kann später Pipeline-, Infix- und Postfixschreibweisen in diese Form übersetzen. Diese Schreibweisen werden vom Basisinterpreter nicht erkannt. Weitergehende Metafunktionsregeln, externe Effekte, Tensoroperationen und die größere FJ@-Standardbibliothek gehören nicht zum Sprachkern 0.3. Externe Funktionen werden über die [Host-Policy](SECURITY.md) registriert und geprüft, ohne neue Sprachformen einzuführen.
 
 `@plus` ist der Name für die Addition, wie im bisherigen FJ@-Entwurf. `@add` ist kein eingebauter Alias.
+
+### Effekte und Capabilities
+
+Die Python-Anwendung kann native Funktionen mit einer Operations-ID und
+Effekten wie `READ`, `WRITE`, `EXEC` oder `NETWORK` registrieren. Die
+Standard-Policy verweigert solche Host-Aufrufe. Ein Aufruf ist nur erlaubt,
+wenn alle benötigten Effekte freigegeben sind und ein Grant für die genaue
+Operations-ID vorliegt. Die Prüfung gilt auch über Closures und `@apply`.
+Die vollständige Python-Schnittstelle und ihre Grenzen stehen in
+[SECURITY.md](SECURITY.md). Datei-, Prozess- und Netzwerkadapter sind noch
+nicht enthalten; Ressourcenscopes folgen als eigener Schritt.
 
 ## Python-Schnittstelle und Ausführung
 
@@ -196,7 +207,7 @@ Das Kommando gibt das Ergebnis als JSON aus. Closures, logische Variablen und Go
 1. Bibliotheksfunktionen wie `@map`, `@filter`, `@compose` und `@curry` auf dem Sprachkern aufbauen.
 2. Die Logikbibliothek um verzögerte rekursive Goals und faire Suche erweitern; anonyme Variablen und Klauseldatenbanken gesondert spezifizieren.
 3. Die weitergehenden FJ@-Metafunktionsregeln getrennt vom Präfixkern spezifizieren und testen; syntaktische Varianten für `fj@nice` entwerfen.
-4. Effekte, Fähigkeiten und numerische Kerne getrennt vom reinen Sprachkern ergänzen.
+4. Grants um geprüfte Ressourcenscopes erweitern; danach Datei-, Prozess- und Netzwerkadapter sowie numerische Kerne getrennt vom reinen Sprachkern ergänzen.
 
 ## Lizenz
 
