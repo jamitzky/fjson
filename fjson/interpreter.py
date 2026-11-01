@@ -1,7 +1,8 @@
 """Interpreter for the documented FJ@ JSON core.
 
 Only the Python standard library is used. Source programs are JSON values;
-closures and native functions are runtime values and are not JSON serializable.
+closures, native functions and logic variables are runtime values and are not
+JSON serializable.
 """
 
 from __future__ import annotations
@@ -44,10 +45,43 @@ def _is_name(value: Any) -> bool:
     return isinstance(value, str) and len(value) > 1 and value.startswith("@")
 
 
+def _is_logic_name(value: Any) -> bool:
+    if not isinstance(value, str) or len(value) < 2 or value[0] != "!":
+        return False
+    return ("A" <= value[1] <= "Z" and all(
+        "A" <= char <= "Z" or "a" <= char <= "z" or
+        "0" <= char <= "9" or char == "_" for char in value[2:]
+    ))
+
+
+@dataclass(eq=False, frozen=True)
+class LogicVar:
+    """A logic variable identified by object identity, not by its name."""
+
+    name: str
+
+
+class LogicScope:
+    def __init__(self) -> None:
+        self.variables: dict[str, LogicVar] = {}
+
+    def resolve(self, name: str) -> LogicVar:
+        if name not in self.variables:
+            self.variables[name] = LogicVar(name)
+        return self.variables[name]
+
+
 class Environment:
-    def __init__(self, parent: Environment | None = None) -> None:
+    def __init__(
+        self, parent: Environment | None = None,
+        logic_scope: LogicScope | None = None,
+    ) -> None:
         self.parent = parent
         self.values: dict[str, Any] = {}
+        self.logic_scope = (
+            logic_scope if logic_scope is not None else
+            parent.logic_scope if parent is not None else LogicScope()
+        )
 
     def resolve(self, name: str) -> Any:
         if name in self.values:
@@ -166,6 +200,7 @@ class Interpreter:
     def eval(self, expression: Any) -> Any:
         """Evaluate a JSON-compatible Python value (also available via call)."""
         self.steps = 0
+        self.global_env.logic_scope = LogicScope()
         return self._eval(expression, self.global_env, 0)
 
     def _tick(self, depth: int) -> None:
@@ -180,10 +215,14 @@ class Interpreter:
         if isinstance(expression, str):
             if expression == "@":
                 raise ResolutionError("invalid reference: @")
+            if _is_logic_name(expression):
+                return env.logic_scope.resolve(expression[1:])
             return env.resolve(expression) if _is_name(expression) else expression
         if expression is None or isinstance(expression, (bool, int, float)):
             if isinstance(expression, float) and not math.isfinite(expression):
                 raise EvaluationError("non-finite number")
+            return expression
+        if isinstance(expression, (LogicVar, Native, Closure)):
             return expression
         if isinstance(expression, dict):
             if any(not isinstance(key, str) for key in expression):
@@ -237,7 +276,7 @@ class Interpreter:
             raise EvaluationError("value is not callable")
         if isinstance(function, Native):
             return function.function(*values)
-        local = Environment(function.environment)
+        local = Environment(function.environment, LogicScope())
         for index, name in enumerate(function.names):
             local.values[name] = (
                 values[index] if index < len(values) else function.defaults[index]
