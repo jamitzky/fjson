@@ -1,12 +1,12 @@
 # fjson
 
-**fjson** soll die Grundlage für eine in JSON geschriebene Implementierung von FJ@ bilden. Das erste Ziel ist ein kleines Python-Modul, das FJ@-Ausdrücke aus JSON auswertet. Die Sprache soll von einem einfachen, nachvollziehbaren Kern aus wachsen: Referenzen, Funktionen, Funktionsaufrufe und lexikalische Bindungen.
+**fjson** ist die Grundlage für eine in JSON geschriebene Implementierung von FJ@. Das reine Python-Modul wertet einen definierten Sprachkern aus: Referenzen, Funktionen, Funktionsaufrufe, lexikalische Bindungen und die unten beschriebenen besonderen Formen.
 
-> **Stand:** Dieses Repository enthält derzeit die Sprachskizze und die Lizenz. Das Python-Modul ist noch nicht implementiert. Die Beispiele unten beschreiben das beabsichtigte Verhalten.
+> **Stand:** Version 0.1 implementiert den in [GRAMMAR.ebnf](GRAMMAR.ebnf) und diesem README beschriebenen Kern. Sie ist noch keine vollständige Implementierung aller FJ@-Bibliotheksfunktionen und Metafunktionsregeln.
 
 ## Grundidee
 
-Ein FJ@-Programm ist ein JSON-Wert. JSON-Zahlen, boolesche Werte, `null` und gewöhnliche Strings können Daten sein. Ein String, der mit `@` beginnt, ist dagegen ein **Bezeichner**: Er verweist auf eine Variable, ein Symbol oder eine Funktion. Beispielsweise bezeichnet `"@x"` einen gebundenen Wert und `"@add"` eine Funktion. Ein unbekannter Bezeichner soll einen Fehler auslösen.
+Ein FJ@-Programm ist ein JSON-Wert. JSON-Zahlen, boolesche Werte, `null` und gewöhnliche Strings können Daten sein. Ein String, der mit `@` beginnt, ist dagegen ein **Bezeichner**: Er verweist auf eine Variable, ein Symbol oder eine Funktion. Beispielsweise bezeichnet `"@x"` einen gebundenen Wert und `"@add"` eine Funktion. Ein unbekannter Bezeichner löst einen Fehler aus.
 
 JSON-Arrays dienen sowohl als Daten als auch als Ausdrücke. Der Auswerter muss anhand der definierten Sprachformen und aufrufbaren Werte entscheiden, ob ein Array einen Aufruf darstellt. JSON-Objektschlüssel bleiben gewöhnliche Strings.
 
@@ -52,7 +52,7 @@ Die Listenform bezeichnet weiterhin Pflichtparameter; in der Objektform haben al
 
 Eine Funktion merkt sich die Umgebung, in der sie erzeugt wurde. Dadurch können freie Bezeichner im Rumpf auch später noch auf ihre ursprünglichen Bindungen zugreifen. Dieser lexikalische Geltungsbereich macht `@function` zur Grundlage für Funktionen höherer Ordnung.
 
-Ein Beispiel für das angestrebte Verhalten:
+Ein Beispiel:
 
 ```json
 ["@let",
@@ -76,8 +76,8 @@ Einige Formen müssen vom Auswerter selbst erkannt werden. Eine gewöhnliche Fun
 | `@if` | Wertet die Bedingung und anschließend nur den gewählten Zweig aus. |
 | `@do` | Wertet mehrere Ausdrücke der Reihe nach in derselben Umgebung aus und liefert den letzten Wert. |
 | `@and`, `@or` | Werten Operanden von links nach rechts mit Kurzschluss aus und liefern den jeweils entscheidenden Wert. |
-| `@try` | Wertet einen Ausdruck mit einer definierten FJ@-Fehlerbehandlung aus; ein optionaler Ersatz-Ausdruck wird nur im Fehlerfall ausgewertet. |
-| `@pipe` | Führt einen Wert durch Stufen; eine Stufe kann eine Aufrufvorlage sein, in die der aktuelle Wert eingesetzt wird. |
+| `@try` | Fängt Auswertungsfehler ab; ein optionaler Ersatz-Ausdruck wird nur im Fehlerfall ausgewertet. Ohne Ersatz entsteht ein Fehlerobjekt. Ressourcenlimits bleiben Fehler. |
+| `@pipe` | Führt einen Wert durch Stufen: ein einzelner Name ruft eine einstellige Funktion auf, `[argument, ..., name]` setzt den aktuellen Wert als letztes Argument ein. |
 
 `@define` macht einen Wert für folgende Ausdrücke derselben Umgebung verfügbar. Zusammen mit `@do` entsteht so ein vollständiges Programm in einem JSON-Ausdruck:
 
@@ -89,13 +89,17 @@ Einige Formen müssen vom Auswerter selbst erkannt werden. Eine gewöhnliche Fun
 
 Erwartetes Ergebnis: `42`. Bei einer fortbestehenden Interpreter-Sitzung bleibt `@inc` auch für spätere Auswertungen gebunden. `@let` begrenzt eine Bindung dagegen auf seinen lokalen Rumpf. Wie im bisherigen FJ@ werden `@let`-Bindungen in der Reihenfolge ihrer JSON-Objektschlüssel ausgewertet; spätere Bindungen können frühere verwenden.
 
-`@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. Die genaue Fehlerstruktur von `@try` und die zulässigen Vorlagen von `@pipe` werden vor ihrer Implementierung mit Beispielen festgeschrieben.
+Für Bedingungen gilt: `false`, `null`, `0`, `""`, `[]` und `{}` sind falsch; andere Werte sind wahr. `@if` wertet den nicht gewählten Zweig nicht aus. `@and` und `@or` liefern einen Operandenwert statt ihn in einen booleschen Wert umzuwandeln. Ohne Operanden liefern sie `true` beziehungsweise `false`.
 
-Operationen wie `@add` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Sie können als eingebaute Funktionen oder in einer FJ@-Bibliothek bereitgestellt werden. Auch ein aus Leistungsgründen nativ implementierter Rechenkern wie `@reduce` bleibt eine aufrufbare Funktion statt eines Keywords.
+`@pipe` setzt bei einer Vorlagenstufe den laufenden Wert als letztes Argument ein. So liefert `["@pipe", 41, [1, "@add"]]` den Wert `42`. Eine einzelne Stufe `"@inc"` ruft dagegen `@inc` mit dem laufenden Wert als einzigem Argument auf.
+
+`@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. `@try` fängt `EvaluationError` und dessen Unterklassen ab, aber keinen `ResourceLimitError`; ohne Ersatz liefert es `{"error": "Klassenname", "message": "Text"}`. Bereits erfolgte `@define`-Bindungen werden durch `@try` nicht zurückgerollt.
+
+Operationen wie `@add` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Version 0.1 bietet `@add` (auch `@plus`), `@minus`, `@times`, `@divide`, `@eq` und `@le` als eingebaute Funktionen. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
 
 ## Auswertung und Aufrufe
 
-Der erste Python-Auswerter soll mindestens diese Regeln umsetzen:
+Der Python-Auswerter setzt diese Grundregeln um:
 
 | Form | Bedeutung |
 | --- | --- |
@@ -108,7 +112,7 @@ Der erste Python-Auswerter soll mindestens diese Regeln umsetzen:
 | `["@define", "@n", 1]` | Wert in der aktuellen Umgebung deklarieren |
 | `["@quote", "@x"]` | `"@x"` als Datenwert zurückgeben, ohne die Referenz aufzulösen |
 
-`@quote` wird benötigt, wenn ein mit `@` beginnender String oder ein Ausdruck selbst als Daten behandelt werden soll. Ausdrücke werden sonst gemäß ihren Sprachregeln ausgewertet. Ein Funktionsaufruf wertet seine Argumente aus und bindet sie in der Reihenfolge der Parameter.
+`@quote` wird benötigt, wenn ein mit `@` beginnender String oder ein Ausdruck selbst als Daten behandelt werden soll. Ausdrücke werden sonst gemäß ihren Sprachregeln ausgewertet. Ein Funktionsaufruf wertet seine Argumente aus und bindet sie in der Reihenfolge der Parameter. Ein gewöhnliches Array ohne passenden aufrufbaren Wert wird als Datenarray elementweise ausgewertet. Für dreiteilige Arrays prüft der Auswerter zuerst die Infixposition, dann Präfix und schließlich Postfix. Ein aufrufbarer Wert mit falscher Argumentzahl führt zu einem Fehler.
 
 Ein minimales Programm zum Binden und Aufrufen der Funktion soll so aussehen:
 
@@ -122,33 +126,39 @@ Erwartetes Ergebnis: `42`.
 
 ## Verhältnis zum bisherigen FJ@
 
-Der oben beschriebene Sprachkern orientiert sich am bisherigen FJ@-Entwurf. `fjson` soll ihn schrittweise als eigenständiges Python-Modul zugänglich machen. Funktionen höherer Ordnung und Aufrufe in Präfix-, Infix- und Postfixposition gehören ebenfalls zum angestrebten FJ@-Sprachumfang. Die Dokumentation einer Form beschreibt zunächst ihr Zielverhalten; eine Implementierung ist damit noch nicht zugesichert.
+Der implementierte Sprachkern orientiert sich am bisherigen FJ@-Entwurf. Funktionen können übergeben und zurückgegeben werden; Aufrufe in Präfix-, Infix- und Postfixposition werden anhand der Argumentzahl erkannt. Weitergehende Metafunktionsregeln, Effekte, Tensoroperationen und die größere FJ@-Standardbibliothek gehören noch nicht zu Version 0.1.
 
-Das Beispiel hier verwendet `@add`. Wo bestehende FJ@-Implementierungen andere Namen für dieselbe Operation verwenden, werden Namenskonventionen und mögliche Aliase vor der Kompatibilitätsfreigabe ausdrücklich festgelegt.
+Das Beispiel hier verwendet `@add`; `@plus` ist als kompatibler Alias derselben Operation vorhanden.
 
-## Geplante Python-Schnittstelle
+## Python-Schnittstelle und Ausführung
 
-Die erste Implementierung soll mit der Python-Standardbibliothek auskommen und JSON-Text über `json.loads` einlesen. Angestrebt ist eine einfache API in dieser Art:
+Die Laufzeit verwendet ausschließlich die Python-Standardbibliothek und benötigt Python 3.10 oder neuer. `Interpreter.run` liest JSON-Text ein und weist doppelte Objektschlüssel zurück. `Interpreter.eval` nimmt bereits eingelesene Python-Werte entgegen. Eine Interpreter-Instanz behält Definitionen zwischen Aufrufen:
 
 ```python
-import json
 from fjson import Interpreter
 
 source = '["@let", {"@inc": ["@function", ["@x"], ["@add", "@x", 1]]}, ["@inc", 41]]'
-result = Interpreter().eval(json.loads(source))
+result = Interpreter().run(source)
 assert result == 42
 ```
 
-Funktionswerte und ihre eingefangenen Umgebungen sind Laufzeitwerte des Interpreters; sie müssen selbst keine JSON-Werte sein. Ein- und Ausgaben, die als JSON ausgegeben werden, müssen dagegen JSON-kompatibel bleiben.
+Aus dem Repository-Verzeichnis lässt sich eine JSON-Datei ausführen:
 
-## Nächste Implementierungsschritte
+```powershell
+python -m fjson examples/inc.json
+python -B -m unittest discover -s tests
+```
 
-1. Bezeichnerauflösung, literale Werte und klare Fehler für unbekannte Namen.
-2. `@function`, Aufrufe, Pflichtparameter, Standardwerte, Parameterprüfung und lexikalische Closures.
-3. `@add`, `@let`, `@define`, `@do`, `@quote` und `@if` samt ausführbarer Tests für die Beispiele oben.
-4. `@letrec`, `@and`, `@or`, `@try`, `@pipe` und `@apply` mit präzisen Fehler- und Auswertungsregeln.
-5. Weitere FJ@-Funktionen, Aufrufpositionen und Kompatibilitätsregeln mit Tests.
+Das Kommando gibt das Ergebnis als JSON aus. Funktionswerte und ihre eingefangenen Umgebungen sind Laufzeitwerte des Interpreters und nicht selbst JSON-serialisierbar. `@quote` erhält JSON-Quellwerte als Daten. Die Auswertung ist durch konfigurierbare Schritt- und Tiefengrenzen beschränkt.
+
+## Nächste Schritte
+
+1. Bibliotheksfunktionen wie `@map`, `@filter`, `@compose` und `@curry` auf dem Sprachkern aufbauen.
+2. Die weitergehenden FJ@-Metafunktionsregeln und ihre Aufrufmehrdeutigkeiten spezifizieren und testen.
+3. Effekte, Fähigkeiten und numerische Kerne getrennt vom reinen Sprachkern ergänzen.
 
 ## Lizenz
 
 Dieses Repository steht unter der [GNU General Public License Version 3](LICENSE).
+
+
