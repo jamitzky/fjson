@@ -16,7 +16,7 @@ def main() -> int:
         source = args.program.read_text(encoding="utf-8")
         result = Interpreter().run(source)
         print(json.dumps(result, ensure_ascii=False, allow_nan=False))
-    except (OSError, ValueError, FjsonError) as exc:
+    except (OSError, ValueError, TypeError, FjsonError) as exc:
         print(f"fjson: {exc}", file=sys.stderr)
         return 1
     return 0
