@@ -36,7 +36,7 @@ Statt einer Liste kann `@function` ein JSON-Objekt als Parameterspezifikation er
 ["@function", {"@x": 1}, ["@add", "@x", 1]]
 ```
 
-Ohne Argument wird `@x` auf `1` gesetzt und die Funktion liefert `2`. Mit einem Argument überschreibt dieses den Standardwert; mit `41` liefert die Funktion `42`. Ein ausführbares Beispiel für beide Aufrufe:
+Ohne Argument wird `@x` auf `1` gesetzt und die Funktion liefert `2`. Mit einem Argument überschreibt dieses den Standardwert; mit `41` liefert die Funktion `42`. Ein Beispiel für beide Aufrufe:
 
 ```json
 ["@let",
