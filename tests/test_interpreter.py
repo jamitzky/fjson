@@ -20,6 +20,18 @@ class InterpreterTests(unittest.TestCase):
             42,
         )
 
+    def test_direct_python_call(self):
+        fjson = Interpreter()
+        program = [
+            "@let",
+            {"@inc": ["@function", ["@x"], ["@add", "@x", 1]]},
+            ["@inc", 41],
+        ]
+        self.assertEqual(fjson(program), 42)
+        self.assertEqual(fjson(["@define", "@answer", 42]), 42)
+        self.assertEqual(fjson("@answer"), 42)
+        self.assertEqual(fjson([True, None]), [True, None])
+
     def test_define_persists_and_do_sequences(self):
         self.assertEqual(
             self.fj.run('["@do", ["@define", "@inc", '
