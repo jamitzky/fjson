@@ -132,15 +132,23 @@ Das Beispiel hier verwendet `@add`; `@plus` ist als kompatibler Alias derselben 
 
 ## Python-Schnittstelle und Ausführung
 
-Die Laufzeit verwendet ausschließlich die Python-Standardbibliothek und benötigt Python 3.10 oder neuer. `Interpreter.run` liest JSON-Text ein und weist doppelte Objektschlüssel zurück. `Interpreter.eval` nimmt bereits eingelesene Python-Werte entgegen. Eine Interpreter-Instanz behält Definitionen zwischen Aufrufen:
+Die Laufzeit verwendet ausschließlich die Python-Standardbibliothek und benötigt Python 3.10 oder neuer. Liegt das Programm bereits als Python-Liste, -Dictionary oder anderer JSON-kompatibler Wert vor, wird die Interpreter-Instanz direkt aufgerufen. Eine Instanz behält Definitionen zwischen Aufrufen:
 
 ```python
 from fjson import Interpreter
 
-source = '["@let", {"@inc": ["@function", ["@x"], ["@add", "@x", 1]]}, ["@inc", 41]]'
-result = Interpreter().run(source)
+fjson = Interpreter()
+result = fjson([
+    "@let",
+    {"@inc": ["@function", ["@x"], ["@add", "@x", 1]]},
+    ["@inc", 41],
+])
 assert result == 42
 ```
+
+Python prüft dabei bereits die Syntax des Python-Quelltexts. Der Interpreter prüft zusätzlich, ob der übergebene Wert eine gültige FJ@-Form ist. In Python-Programmen schreibt man `True`, `False` und `None` statt `true`, `false` und `null`.
+
+Für JSON-Text und `.json`-Dateien gibt es weiterhin `fjson.run(source)`. Diese Methode verwendet `json.loads` und weist doppelte Objektschlüssel zurück; ein eigener `json.loads`-Aufruf ist dafür nicht nötig. `fjson.eval(value)` bleibt als gleichwertige Methode für bereits eingelesene Werte verfügbar.
 
 Aus dem Repository-Verzeichnis lässt sich eine JSON-Datei ausführen:
 
