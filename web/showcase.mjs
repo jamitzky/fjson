@@ -49,6 +49,8 @@ export const showcaseGroups = [
     lesson('higher_order', 'Funktion als Argument', '@map erhält eine Funktion als normalen Wert.', ['@let', { '@doppelt': ['@function', ['@x'], ['@times', '@x', 2]] }, ['@map', '@doppelt', [1, 2, 3]]], [2, 4, 6]),
     lesson('apply_native', '@apply · Argumentliste', '@apply ruft eine Funktion mit einer bereits erzeugten Argumentliste auf.', ['@apply', '@plus', [20, 22]], 42),
     lesson('apply_closure', '@apply · eigene Funktion', '@apply funktioniert genauso mit einer fjson-Closure.', ['@apply', ['@function', ['@x'], ['@times', '@x', 2]], [21]], 42),
+    lesson('list_apply', '@list · Argumente für @apply', '@list erzeugt ein Array aus ausgewerteten Werten, auch wenn sein erstes Element ein Funktionswert ist.', ['@let', { '@y': 41 }, ['@apply', ['@function', ['@x'], ['@plus', '@x', 1]], ['@list', '@y']]], 42),
+    lesson('list_ast', '@list · Code als Daten bauen', '@quote hält den Funktionsnamen als String fest; @list setzt daraus mit dem Wert von @x einen AST zusammen.', ['@let', { '@x': 41 }, ['@list', ['@quote', '@plus'], '@x', 1]], ['@plus', 41, 1]),
     lesson('letrec_factorial', '@letrec · Fakultät', '@letrec erlaubt der Funktion, sich im eigenen Rumpf aufzurufen.', ['@letrec', { '@fak': ['@function', ['@n'], ['@if', ['@le', '@n', 1], 1, ['@times', '@n', ['@fak', ['@minus', '@n', 1]]]]] }, ['@fak', 5]], 120),
     lesson('letrec_even', '@letrec · gegenseitige Rekursion', 'Zwei Funktionen können sich mit @letrec gegenseitig aufrufen.', ['@letrec', {
       '@gerade': ['@function', ['@n'], ['@if', ['@le', '@n', 0], true, ['@ungerade', ['@minus', '@n', 1]]]],
