@@ -116,3 +116,18 @@ test('graph reference errors, options and bounded traversal', () => {
   assert.throws(() => bounded.eval(['@run', 10, '!Path',
     ['@patho', '@g', '!Path', '!Value']]), ResourceLimitError);
 });
+
+test('numeric and sequence errors remain bounded and explicit', () => {
+  const fj = new Interpreter();
+  for (const expression of [
+    ['@range', 0, 10, 0], ['@mod', 1, 0], ['@mod', true, 2],
+    ['@sqrt', -1], ['@pow', -1, 0.5],
+  ]) assert.throws(() => fj.eval(expression), EvaluationError);
+  assert.throws(() => fj.eval(['@map', '@plus', [1, 2]]), ArityError);
+  assert.throws(() => fj.eval(['@filter', '@plus', 'not an array']), EvaluationError);
+  assert.throws(() => new Interpreter({ maxSteps: 30 }).eval(['@range', 100]),
+    ResourceLimitError);
+  assert.throws(() => new Interpreter({ maxSteps: 45 }).eval(
+    ['@map', ['@function', ['@x'], '@x'], Array(100).fill(1)]),
+  ResourceLimitError);
+});
