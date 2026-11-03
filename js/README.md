@@ -6,6 +6,10 @@
 Browsern. `fjson.d.mts` liefert TypeScript-Deklarationen für diesen
 JavaScript-Code; es gibt keine zweite, abweichende Laufzeit.
 
+Die [JSON-Graphsicht](../GRAPH.md) ist ebenfalls in Python und JavaScript
+implementiert. `@graph`, `@edgeo`, `@matcho`, `@record`, `@some`, `@nodeo`
+und die vierstellige Form von `@patho` sind in beiden Laufzeiten verfügbar.
+
 ## Node und TypeScript
 
 Aus dem Repository-Verzeichnis:
