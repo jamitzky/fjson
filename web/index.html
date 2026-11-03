@@ -59,15 +59,36 @@
         aria-valuemin="100" aria-valuemax="500" aria-valuenow="230"
         title="Ziehen oder Pfeiltasten verwenden"><span></span></div>
 
-      <section id="output-pane" class="output-pane" aria-label="Ausgabe">
-        <div class="output-header">
-          <div class="output-title"><strong>AUSGABE</strong><span id="output-count">0 Einträge</span></div>
-          <button id="clear-output" type="button">Ausgabe leeren</button>
-        </div>
-        <div id="output" class="output" role="log" aria-live="polite">
-          <p class="empty-output">Ausführen zeigt Ergebnisse und Fehler hier an.</p>
-        </div>
-      </section>
+      <div id="lower-pane" class="lower-pane">
+        <section id="shell-pane" class="shell-pane" aria-label="Shell-Eingabe">
+          <div class="output-header">
+            <div class="output-title"><strong>SHELL</strong><span>JSON-Ausdruck</span></div>
+            <button id="run-shell" type="button" title="Shell ausführen (Strg/⌘+Enter)">▶ Ausführen</button>
+          </div>
+          <div class="editor-wrap shell-editor">
+            <pre id="shell-highlight" class="highlight" aria-hidden="true"></pre>
+            <label class="sr-only" for="shell-source">Shell-Ausdruck</label>
+            <textarea id="shell-source" spellcheck="false" autocapitalize="off"
+              autocomplete="off" autocorrect="off"></textarea>
+          </div>
+          <div class="shell-help">Strg/⌘+Enter · gemeinsame Interpreter-Sitzung</div>
+        </section>
+
+        <div id="column-splitter" class="column-splitter" role="separator" tabindex="0"
+          aria-label="Breite von Shell und Ergebnis ändern" aria-orientation="vertical"
+          aria-valuemin="180" aria-valuemax="700" aria-valuenow="380"
+          title="Ziehen oder Pfeiltasten verwenden"><span></span></div>
+
+        <section id="output-pane" class="output-pane" aria-label="Ergebnis und Ausgabe">
+          <div class="output-header">
+            <div class="output-title"><strong>ERGEBNIS</strong><span id="output-count">0 Einträge</span></div>
+            <button id="clear-output" type="button">Ausgabe leeren</button>
+          </div>
+          <div id="output" class="output" role="log" aria-live="polite">
+            <p class="empty-output">Ausführen zeigt Ergebnisse und Fehler hier an.</p>
+          </div>
+        </section>
+      </div>
     </main>
 
     <footer class="statusbar">
