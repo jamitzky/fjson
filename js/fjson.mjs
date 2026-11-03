@@ -194,12 +194,6 @@ export class JsonGraph {
     return result;
   }
   byId(id, step) { return this.indexIds(step).get(id); }
-  start(value, step) {
-    if (value === this) return this.root;
-    if (value instanceof GraphNode && value.graph === this) return value;
-    if (typeof value === 'string') return this.byId(value, step);
-    return null;
-  }
   edges(node, step) {
     return rawEdges(node.value).map(([key, child]) => {
       step();
@@ -262,9 +256,6 @@ export class PathGoal extends Goal {
 }
 export class EdgeGoal extends Goal {
   constructor(source, key, target) { super(); Object.assign(this, { source, key, target }); }
-}
-export class GraphPathGoal extends Goal {
-  constructor(graph, start, path, value) { super(); Object.assign(this, { graph, start, path, value }); }
 }
 export class MatchoGoal extends Goal {
   constructor(data, pattern) { super(); Object.assign(this, { data, pattern }); }
@@ -543,8 +534,16 @@ function search(goal, query, limit, step, project) {
       const data = walk(head.data, substitutions, step);
       if (!(data instanceof LogicVar)) {
         const [known, path] = resolved(head.path, substitutions, step);
-        const [found, value] = known ? atPath(data, path, step) : [false, null];
-        const candidates = known ? (found ? [[path, value]] : []) : paths(data, step);
+        let candidates;
+        if (data instanceof JsonGraph || data instanceof GraphNode) {
+          const graph = data instanceof JsonGraph ? data : data.graph;
+          const start = data instanceof JsonGraph ? data.root : data;
+          const [found, value] = known ? graphAtPath(graph, start, path, step) : [false, null];
+          candidates = known ? (found ? [[path, value]] : []) : graphPaths(graph, start, step);
+        } else {
+          const [found, value] = known ? atPath(data, path, step) : [false, null];
+          candidates = known ? (found ? [[path, value]] : []) : paths(data, step);
+        }
         for (const [path, value] of candidates.reverse()) {
           let next = unify(head.path, path, substitutions, step);
           if (next !== null) next = unify(head.value, value, next, step);
@@ -576,21 +575,6 @@ function search(goal, query, limit, step, project) {
           let next = unify(head.identifier, key, substitutions, step);
           if (next !== null) next = unify(head.node, node, next, step);
           if (next !== null) work.push({ pending: rest, substitutions: next, delayed });
-        }
-      }
-    } else if (head instanceof GraphPathGoal) {
-      const graph = walk(head.graph, substitutions, step);
-      if (graph instanceof JsonGraph) {
-        const start = graph.start(walk(head.start, substitutions, step), step);
-        if (start) {
-          const [known, path] = resolved(head.path, substitutions, step);
-          const [found, value] = known ? graphAtPath(graph, start, path, step) : [false, null];
-          const candidates = known ? (found ? [[path, value]] : []) : graphPaths(graph, start, step);
-          for (const [candidatePath, candidateValue] of candidates.reverse()) {
-            let next = unify(head.path, candidatePath, substitutions, step);
-            if (next !== null) next = unify(head.value, candidateValue, next, step);
-            if (next !== null) work.push({ pending: rest, substitutions: next, delayed });
-          }
         }
       }
     } else if (head instanceof NeqGoal || head instanceof GeGoal || head instanceof ProjectGoal) {
@@ -644,8 +628,8 @@ export class Interpreter {
       new MatchGoal(data, pattern)));
     this.global.values.set('@membero', new Native('@membero', 2, (items, item) =>
       new MemberGoal(items, item)));
-    this.global.values.set('@patho', new Native('@patho', [3, 4], (...args) =>
-      args.length === 3 ? new PathGoal(...args) : new GraphPathGoal(...args)));
+    this.global.values.set('@patho', new Native('@patho', 3, (data, path, value) =>
+      new PathGoal(data, path, value)));
     this.global.values.set('@graph', new Native('@graph', [1, 2], (...args) =>
       new JsonGraph(...args)));
     this.global.values.set('@edgeo', new Native('@edgeo', 3, (source, key, target) =>
