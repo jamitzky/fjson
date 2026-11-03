@@ -98,6 +98,10 @@ unter Namen wie `@plus@math` und `@unify@logic`. Diese Direktiven sind
 keine Formen des Sprachkerns; bestehende unqualifizierte Programme laufen
 weiter.
 
+Die optionale [J-Funktionsbibliothek](J_MODULE.md) ist ein registrierbares
+JSONL-Modul. Sie definiert explizite Hooks, Forks, Atop, Each, Insert und
+Curry als fjson-Closures, ohne CORE 0.3 oder den Evaluator zu ändern.
+
 ## Auswertung und Aufrufe
 
 Der Python-Auswerter setzt diese Grundregeln um:
