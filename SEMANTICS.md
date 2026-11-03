@@ -1,6 +1,7 @@
 # fjson 0.3: Auswertungssemantik
 
-Dieses Dokument beschreibt das Verhalten des kleinen Python-Interpreters.
+Dieses Dokument beschreibt den gemeinsamen Sprachkern der Python- und
+JavaScript-Referenzinterpreter.
 [GRAMMAR.ebnf](GRAMMAR.ebnf) beschreibt die Quellsyntax. Die folgende
 Reihenfolge ist Teil der Semantik; eine spätere Implementierung darf sie nicht
 ohne ausdrückliche Sprachänderung vertauschen.
