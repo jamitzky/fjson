@@ -7,10 +7,13 @@ JavaScript-Interpreter, die IDE und das CSS. Diese eine Datei herunterladen
 und lokal im Browser öffnen, zum Beispiel per Doppelklick. Ein Webserver
 und eine Internetverbindung sind nicht erforderlich.
 
-Die IDE hat drei Tabs: **Programm** für fjson-Ausdrücke, **JSON-Daten**
-für einen separaten Datenwert und **Shell** für interaktive Ausdrücke mit
-Verlauf. Die Daten können eingefügt oder aus einer lokalen JSON-Datei
-geladen werden. Bei jeder Ausführung werden sie als `@data` gebunden.
+Die Arbeitsfläche startet mit den Tabs **Input**, **Daten** und **Shell**.
+Im Menü oben erzeugen **＋ Code** und **＋ Daten** weitere Tabs. Der erste
+Daten-Tab ist als `@data` verfügbar, weitere als `@data2`, `@data3` usw.
+Diese Namen bleiben einem Tab zugeordnet; beim Schließen eines Daten-Tabs
+wird seine Bindung entfernt. Die Daten können eingefügt oder aus einer
+lokalen JSON-Datei geladen werden. Bei jeder Ausführung werden alle
+offenen Daten-Tabs neu gebunden.
 Ein Beispiel mit `{ "answer": 41 }` als Daten:
 
 ```json
@@ -19,14 +22,17 @@ Ein Beispiel mit `{ "answer": 41 }` als Daten:
 
 Das Ergebnis ist `42`. `@get` liest einen Objektschlüssel oder
 Arrayindex; `@length` zählt Einträge. Ungültige JSON-Daten stoppen die
-Auswertung mit einer Fehlermeldung. Beide Editoren und die Shell zeigen
-Syntaxfarben für Bezeichner, Strings, Zahlen und JSON-Zeichen.
+Auswertung mit einer Fehlermeldung. Der aktive Editor zeigt Syntaxfarben
+für Bezeichner, Strings, Zahlen und JSON-Zeichen.
 
-**Ausführen** oder `Strg+Enter`/`⌘+Enter` wertet den jeweiligen
-Programm- oder Shell-Ausdruck aus. Globale Deklarationen bleiben während
-der Sitzung erhalten. **Sitzung zurücksetzen** löscht sie und den
-Shell-Verlauf. Programm und Daten lassen sich per Knopfdruck als
-JSON-Dateien herunterladen. Das Laden und Speichern läuft über die
+**Ausführen** oder `Strg+Enter`/`⌘+Enter` wertet den aktiven Code- oder
+Shell-Tab aus. Ein Daten-Tab zeigt beim Ausführen seinen JSON-Wert in der
+Ausgabe. Ergebnisse und Fehler erscheinen im unteren Ausgabebereich;
+der Trenner darüber lässt sich ziehen oder mit den Pfeiltasten bedienen.
+Die Toolbar öffnet eine lokale JSON-Datei im aktiven Tab, speichert den
+Tab als Datei und setzt die Interpreter-Sitzung zurück. `Strg+S` oder
+`⌘+S` speichert ebenfalls den aktiven Tab. Globale Deklarationen bleiben
+bis zum Zurücksetzen erhalten. Das Laden und Speichern läuft über die
 Browseroberfläche; fjson selbst erhält dadurch keine Datei-Capability.
 
 ## Quelldateien und Entwicklung
