@@ -164,11 +164,33 @@ def _binary_number(name: str, operation: Callable[[Any, Any], Any]) -> Native:
             result = operation(left, right)
         except (ArithmeticError, OverflowError) as exc:
             raise EvaluationError(f"{name}: {exc}") from exc
-        if isinstance(result, float) and not math.isfinite(result):
+        if type(result) not in (bool, int, float) or (
+            isinstance(result, float) and not math.isfinite(result)
+        ):
             raise EvaluationError(f"{name} produced a non-finite number")
         return result
 
     return Native(name, 2, run)
+
+
+def _unary_number(name: str, operation: Callable[[Any], Any]) -> Native:
+    def run(value: Any) -> Any:
+        try:
+            result = operation(_number(value, name))
+        except (ArithmeticError, ValueError, OverflowError) as exc:
+            raise EvaluationError(f"{name}: {exc}") from exc
+        if type(result) not in (int, float) or (
+            isinstance(result, float) and not math.isfinite(result)
+        ):
+            raise EvaluationError(f"{name} produced a non-finite number")
+        return result
+    return Native(name, 1, run)
+
+
+def _integer(value: Any, operation: str) -> int:
+    if type(value) is not int:
+        raise EvaluationError(f"{operation} expects integers")
+    return value
 
 
 def _json_equal(a: Any, b: Any) -> bool:
@@ -243,10 +265,29 @@ class Interpreter:
             "@minus": _binary_number("@minus", lambda a, b: a - b),
             "@times": _binary_number("@times", lambda a, b: a * b),
             "@divide": _binary_number("@divide", lambda a, b: a / b),
+            "@pow": _binary_number("@pow", lambda a, b: a ** b),
+            "@min": _binary_number("@min", min),
+            "@max": _binary_number("@max", max),
+            "@lt": _binary_number("@lt", lambda a, b: a < b),
             "@le": _binary_number("@le", lambda a, b: a <= b),
+            "@gt": _binary_number("@gt", lambda a, b: a > b),
+            "@gte": _binary_number("@gte", lambda a, b: a >= b),
+            "@mod": Native("@mod", 2, self._math_mod),
+            "@negate": _unary_number("@negate", lambda a: -a),
+            "@abs": _unary_number("@abs", abs),
+            "@floor": _unary_number("@floor", math.floor),
+            "@ceil": _unary_number("@ceil", math.ceil),
+            "@trunc": _unary_number("@trunc", math.trunc),
+            "@round": _unary_number("@round", lambda a: int(math.copysign(math.floor(abs(a) + 0.5), a))),
+            "@sqrt": _unary_number("@sqrt", math.sqrt),
+            "@not": Native("@not", 1, lambda value: not value),
             "@eq": Native("@eq", 2, _json_equal),
             "@get": Native("@get", 2, _get),
             "@length": Native("@length", 1, _length),
+            "@range": Native("@range", (1, 2, 3), self._seq_range),
+            "@map": Native("@map", 2, self._seq_map),
+            "@filter": Native("@filter", 2, self._seq_filter),
+            "@reduce": Native("@reduce", 3, self._seq_reduce),
             "@unify": Native("@unify", 2, UnifyGoal),
             "@match": Native("@match", 2, MatchGoal),
             "@membero": Native("@membero", 2, MemberGoal),
@@ -472,6 +513,49 @@ class Interpreter:
         if not _is_name(name) or name in _SPECIAL:
             raise EvaluationError("binding name must be a non-reserved @ name")
         return name
+
+    @staticmethod
+    def _math_mod(left: Any, right: Any) -> int:
+        a, b = _integer(left, "@mod"), _integer(right, "@mod")
+        if b == 0:
+            raise EvaluationError("@mod division by zero")
+        return a % b
+
+    def _seq_range(self, *args: Any) -> list[int]:
+        values = [_integer(value, "@range") for value in args]
+        start, stop, stride = (
+            (0, values[0], 1) if len(values) == 1 else
+            (values[0], values[1], 1) if len(values) == 2 else tuple(values)
+        )
+        if stride == 0:
+            raise EvaluationError("@range step must not be zero")
+        result = []
+        for value in range(start, stop, stride):
+            self._tick(0)
+            result.append(value)
+        return result
+
+    @staticmethod
+    def _sequence_args(name: str, function: Any, items: Any, arity: int) -> None:
+        if not isinstance(function, (Native, Closure)) or not isinstance(items, list):
+            raise EvaluationError(f"{name} expects a function and an array")
+        if not Interpreter._accepts(function, arity):
+            raise ArityError(f"{name} callback must accept {arity} arguments")
+
+    def _seq_map(self, function: Any, items: Any) -> list[Any]:
+        self._sequence_args("@map", function, items, 1)
+        return [self._invoke(function, [item], 0) for item in items]
+
+    def _seq_filter(self, function: Any, items: Any) -> list[Any]:
+        self._sequence_args("@filter", function, items, 1)
+        return [item for item in items if self._invoke(function, [item], 0)]
+
+    def _seq_reduce(self, function: Any, items: Any, initial: Any) -> Any:
+        self._sequence_args("@reduce", function, items, 2)
+        result = initial
+        for item in items:
+            result = self._invoke(function, [result, item], 0)
+        return result
 
     @staticmethod
     def _logic_choice(left: Any, right: Any) -> Goal:
