@@ -53,7 +53,6 @@ button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:fo
   font-size: .76rem; }
 .tab-icon { color: #78b7ea; margin-right: .5rem; font-family: Consolas, monospace; }
 .tab-slot[data-kind="data"] .tab-icon { color: #d7a96a; }
-.tab-slot[data-kind="shell"] .tab-icon { color: #8ed9b1; }
 .tab-close { margin-right: .35rem; border-radius: .2rem;
   padding: .15rem .38rem; font-size: .85rem; }
 .tab-close:hover { background: #46505d; }
@@ -91,6 +90,21 @@ button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:fo
 .splitter:hover, .splitter.dragging, .splitter:focus-visible { background: #4e8fbe; }
 .splitter span { display: block; width: 42px; height: 2px; border-radius: 3px;
   background: #8996a9; }
+.lower-pane { --shell-width: 42%; min-width: 0; min-height: 0; display: grid;
+  grid-template-columns: minmax(120px, var(--shell-width)) 7px minmax(120px, 1fr); }
+.shell-pane { min-width: 0; min-height: 0; display: flex; flex-direction: column;
+  background: #20242b; }
+.shell-editor { min-height: 0; }
+.shell-editor textarea, .shell-editor .highlight { padding: .75rem 1rem; }
+.shell-help { padding: .35rem .75rem; border-top: 1px solid #343a46;
+  color: #8392a5; font-size: .67rem; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.column-splitter { display: grid; place-items: center; cursor: col-resize;
+  background: #343b47; touch-action: none; }
+.column-splitter:hover, .column-splitter.dragging,
+.column-splitter:focus-visible { background: #4e8fbe; }
+.column-splitter span { display: block; width: 2px; height: 42px;
+  border-radius: 3px; background: #8996a9; }
 .output-pane { min-height: 0; display: flex; flex-direction: column;
   background: #191c22; }
 .output-header { min-height: 34px; display: flex; align-items: center;
@@ -99,6 +113,7 @@ button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:fo
 .output-title { display: flex; align-items: center; gap: .9rem;
   color: #c6cfdb; font-size: .68rem; letter-spacing: .09em; }
 #output-count { color: #8190a4; font-weight: 400; letter-spacing: 0; }
+#run-shell { color: #8ed9b1; font-weight: 700; }
 .output { flex: 1; min-height: 0; overflow: auto; padding: .5rem 1rem 1rem;
   font: .82rem/1.55 Consolas, "Cascadia Code", monospace; }
 .empty-output { color: #7f8b9d; }
