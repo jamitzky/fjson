@@ -1,0 +1,11 @@
+{
+  "name": "fjson-reference",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./fjson.d.mts",
+      "default": "./fjson.mjs"
+    }
+  }
+}
