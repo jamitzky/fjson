@@ -1,0 +1,11 @@
+[
+  {"name":"identity","program":["@identity@j",42],"expected":42},
+  {"name":"atop","program":["@let",{"@square":["@function",["@x"],["@times","@x","@x"]],"@inc":["@function",["@x"],["@plus","@x",1]],"@f":["@atop@j","@square","@inc"]},["@f",3]],"expected":16},
+  {"name":"hook","program":["@let",{"@square":["@function",["@x"],["@times","@x","@x"]],"@f":["@hook@j","@minus","@square"]},["@f",3]],"expected":-6},
+  {"name":"fork","program":["@let",{"@square":["@function",["@x"],["@times","@x","@x"]],"@double":["@function",["@x"],["@times",2,"@x"]],"@f":["@fork@j","@square","@plus","@double"]},["@f",5]],"expected":35},
+  {"name":"fork2","program":["@let",{"@f":["@fork2@j","@plus","@minus","@times"]},["@f",5,3]],"expected":-7},
+  {"name":"each","program":["@let",{"@square":["@function",["@x"],["@times","@x","@x"]],"@f":["@each@j","@square"]},["@f",[1,2,3]]],"expected":[1,4,9]},
+  {"name":"insert_left_fold","program":["@let",{"@f":["@insert@j","@minus"]},["@f",[10,3,2]]],"expected":5},
+  {"name":"curry_left","program":["@let",{"@f":["@curry@j","@minus","left",10]},["@f",3]],"expected":7},
+  {"name":"curry_right","program":["@let",{"@f":["@curry@j","@minus","right",10]},["@f",3]],"expected":-7}
+]
