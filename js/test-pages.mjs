@@ -79,6 +79,9 @@ const ideIds = [
   '#line-count', '#editor-title', '#editor-hint', '#data-title', '#data-hint',
   '#code-menu', '#code-menu-button', '#code-menu-content',
   '#shell-menu', '#shell-menu-button', '#shell-menu-content',
+  '#tutorial-menu', '#tutorial-menu-button', '#tutorial-menu-content',
+  '#tutorial-panel', '#tutorial-title', '#tutorial-progress', '#tutorial-body',
+  '#tutorial-close', '#tutorial-prev', '#tutorial-next', '#tutorial-run',
   '#file-input', '#data-source', '#data-highlight', '#data-pane',
   '#editor-pane', '#top-pane', '#editor-splitter',
   '#workarea', '#output-pane', '#splitter', '#source', '#highlight',
@@ -92,6 +95,8 @@ assert.match(pageSource, /id="top-pane"[\s\S]*id="source"[\s\S]*id="editor-split
 assert.match(styleSource, /\.top-pane\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:/);
 assert.match(pageSource, /id="code-menu-content"/);
 assert.match(pageSource, /id="shell-menu-content"/);
+assert.match(pageSource, /id="tutorial-menu-content"/);
+assert.match(pageSource, /id="tutorial-panel"/);
 
 async function checkIde(elements) {
   const get = id => elements.get('#' + id);
@@ -122,6 +127,23 @@ async function checkIde(elements) {
 
   assert.ok(get('code-menu-content').children.length >= 7);
   assert.ok(get('shell-menu-content').children.length >= 3);
+  assert.ok(get('tutorial-menu-content').children.length >= 7);
+
+  choose('tutorial', 'tour_hello');
+  assert.equal(get('tutorial-panel').hidden, false);
+  assert.match(get('tutorial-body').innerHTML, /<strong>Willkommen!<\/strong>/);
+  assert.match(get('tutorial-progress').textContent, /Schritt 1 von/);
+  get('tutorial-next').click();
+  assert.match(get('tutorial-title').textContent, /Datenarrays/);
+  get('tutorial-prev').click();
+  get('tutorial-run').click();
+  assert.equal(get('tutorial-panel').hidden, true);
+  assert.equal(result(), '"Hallo fjson!"');
+  choose('tutorial', 'tour_modules');
+  assert.match(get('tutorial-body').innerHTML, /@import/);
+  get('tutorial-run').click();
+  assert.equal(result(), '42');
+  get('clear-output').click();
 
   assert.equal(tabs.children.length, 2);
   assert.equal(tabs.children[0].children[0].children[1].textContent, 'Input');
