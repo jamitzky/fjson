@@ -13,16 +13,21 @@ import math
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from .graph import GraphError, GraphNode, JsonGraph, RecordPattern, SomePattern
 from .logic import (
     ChoiceGoal,
     ConjGoal,
+    EdgeGoal,
     GeGoal,
     Goal,
+    GraphPathGoal,
     LogicScope,
     LogicVar,
     MatchGoal,
+    MatchoGoal,
     MemberGoal,
     NeqGoal,
+    NodeGoal,
     PathGoal,
     ProjectGoal,
     UnifyGoal,
@@ -101,14 +106,17 @@ class Environment:
 @dataclass(frozen=True)
 class Native:
     name: str
-    arity: int
+    arity: int | tuple[int, ...]
     function: Callable[..., Any]
     effects: frozenset[Effect] = frozenset()
     operation_id: str | None = None
     scope_type: type | None = None
 
     def __post_init__(self) -> None:
-        if not _is_name(self.name) or type(self.arity) is not int or self.arity < 0 or not callable(self.function):
+        arities = (self.arity,) if type(self.arity) is int else self.arity
+        if (not _is_name(self.name) or not isinstance(arities, tuple) or
+                not arities or any(type(n) is not int or n < 0 for n in arities) or
+                len(set(arities)) != len(arities) or not callable(self.function)):
             raise ValueError("invalid native operation")
         if not isinstance(self.effects, frozenset) or any(
             not isinstance(effect, Effect) for effect in self.effects
@@ -243,7 +251,13 @@ class Interpreter:
             "@unify": Native("@unify", 2, UnifyGoal),
             "@match": Native("@match", 2, MatchGoal),
             "@membero": Native("@membero", 2, MemberGoal),
-            "@patho": Native("@patho", 3, PathGoal),
+            "@patho": Native("@patho", (3, 4), self._logic_patho),
+            "@graph": Native("@graph", (1, 2), JsonGraph),
+            "@edgeo": Native("@edgeo", 3, EdgeGoal),
+            "@matcho": Native("@matcho", 2, MatchoGoal),
+            "@nodeo": Native("@nodeo", 3, NodeGoal),
+            "@record": Native("@record", 1, self._logic_record),
+            "@some": Native("@some", 1, SomePattern),
             "@neqo": Native("@neqo", 2, NeqGoal),
             "@ge": Native("@ge", 2, GeGoal),
             "@guard": Native("@guard", 1, self._logic_guard),
@@ -306,7 +320,8 @@ class Interpreter:
             if isinstance(expression, float) and not math.isfinite(expression):
                 raise EvaluationError("non-finite number")
             return expression
-        if isinstance(expression, (LogicVar, Goal, Native, Closure)):
+        if isinstance(expression, (LogicVar, Goal, Native, Closure, JsonGraph,
+                                   GraphNode, RecordPattern, SomePattern)):
             return expression
         if isinstance(expression, dict):
             if any(not isinstance(key, str) for key in expression):
@@ -347,7 +362,8 @@ class Interpreter:
     @staticmethod
     def _accepts(function: Any, count: int) -> bool:
         if isinstance(function, Native):
-            return function.arity == count
+            return count in ((function.arity,) if type(function.arity) is int
+                             else function.arity)
         if isinstance(function, Closure):
             return function.min_arity <= count <= function.max_arity
         return False
@@ -374,7 +390,10 @@ class Interpreter:
             if (function.operation_id is not None and
                     function.operation_id not in self.policy.grants):
                 raise SecurityError(f"capability denied: {function.operation_id}")
-            return function.function(*values)
+            try:
+                return function.function(*values)
+            except GraphError as exc:
+                raise EvaluationError(str(exc)) from exc
         local = Environment(function.environment, LogicScope())
         for index, name in enumerate(function.names):
             local.values[name] = (
@@ -472,10 +491,23 @@ class Interpreter:
             raise EvaluationError("@run expects a nonnegative integer limit")
         if not isinstance(goal, Goal):
             raise EvaluationError("@run expects a goal")
-        return search(
-            goal, query, limit, lambda: self._tick(0),
-            lambda function, args: self._invoke(function, args, 0),
-        )
+        try:
+            return search(
+                goal, query, limit, lambda: self._tick(0),
+                lambda function, args: self._invoke(function, args, 0),
+            )
+        except GraphError as exc:
+            raise EvaluationError(str(exc)) from exc
+
+    @staticmethod
+    def _logic_patho(*args: Any) -> Goal:
+        return PathGoal(*args) if len(args) == 3 else GraphPathGoal(*args)
+
+    @staticmethod
+    def _logic_record(fields: Any) -> RecordPattern:
+        if not isinstance(fields, dict):
+            raise EvaluationError("@record expects an object")
+        return RecordPattern(fields)
 
     @staticmethod
     def _logic_guard(goal: Any) -> Goal:
