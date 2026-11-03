@@ -196,9 +196,11 @@ weitere Daten-Tabs heißen `@data2`, `@data3` usw. Zum Beispiel liefert
 `["@get", "@data", "answer"]` den Wert des Schlüssels `answer`.
 `@get` und `@length` sind auch in Python und Node verfügbar.
 
-Die **Shell** wertet einzelne JSON-Ausdrücke aus. Die Ausgabe liegt
-unten in einem Bereich, dessen Höhe sich durch Ziehen oder per
-Pfeiltasten verändern lässt. Deklarationen aus Code und Shell bleiben
+Die **Shell liegt unten links** und wertet einzelne JSON-Ausdrücke aus.
+**Ergebnisse und Fehler erscheinen unten rechts**. Der untere Bereich
+lässt sich in der Höhe ändern; ein zweiter, senkrechter Trenner verändert
+die Breite von Shell und Ergebnis. Beide Trenner funktionieren per Ziehen
+oder Pfeiltasten. Deklarationen aus Code und Shell bleiben
 in derselben Sitzung. Die Toolbar lädt und speichert lokale JSON-Dateien
 für den aktiven Tab; der Editor hat Syntaxfarben. Sechs Beispiele
 decken Funktionen, Standardwerte, logische Suche, Rekursion, `@quote`
