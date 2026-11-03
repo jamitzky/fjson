@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
+import { buildStandalone } from '../web/build-standalone.mjs';
 
 class Element {
   constructor() {
@@ -73,3 +75,30 @@ ide.get('#source').value = '[1,]';
 ide.get('#run').listeners.get('click')();
 assert.equal(ide.get('#steps').textContent, 'JSON wurde nicht ausgewertet');
 console.log('Browser-Testseite: 18/18; IDE: Ausführen, Beispiel, Fehler und Reset geprüft');
+
+const standalonePath = new URL('../web/fjson-studio.html', import.meta.url);
+const standalone = readFileSync(standalonePath, 'utf8');
+assert.equal(standalone, buildStandalone(), 'Standalone-Datei muss dem Build entsprechen');
+assert.doesNotMatch(standalone, /<(?:script|link)\b[^>]*(?:src|href)=/i);
+const scripts = [...standalone.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
+assert.equal(scripts.length, 1);
+const offline = documentFor([
+  '#source', '#example', '#result', '#status', '#steps', '#line-count', '#run', '#reset',
+]);
+offline.get('#example').value = 'inc';
+runInNewContext(scripts[0][1], { document: globalThis.document });
+offline.get('#run').listeners.get('click')();
+assert.equal(offline.get('#result').textContent, '42');
+offline.get('#example').value = 'logic';
+offline.get('#example').listeners.get('change')();
+offline.get('#run').listeners.get('click')();
+assert.equal(offline.get('#result').textContent, '[\n  "alice",\n  "bob"\n]');
+offline.get('#source').value = '{"@answer":42}';
+offline.get('#run').listeners.get('click')();
+offline.get('#source').value = '"@answer"';
+offline.get('#run').listeners.get('click')();
+assert.equal(offline.get('#result').textContent, '42');
+offline.get('#reset').listeners.get('click')();
+offline.get('#run').listeners.get('click')();
+assert.match(offline.get('#result').textContent, /ResolutionError/);
+console.log('Offline-IDE: Einzeldatei, Build-Gleichheit, Ausführung, Logik und Sitzung geprüft');
