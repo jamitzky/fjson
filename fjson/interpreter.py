@@ -104,7 +104,7 @@ class Environment:
 @dataclass(frozen=True)
 class Native:
     name: str
-    arity: int | tuple[int, ...]
+    arity: int | tuple[int, ...] | None
     function: Callable[..., Any]
     effects: frozenset[Effect] = frozenset()
     operation_id: str | None = None
@@ -112,9 +112,11 @@ class Native:
 
     def __post_init__(self) -> None:
         arities = (self.arity,) if type(self.arity) is int else self.arity
-        if (not _is_name(self.name) or not isinstance(arities, tuple) or
-                not arities or any(type(n) is not int or n < 0 for n in arities) or
-                len(set(arities)) != len(arities) or not callable(self.function)):
+        if (not _is_name(self.name) or
+                (arities is not None and (not isinstance(arities, tuple) or
+                 not arities or any(type(n) is not int or n < 0 for n in arities) or
+                 len(set(arities)) != len(arities))) or
+                not callable(self.function)):
             raise ValueError("invalid native operation")
         if not isinstance(self.effects, frozenset) or any(
             not isinstance(effect, Effect) for effect in self.effects
@@ -283,6 +285,7 @@ class Interpreter:
             "@eq": Native("@eq", 2, _json_equal),
             "@get": Native("@get", 2, _get),
             "@length": Native("@length", 1, _length),
+            "@list": Native("@list", None, lambda *items: list(items)),
             "@range": Native("@range", (1, 2, 3), self._seq_range),
             "@map": Native("@map", 2, self._seq_map),
             "@filter": Native("@filter", 2, self._seq_filter),
@@ -399,6 +402,8 @@ class Interpreter:
     @staticmethod
     def _accepts(function: Any, count: int) -> bool:
         if isinstance(function, Native):
+            if function.arity is None:
+                return True
             return count in ((function.arity,) if type(function.arity) is int
                              else function.arity)
         if isinstance(function, Closure):
