@@ -53,7 +53,16 @@ Repository-Verzeichnis ist `python -m http.server 8000`; anschließend
 Konformitätsfälle und fünf zusätzliche Browser-Checks mit Pass/Fail-
 Ergebnissen. Unter `http://localhost:8000/js/browser-test.html` laufen
 die Tests automatisch; der Knopf startet sie erneut. Die kleine
-[fjson-IDE](../web/README.md) liegt unter `http://localhost:8000/web/`.
+[modulare fjson-IDE](../web/README.md) liegt unter
+`http://localhost:8000/web/`.
+
+Für die IDE gibt es zusätzlich eine
+[vollständig eigenständige HTML-Datei](../web/fjson-studio.html). Sie
+enthält `fjson.mjs`, den App-Code und die Styles inline. Die Datei kann
+allein heruntergeladen und ohne Webserver über `file://` geöffnet werden.
+Sie wird aus den modularen Quelldateien mit
+`node web/build-standalone.mjs` erzeugt; `node js/test-pages.mjs` prüft
+den erzeugten Inhalt und die IDE-Funktionen mit Node.
 
 Die Referenzimplementierung installiert keinerlei Datei-, Prozess-
 oder Netzwerkfunktionen. Die [Python-Host-Adapter](../SECURITY.md) sind
