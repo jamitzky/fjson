@@ -189,24 +189,25 @@ Die [fjson-IDE als einzelne HTML-Datei](web/fjson-studio.html) enthält
 Interpreter, Oberfläche und Styles vollständig. **Nur diese Datei
 herunterladen und per Doppelklick im Browser öffnen**; ein Webserver,
 Paketmanager und eine Internetverbindung sind dafür nicht nötig. Der
-Programm-Tab nimmt JSON-Text entgegen und zeigt Ergebnis oder
-Fehlermeldung. Im Tab **JSON-Daten** lassen sich Daten einfügen oder aus
-einer lokalen `.json`-Datei laden. Sie stehen dem Programm und der Shell
-als `@data` zur Verfügung. Zum Beispiel liefert
+**Input** nimmt fjson-Quelltext entgegen. **Daten** nimmt einen JSON-Wert
+auf, der dem Programm und der Shell als `@data` zur Verfügung steht. Über
+das Menü oben lassen sich zusätzliche Code- und Daten-Tabs anlegen;
+weitere Daten-Tabs heißen `@data2`, `@data3` usw. Zum Beispiel liefert
 `["@get", "@data", "answer"]` den Wert des Schlüssels `answer`.
 `@get` und `@length` sind auch in Python und Node verfügbar.
 
-Die **Shell** wertet einzelne JSON-Ausdrücke aus und zeigt einen Verlauf.
-Deklarationen aus Programm und Shell bleiben in derselben Sitzung.
-Programm und Daten lassen sich als lokale JSON-Dateien speichern;
-beide Editorfenster und die Shell haben Syntaxfarben. Sechs Beispiele
+Die **Shell** wertet einzelne JSON-Ausdrücke aus. Die Ausgabe liegt
+unten in einem Bereich, dessen Höhe sich durch Ziehen oder per
+Pfeiltasten verändern lässt. Deklarationen aus Code und Shell bleiben
+in derselben Sitzung. Die Toolbar lädt und speichert lokale JSON-Dateien
+für den aktiven Tab; der Editor hat Syntaxfarben. Sechs Beispiele
 decken Funktionen, Standardwerte, logische Suche, Rekursion, `@quote`
 und den Datenzugriff ab. `Strg+Enter` beziehungsweise `⌘+Enter`
 startet den Ausdruck des aktiven Editors.
 
 Die IDE behält globale Deklarationen innerhalb der aktuellen Sitzung.
-„Sitzung zurücksetzen“ erstellt einen neuen Interpreter und leert den
-Shell-Verlauf. Der Code läuft lokal im Browser; Laden und Speichern
+„Sitzung zurücksetzen“ erstellt einen neuen Interpreter und leert die
+Ausgabe. Der Code läuft lokal im Browser; Laden und Speichern
 erfolgen durch die Browseroberfläche, nicht durch fjson-Capabilities.
 Änderungen an den Quelldateien lassen sich mit
 `node web/build-standalone.mjs` in die Einzeldatei übernehmen. Die
