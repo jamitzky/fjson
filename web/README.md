@@ -37,17 +37,21 @@ und `@patho` zur Verfügung. Die Beispiele in
 [LOGIC_JSON.md](../LOGIC_JSON.md) lassen sich mit einem geladenen
 Daten-Tab ausführen; dessen Bindung heißt standardmäßig `@data`.
 
-Die Beispielauswahl enthält elf direkt ausführbare Abfragen mit Freds
-vollständigem Datensatz: Teilmuster, Büronummern, Arbeits-E-Mails,
-Rückwärtspfad, Volljährigkeit, verschiedene Städte, Projektion sowie
-[Graphpfad, Kanten, Graphmuster und eine Regel](../GRAPH.md).
-Beim Auswählen eines Fred-Beispiels wird der Inhalt des `@data`-Tabs
-durch [examples/fred.json](../examples/fred.json) ersetzt. Der Datensatz
-ist auch in der Offline-HTML-Datei enthalten; dafür ist kein Laden über
-das Netzwerk nötig. Vorherige Änderungen am `@data`-Tab bei Bedarf
-zuerst speichern. Die Beispiele sind kompakt formatiert: einfache Listen
-und Objekte stehen jeweils auf einer Zeile, während verschachtelte
-Ausdrücke eingerückt bleiben.
+Das Menü **Beispiele** enthält 56 Lektionen in sieben aufklappbaren
+Themenbereichen: JSON-Grundlagen, Funktionen, Kontrollfluss, Arithmetik,
+Bereiche und Listen, Logik sowie Graphabfragen. Das getrennte Menü
+**Shell-Snippets** fügt elf kurze Ausdrücke in die Shell ein, ohne sie
+sofort auszuführen. [SHOWCASE.md](../SHOWCASE.md) führt durch die Themen
+und erklärt die neuen Rechen- und Listenoperationen. Jedes längere
+Beispiel enthält eine `@kommentar`-Deklaration direkt im ausführbaren
+fjson-Quelltext. Einfache Listen und Objekte stehen jeweils auf einer
+Zeile, während verschachtelte Ausdrücke eingerückt bleiben.
+
+Fred- und Referenzbeispiele laden automatisch ihren Datensatz in den
+`@data`-Tab. [fred.json](../examples/fred.json) und
+[graph_refs.json](../examples/graph_refs.json) sind auch in der
+Offline-HTML-Datei enthalten; dafür ist kein Netzwerk nötig. Vorherige
+Änderungen am `@data`-Tab bei Bedarf zuerst speichern.
 
 **Code ausführen** oder `Strg+Enter`/`⌘+Enter` wertet den links sichtbaren
 Code mit den rechts sichtbaren Daten aus.
@@ -64,7 +68,8 @@ Browseroberfläche; fjson selbst erhält dadurch keine Datei-Capability.
 
 ## Quelldateien und Entwicklung
 
-[`index.html`](index.html), [`app.mjs`](app.mjs) und
+[`index.html`](index.html), [`app.mjs`](app.mjs),
+[`showcase.mjs`](showcase.mjs) und
 [`style.css`](style.css) sind die modulare Variante. Sie verwenden
 [`../js/fjson.mjs`](../js/fjson.mjs). Nach Änderungen am Interpreter,
 an der App oder am CSS wird die Einzeldatei neu erzeugt:
