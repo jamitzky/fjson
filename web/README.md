@@ -7,7 +7,7 @@ JavaScript-Interpreter, die IDE und das CSS. Diese eine Datei herunterladen
 und lokal im Browser öffnen, zum Beispiel per Doppelklick. Ein Webserver
 und eine Internetverbindung sind nicht erforderlich.
 
-Die Arbeitsfläche startet mit den Tabs **Input**, **Daten** und **Shell**.
+Die Arbeitsfläche startet oben mit den Tabs **Input** und **Daten**.
 Im Menü oben erzeugen **＋ Code** und **＋ Daten** weitere Tabs. Der erste
 Daten-Tab ist als `@data` verfügbar, weitere als `@data2`, `@data3` usw.
 Diese Namen bleiben einem Tab zugeordnet; beim Schließen eines Daten-Tabs
@@ -25,10 +25,13 @@ Arrayindex; `@length` zählt Einträge. Ungültige JSON-Daten stoppen die
 Auswertung mit einer Fehlermeldung. Der aktive Editor zeigt Syntaxfarben
 für Bezeichner, Strings, Zahlen und JSON-Zeichen.
 
-**Ausführen** oder `Strg+Enter`/`⌘+Enter` wertet den aktiven Code- oder
-Shell-Tab aus. Ein Daten-Tab zeigt beim Ausführen seinen JSON-Wert in der
-Ausgabe. Ergebnisse und Fehler erscheinen im unteren Ausgabebereich;
-der Trenner darüber lässt sich ziehen oder mit den Pfeiltasten bedienen.
+**Ausführen** oder `Strg+Enter`/`⌘+Enter` wertet den aktiven Code-Tab aus.
+Ein Daten-Tab zeigt beim Ausführen seinen JSON-Wert im Ergebnisbereich.
+Die **Shell liegt unten links** und hat einen eigenen Ausführen-Knopf
+sowie `Strg+Enter`/`⌘+Enter`. **Ergebnisse und Fehler stehen unten rechts**.
+Der waagerechte Trenner über dem unteren Bereich verändert seine Höhe;
+der senkrechte Trenner zwischen Shell und Ergebnis verändert ihre Breite.
+Beide lassen sich ziehen oder mit den jeweiligen Pfeiltasten bedienen.
 Die Toolbar öffnet eine lokale JSON-Datei im aktiven Tab, speichert den
 Tab als Datei und setzt die Interpreter-Sitzung zurück. `Strg+S` oder
 `⌘+S` speichert ebenfalls den aktiven Tab. Globale Deklarationen bleiben
