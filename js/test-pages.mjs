@@ -266,6 +266,16 @@ async function checkIde(elements) {
   choose('code', 'list_ast');
   get('run').click();
   assert.deepEqual(JSON.parse(result()), ['@plus', 41, 1]);
+  choose('code', 'j_fork');
+  get('run').click();
+  assert.equal(result(), '35');
+  get('reset').click();
+  get('run').click();
+  assert.equal(result(), '35');
+  choose('tutorial', 'tour_j_mean');
+  assert.match(get('tutorial-body').innerHTML, /Mittelwert/);
+  get('tutorial-run').click();
+  assert.equal(result(), '4');
   choose('shell', 'Quadratwurzel');
   assert.equal(get('shell-source').value, '["@sqrt",144]');
   get('run-shell').click();
