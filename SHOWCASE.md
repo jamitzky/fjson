@@ -1,7 +1,7 @@
 # fjson lernen: interaktiver Showcase
 
-Die [fjson Studio Einzeldatei](web/fjson-studio.html) enthält 58 ausführbare
-Beispiele in sieben Themenmenüs und 11 kurze Ausdrücke im Menü
+Die [fjson Studio Einzeldatei](web/fjson-studio.html) enthält 73 ausführbare
+Beispiele in acht Themenmenüs und 11 kurze Ausdrücke im Menü
 **Shell-Snippets**. Sie läuft nach dem Herunterladen ohne Webserver. Code
 steht links, JSON-Daten rechts; **Code ausführen** verwendet beide. Die
 Themenmenüs führen von einfachen JSON-Werten über alle reservierten
@@ -118,6 +118,9 @@ Bausteine als auch ihre Zusammensetzung.
    `@membero`, `@patho`, verzögerte Constraints und `@project`.
 7. **JSON als Graph:** `@graph`, `@edgeo`, `@matcho`, `@record`, `@some`,
    `@nodeo` und explizite `$ref`-Kanten.
+8. **J: Funktionen komponieren:** Identität, Atop, Hook, monadische und
+   dyadische Forks, Each, linksassoziatives Insert, Curry sowie
+   zusammengesetzte Programme. Die IDE lädt das J-Modul bei Bedarf.
 
 Die Fred- und Referenzbeispiele laden automatisch ihren passenden
 Datensatz in den rechten Editor. Andere Daten-Tabs und der linke
