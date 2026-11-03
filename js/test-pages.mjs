@@ -31,7 +31,8 @@ class Element {
   replaceChildren() { this.children = []; }
   click() { this.clicked = true; return this.listeners.get('click')?.(); }
   getBoundingClientRect() {
-    return { height: this.tag === 'workarea' ? 600 : 230 };
+    return { height: this.tag === 'workarea' ? 600 : 230,
+      width: this.tag === 'lower-pane' ? 800 : this.tag === 'shell-pane' ? 380 : 500 };
   }
   setPointerCapture() {}
   releasePointerCapture() {}
@@ -39,7 +40,9 @@ class Element {
 
 function documentFor(ids) {
   const elements = new Map(ids.map(id => [id, new Element(
-    id === '#workarea' ? 'workarea' : 'div')]));
+    id === '#workarea' ? 'workarea' :
+      id === '#lower-pane' ? 'lower-pane' :
+        id === '#shell-pane' ? 'shell-pane' : 'div')]));
   elements.created = [];
   globalThis.document = {
     querySelector: selector => elements.get(selector),
@@ -73,6 +76,8 @@ const ideIds = [
   '#tabs', '#output', '#output-count', '#status', '.statusbar', '#binding-info',
   '#line-count', '#editor-title', '#editor-hint', '#example', '#file-input',
   '#workarea', '#output-pane', '#splitter', '#source', '#highlight',
+  '#lower-pane', '#shell-pane', '#column-splitter', '#shell-source',
+  '#shell-highlight', '#run-shell',
   '#new-code', '#new-data', '#run', '#open', '#save', '#reset', '#clear-output',
 ];
 
@@ -88,10 +93,11 @@ async function checkIde(elements) {
   };
   const selectTab = index => tabs.children[index].children[0].click();
 
-  assert.equal(tabs.children.length, 3);
+  assert.equal(tabs.children.length, 2);
   assert.equal(tabs.children[0].children[0].children[1].textContent, 'Input');
   assert.equal(tabs.children[1].children[0].children[1].textContent, 'Daten');
-  assert.equal(tabs.children[2].children[0].children[1].textContent, 'Shell');
+  assert.equal(get('shell-source').value, '["@plus", 1, 2]');
+  assert.match(get('shell-highlight').innerHTML, /tok-name/);
   assert.match(editor.value, /@inc/);
   assert.match(get('highlight').innerHTML, /tok-name/);
   get('run').click();
@@ -99,11 +105,11 @@ async function checkIde(elements) {
   assert.equal(get('output-count').textContent, '1 Eintrag');
 
   get('new-data').click();
-  assert.equal(tabs.children.length, 4);
+  assert.equal(tabs.children.length, 3);
   assert.equal(get('editor-hint').textContent.includes('@data2'), true);
   edit('{"answer":7}');
   assert.match(get('highlight').innerHTML, /tok-key/);
-  assert.match(tabs.children[3].children[0].children[2].textContent, /●/);
+  assert.match(tabs.children[2].children[0].children[2].textContent, /●/);
 
   selectTab(0);
   get('example').value = 'data';
@@ -115,20 +121,25 @@ async function checkIde(elements) {
   assert.equal(result(), '8');
 
   get('new-code').click();
-  assert.equal(tabs.children.length, 5);
+  assert.equal(tabs.children.length, 4);
   edit('{"@n":9}');
   get('run').click();
   assert.equal(result(), '9');
-  selectTab(2);
-  edit('["@plus","@n",1]');
-  get('run').click();
+  get('shell-source').value = '["@plus","@n",1]';
+  get('shell-source').listeners.get('input')();
+  get('run-shell').click();
   assert.equal(result(), '10');
 
-  selectTab(3);
+  selectTab(2);
   get('file-input').files = [{ name: 'extra.json', text: async () => '{"answer":12}' }];
   await get('file-input').listeners.get('change')();
   assert.equal(editor.value, '{"answer":12}');
   assert.equal(get('editor-title').textContent, 'extra.json');
+  get('shell-source').value = '["@get","@data2","answer"]';
+  get('shell-source').listeners.get('keydown')({
+    key: 'Enter', ctrlKey: true, preventDefault() {},
+  });
+  assert.equal(result(), '12');
   get('save').click();
   const download = elements.created.filter(node => node.tag === 'a').at(-1);
   assert.equal(download.download, 'extra.json');
@@ -143,8 +154,17 @@ async function checkIde(elements) {
   assert.equal(get('workarea').style.values.get('--output-height'), '256px');
   assert.equal(splitter.attributes.get('aria-valuenow'), '256');
 
-  tabs.children[3].children[1].click();
-  assert.equal(tabs.children.length, 4);
+  const columnSplitter = get('column-splitter');
+  columnSplitter.listeners.get('pointerdown')({ clientX: 300, pointerId: 2 });
+  columnSplitter.listeners.get('pointermove')({ clientX: 350, pointerId: 2 });
+  assert.equal(get('lower-pane').style.values.get('--shell-width'), '430px');
+  columnSplitter.listeners.get('pointerup')({ pointerId: 2 });
+  columnSplitter.listeners.get('keydown')({ key: 'ArrowLeft', preventDefault() {} });
+  assert.equal(get('lower-pane').style.values.get('--shell-width'), '406px');
+  assert.equal(columnSplitter.attributes.get('aria-valuenow'), '406');
+
+  tabs.children[2].children[1].click();
+  assert.equal(tabs.children.length, 3);
   selectTab(0);
   edit('["@get","@data2","answer"]');
   get('run').click();
@@ -153,9 +173,8 @@ async function checkIde(elements) {
   get('clear-output').click();
   assert.equal(get('output-count').textContent, '0 Einträge');
   get('reset').click();
-  selectTab(3);
-  edit('"@n"');
-  get('run').click();
+  get('shell-source').value = '"@n"';
+  get('run-shell').click();
   assert.match(result(), /ResolutionError/);
 
   selectTab(1);
