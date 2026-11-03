@@ -22,7 +22,6 @@ from .logic import (
     Goal,
     LogicScope,
     LogicVar,
-    MatchGoal,
     MatchoGoal,
     MemberGoal,
     NeqGoal,
@@ -289,7 +288,6 @@ class Interpreter:
             "@filter": Native("@filter", 2, self._seq_filter),
             "@reduce": Native("@reduce", 3, self._seq_reduce),
             "@unify": Native("@unify", 2, UnifyGoal),
-            "@match": Native("@match", 2, MatchGoal),
             "@membero": Native("@membero", 2, MemberGoal),
             "@patho": Native("@patho", 3, PathGoal),
             "@graph": Native("@graph", (1, 2), JsonGraph),
@@ -300,7 +298,6 @@ class Interpreter:
             "@some": Native("@some", 1, SomePattern),
             "@neqo": Native("@neqo", 2, NeqGoal),
             "@ge": Native("@ge", 2, GeGoal),
-            "@guard": Native("@guard", 1, self._logic_guard),
             "@project": Native("@project", 3, self._logic_project),
             "@choice": Native("@choice", 2, self._logic_choice),
             "@conj": Native("@conj", 2, self._logic_conj),
@@ -587,12 +584,6 @@ class Interpreter:
         if not isinstance(fields, dict):
             raise EvaluationError("@record expects an object")
         return RecordPattern(fields)
-
-    @staticmethod
-    def _logic_guard(goal: Any) -> Goal:
-        if not isinstance(goal, Goal):
-            raise EvaluationError("@guard expects a goal")
-        return goal
 
     @staticmethod
     def _logic_project(function: Any, arguments: Any, result: Any) -> Goal:
