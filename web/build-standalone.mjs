@@ -8,14 +8,16 @@ export function buildStandalone() {
   const page = read('index.html');
   const style = read('style.css');
   const runtime = read('../js/fjson.mjs');
+  const showcase = read('showcase.mjs');
   const app = read('app.mjs');
 
 if (!page.includes('<link rel="stylesheet" href="./style.css">') ||
     !page.includes('<script type="module" src="./app.mjs"></script>') ||
-    !app.startsWith("import { Closure, Goal, Interpreter, LogicVar, parseJson } from '../js/fjson.mjs';")) {
+    !app.startsWith("import { Closure, Goal, Interpreter, LogicVar, parseJson } from '../js/fjson.mjs';\n" +
+      "import { fredData, refsData, showcaseGroups, shellGroups, lessonSource } from './showcase.mjs';")) {
   throw new Error('Die Vorlagen haben sich geändert; Standalone-Build prüfen.');
 }
-if (/<\/script/i.test(runtime + app) || /<\/style/i.test(style)) {
+if (/<\/script/i.test(runtime + showcase + app) || /<\/style/i.test(style)) {
   throw new Error('Ein eingebetteter Abschluss-Tag würde die HTML-Datei beschädigen.');
 }
 
@@ -23,12 +25,16 @@ const inlineRuntime = runtime.replace(/^export (class|function) /gm, '$1 ');
 if (/^export\s/m.test(inlineRuntime)) {
   throw new Error('Nicht unterstützter ES-Modul-Export im Interpreter.');
 }
-const inlineApp = app.replace(/^import \{ Closure, Goal, Interpreter, LogicVar, parseJson \} from '\.\.\/js\/fjson\.mjs';\r?\n/, '');
+const inlineShowcase = showcase.replace(/^export (const|function) /gm, '$1 ');
+if (/^export\s/m.test(inlineShowcase)) {
+  throw new Error('Nicht unterstützter ES-Modul-Export im Showcase.');
+}
+const inlineApp = app.replace(/^import \{ Closure, Goal, Interpreter, LogicVar, parseJson \} from '\.\.\/js\/fjson\.mjs';\r?\nimport \{ fredData, refsData, showcaseGroups, shellGroups, lessonSource \} from '\.\/showcase\.mjs';\r?\n/, '');
   return page
   .replace('<link rel="stylesheet" href="./style.css">', `<style>\n${style}</style>`)
   .replace('<script type="module" src="./app.mjs"></script>', '')
   .replace(/\s*<nav aria-label="Projektlinks">[\s\S]*?<\/nav>/, '')
-    .replace('</body>', `<script>\n'use strict';\n${inlineRuntime}\n${inlineApp}\n</script>\n</body>`);
+    .replace('</body>', `<script>\n'use strict';\n${inlineRuntime}\n${inlineShowcase}\n${inlineApp}\n</script>\n</body>`);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
