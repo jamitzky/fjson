@@ -54,11 +54,6 @@ export class EdgeGoal extends Goal {
   constructor(source: unknown, key: unknown, target: unknown);
   readonly source: unknown; readonly key: unknown; readonly target: unknown;
 }
-export class GraphPathGoal extends Goal {
-  constructor(graph: unknown, start: unknown, path: unknown, value: unknown);
-  readonly graph: unknown; readonly start: unknown;
-  readonly path: unknown; readonly value: unknown;
-}
 export class MatchoGoal extends Goal {
   constructor(data: unknown, pattern: unknown);
   readonly data: unknown; readonly pattern: unknown;
