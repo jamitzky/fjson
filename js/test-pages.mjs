@@ -80,6 +80,11 @@ const ideIds = [
   '#shell-highlight', '#run-shell',
   '#new-code', '#new-data', '#run', '#open', '#save', '#reset', '#clear-output',
 ];
+const pageSource = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+for (const name of [
+  'fred_match', 'fred_phone', 'fred_email', 'fred_path',
+  'fred_adult', 'fred_cities', 'fred_project',
+]) assert.ok(pageSource.includes('value="' + name + '"'), name + ' fehlt in der Auswahl');
 
 async function checkIde(elements) {
   const get = id => elements.get('#' + id);
@@ -184,6 +189,29 @@ async function checkIde(elements) {
   get('run').click();
   assert.match(result(), /SyntaxError/);
   assert.match(get('status').textContent, /Daten/);
+
+  const fred = JSON.parse(readFileSync(new URL('../examples/fred.json', import.meta.url), 'utf8'));
+  const fredCases = [
+    ['fred_match', [{ name: 'Fred', surname: 'Smith' }]],
+    ['fred_phone', ['01962 001234', '01962 001235']],
+    ['fred_email', ['fred.smith@my-work.com', 'fsmith@my-work.com']],
+    ['fred_path', [['Other', 'Alternative.Address', 'City']]],
+    ['fred_adult', [28]],
+    ['fred_cities', [{
+      person: 'Fred', main_city: 'Winchester', alternative_city: 'London',
+    }]],
+    ['fred_project', [29]],
+  ];
+  for (const [name, expected] of fredCases) {
+    get('example').value = name;
+    get('example').listeners.get('change')();
+    assert.match(get('status').textContent, /@data ersetzt/);
+    get('run').click();
+    assert.deepEqual(JSON.parse(result()), expected, name);
+  }
+  selectTab(1);
+  assert.deepEqual(JSON.parse(editor.value), fred);
+  assert.equal(get('editor-hint').textContent.includes('@data'), true);
 }
 
 const modular = documentFor(ideIds);
