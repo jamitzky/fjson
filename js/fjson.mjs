@@ -283,6 +283,19 @@ export class Interpreter {
     this.global.values.set('@le', new Native('@le', 2, (a, b) =>
       number(a, '@le') <= number(b, '@le')));
     this.global.values.set('@eq', new Native('@eq', 2, jsonEqual));
+    this.global.values.set('@get', new Native('@get', 2, (container, key) => {
+      if (Array.isArray(container) && Number.isSafeInteger(key)) {
+        if (key >= 0 && key < container.length) return container[key];
+      } else if (isRecord(container) && typeof key === 'string') {
+        if (Object.hasOwn(container, key)) return container[key];
+      } else throw new EvaluationError('@get expects an array and index or object and key');
+      throw new EvaluationError('@get key or index does not exist');
+    }));
+    this.global.values.set('@length', new Native('@length', 1, value => {
+      if (Array.isArray(value)) return value.length;
+      if (isRecord(value)) return keys(value).length;
+      throw new EvaluationError('@length expects an array or object');
+    }));
     this.global.values.set('@unify', new Native('@unify', 2, (a, b) => new UnifyGoal(a, b)));
     this.global.values.set('@choice', new Native('@choice', 2, (a, b) => {
       if (!(a instanceof Goal) || !(b instanceof Goal)) throw new EvaluationError('@choice expects two goals');
