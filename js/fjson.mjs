@@ -245,9 +245,6 @@ export class ChoiceGoal extends Goal {
 export class ConjGoal extends Goal {
   constructor(left, right) { super(); this.left = left; this.right = right; }
 }
-export class MatchGoal extends Goal {
-  constructor(data, pattern) { super(); this.data = data; this.pattern = pattern; }
-}
 export class MemberGoal extends Goal {
   constructor(items, item) { super(); this.items = items; this.item = item; }
 }
@@ -519,9 +516,6 @@ function search(goal, query, limit, step, project) {
     if (head instanceof UnifyGoal) {
       const next = unify(head.left, head.right, substitutions, step);
       if (next !== null) work.push({ pending: rest, substitutions: next, delayed });
-    } else if (head instanceof MatchGoal) {
-      const next = match(head.data, head.pattern, substitutions, step);
-      if (next !== null) work.push({ pending: rest, substitutions: next, delayed });
     } else if (head instanceof MemberGoal) {
       const items = walk(head.items, substitutions, step);
       if (Array.isArray(items)) {
@@ -687,8 +681,6 @@ export class Interpreter {
       return result;
     }));
     this.global.values.set('@unify', new Native('@unify', 2, (a, b) => new UnifyGoal(a, b)));
-    this.global.values.set('@match', new Native('@match', 2, (data, pattern) =>
-      new MatchGoal(data, pattern)));
     this.global.values.set('@membero', new Native('@membero', 2, (items, item) =>
       new MemberGoal(items, item)));
     this.global.values.set('@patho', new Native('@patho', 3, (data, path, value) =>
@@ -708,10 +700,6 @@ export class Interpreter {
     this.global.values.set('@some', new Native('@some', 1, item => new SomePattern(item)));
     this.global.values.set('@neqo', new Native('@neqo', 2, (a, b) => new NeqGoal(a, b)));
     this.global.values.set('@ge', new Native('@ge', 2, (a, b) => new GeGoal(a, b)));
-    this.global.values.set('@guard', new Native('@guard', 1, goal => {
-      if (!(goal instanceof Goal)) throw new EvaluationError('@guard expects a goal');
-      return goal;
-    }));
     this.global.values.set('@project', new Native('@project', 3, (fn, args, result) => {
       if (!(fn instanceof Native || fn instanceof Closure) || !Array.isArray(args))
         throw new EvaluationError('@project expects a function and argument array');
