@@ -1,5 +1,6 @@
 import { Closure, Goal, Interpreter, LogicVar, parseJson } from '../js/fjson.mjs';
 import { fredData, refsData, showcaseGroups, shellGroups, lessonSource } from './showcase.mjs';
+import { tutorialGroups, tutorialSteps } from './tutorial.mjs';
 
 const byId = id => document.querySelector('#' + id);
 const editor = byId('source');
@@ -27,6 +28,13 @@ const codeMenuContent = byId('code-menu-content');
 const shellMenu = byId('shell-menu');
 const shellMenuButton = byId('shell-menu-button');
 const shellMenuContent = byId('shell-menu-content');
+const tutorialMenu = byId('tutorial-menu');
+const tutorialMenuButton = byId('tutorial-menu-button');
+const tutorialMenuContent = byId('tutorial-menu-content');
+const tutorialPanel = byId('tutorial-panel');
+const tutorialTitle = byId('tutorial-title');
+const tutorialProgress = byId('tutorial-progress');
+const tutorialBody = byId('tutorial-body');
 const fileInput = byId('file-input');
 const workarea = byId('workarea');
 const lowerPane = byId('lower-pane');
@@ -51,11 +59,21 @@ let shellWidth = 380;
 let columnDrag = null;
 let codeWidth = 500;
 let editorDrag = null;
+let tutorialIndex = 0;
 
 function escapeHtml(value) {
   return value.replace(/[&<>"]/g, char => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;',
   })[char]);
+}
+
+function tutorialMarkup(markdown) {
+  const inline = value => escapeHtml(value)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  return markdown.trim().split(/\n\s*\n/)
+    .map(paragraph => '<p>' + inline(paragraph.replace(/\s*\n\s*/g, ' ')) + '</p>')
+    .join('');
 }
 
 const tokenPattern = /"(?:\\.|[^"\\])*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|\b(?:true|false|null)\b|[{}\[\],:]/g;
@@ -483,11 +501,31 @@ function closeMenu(content, button) {
   button.setAttribute('aria-expanded', 'false');
 }
 
-function toggleMenu(content, button, otherContent, otherButton) {
+function toggleMenu(content, button) {
   const opening = content.hidden;
-  closeMenu(otherContent, otherButton);
+  for (const [otherContent, otherButton] of [
+    [codeMenuContent, codeMenuButton],
+    [shellMenuContent, shellMenuButton],
+    [tutorialMenuContent, tutorialMenuButton],
+  ]) {
+    if (otherContent !== content) closeMenu(otherContent, otherButton);
+  }
   content.hidden = !opening;
   button.setAttribute('aria-expanded', String(opening));
+}
+
+function showTutorial(item) {
+  const index = tutorialSteps.findIndex(step => step.id === item.id);
+  if (index < 0) return;
+  tutorialIndex = index;
+  const current = tutorialSteps[index];
+  tutorialTitle.textContent = current.title;
+  tutorialProgress.textContent = `Schritt ${index + 1} von ${tutorialSteps.length}`;
+  tutorialBody.innerHTML = tutorialMarkup(current.markdown);
+  byId('tutorial-prev').disabled = index === 0;
+  byId('tutorial-next').disabled = index === tutorialSteps.length - 1;
+  tutorialPanel.hidden = false;
+  closeMenu(tutorialMenuContent, tutorialMenuButton);
 }
 
 function loadDemoData(preset) {
@@ -544,18 +582,29 @@ function fillMenu(content, groups, itemsKey, onChoose) {
 
 fillMenu(codeMenuContent, showcaseGroups, 'lessons', loadLesson);
 fillMenu(shellMenuContent, shellGroups, 'snippets', loadSnippet);
-codeMenuButton.addEventListener('click', () => toggleMenu(
-  codeMenuContent, codeMenuButton, shellMenuContent, shellMenuButton));
-shellMenuButton.addEventListener('click', () => toggleMenu(
-  shellMenuContent, shellMenuButton, codeMenuContent, codeMenuButton));
+fillMenu(tutorialMenuContent, tutorialGroups, 'steps', showTutorial);
+codeMenuButton.addEventListener('click', () => toggleMenu(codeMenuContent, codeMenuButton));
+shellMenuButton.addEventListener('click', () => toggleMenu(shellMenuContent, shellMenuButton));
+tutorialMenuButton.addEventListener('click', () => toggleMenu(tutorialMenuContent, tutorialMenuButton));
+byId('tutorial-close').addEventListener('click', () => { tutorialPanel.hidden = true; });
+byId('tutorial-prev').addEventListener('click', () => showTutorial(tutorialSteps[tutorialIndex - 1]));
+byId('tutorial-next').addEventListener('click', () => showTutorial(tutorialSteps[tutorialIndex + 1]));
+byId('tutorial-run').addEventListener('click', () => {
+  loadLesson(tutorialSteps[tutorialIndex].lesson);
+  tutorialPanel.hidden = true;
+  runActive();
+});
 document.addEventListener?.('click', event => {
   if (!codeMenu.contains(event.target)) closeMenu(codeMenuContent, codeMenuButton);
   if (!shellMenu.contains(event.target)) closeMenu(shellMenuContent, shellMenuButton);
+  if (!tutorialMenu.contains(event.target)) closeMenu(tutorialMenuContent, tutorialMenuButton);
 });
 document.addEventListener?.('keydown', event => {
   if (event.key === 'Escape') {
     closeMenu(codeMenuContent, codeMenuButton);
     closeMenu(shellMenuContent, shellMenuButton);
+    closeMenu(tutorialMenuContent, tutorialMenuButton);
+    tutorialPanel.hidden = true;
   }
 });
 editor.addEventListener('input', () => {
