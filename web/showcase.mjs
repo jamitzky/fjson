@@ -97,12 +97,12 @@ export const showcaseGroups = [
   { title: '06 · Logik und JSON-Daten', lessons: [
     lesson('logic_unify', '@unify · Variable binden', '@run löst ein Goal und ersetzt !X im Ergebnis durch seinen gebundenen Wert.', ['@run', 1, '!X', ['@unify', '!X', 42]], [42]),
     lesson('logic_choice', '@choice · Alternativen', 'Jede Alternative kann eine eigene Lösung liefern.', ['@run', 2, '!X', ['@choice', ['@unify', '!X', 'Alice'], ['@unify', '!X', 'Bob']]], ['Alice', 'Bob']),
-    lesson('logic_match', '@match · Teilobjekt', 'Nicht genannte Felder im Datensatz stören das Muster nicht.', ['@run', 1, '!Name', ['@match', '@data', { FirstName: '!Name', Address: { City: 'Winchester' } }]], ['Fred'], 'fred'),
+    lesson('logic_match', '@matcho · Teilobjekt', 'Nicht genannte Felder im Datensatz stören das Muster nicht.', ['@run', 1, '!Name', ['@matcho', '@data', { FirstName: '!Name', Address: { City: 'Winchester' } }]], ['Fred'], 'fred'),
     lesson('logic_member', '@membero · Arrayelemente', '@membero durchsucht ein Array relational.', ['@run', 4, '!N', ['@membero', [3, 5, 7], '!N']], [3, 5, 7]),
     lesson('logic_path_forward', '@patho · Wert finden', 'Ein bekannter Pfad liefert den Wert an dieser Stelle.', ['@run', 1, '!City', ['@patho', '@data', ['Address', 'City'], '!City']], ['Winchester'], 'fred'),
     lesson('logic_path_reverse', '@patho · Pfad finden', 'Ein unbekannter Pfad kann durch einen bekannten Wert gefunden werden.', ['@run', 1, '!Path', ['@patho', '@data', '!Path', 'London']], [['Other', 'Alternative.Address', 'City']], 'fred'),
-    lesson('logic_constraint', '@neqo und @ge · verzögert', 'Constraints bleiben erhalten, bis !Age durch das Muster gebunden ist.', ['@run', 1, '!Age', ['@conj', ['@neqo', '!Age', 17], ['@conj', ['@guard', ['@ge', '!Age', 18]], ['@match', '@data', { Age: '!Age' }]]]], [28], 'fred'),
-    lesson('logic_project', '@project · berechnen', '@project übergibt gebundene Logikwerte an eine gewöhnliche Funktion.', ['@run', 1, '!Next', ['@conj', ['@project', '@plus', ['!Age', 1], '!Next'], ['@match', '@data', { Age: '!Age' }]]], [29], 'fred'),
+    lesson('logic_constraint', '@neqo und @ge · verzögert', 'Constraints bleiben erhalten, bis !Age durch das Muster gebunden ist.', ['@run', 1, '!Age', ['@conj', ['@neqo', '!Age', 17], ['@conj', ['@ge', '!Age', 18], ['@matcho', '@data', { Age: '!Age' }]]]], [28], 'fred'),
+    lesson('logic_project', '@project · berechnen', '@project übergibt gebundene Logikwerte an eine gewöhnliche Funktion.', ['@run', 1, '!Next', ['@conj', ['@project', '@plus', ['!Age', 1], '!Next'], ['@matcho', '@data', { Age: '!Age' }]]], [29], 'fred'),
   ] },
   { title: '07 · JSON als Graph', lessons: [
     lesson('graph_edge', '@edgeo · direkte Kante', 'Objektschlüssel und Arrayindizes sind Kanten. Ein Graphknoten bleibt als Handle erhalten.', ['@let', { '@g': ['@graph', '@data'] }, ['@run', 1, '!City', ['@conj', ['@edgeo', '@g', 'Address', '!A'], ['@edgeo', '!A', 'City', '!City']]]], ['Winchester'], 'fred'),
