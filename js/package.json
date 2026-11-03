@@ -6,6 +6,10 @@
     ".": {
       "types": "./fjson.d.mts",
       "default": "./fjson.mjs"
+    },
+    "./modules": {
+      "types": "./modules.d.mts",
+      "default": "./modules.mjs"
     }
   }
 }
