@@ -8,137 +8,74 @@
   <script type="module" src="./app.mjs"></script>
 </head>
 <body>
-  <div class="shell">
-    <header class="topbar">
-      <div class="brand">
-        <span class="logo" aria-hidden="true">fj@</span>
-        <div>
-          <strong>fjson Studio</strong>
-          <span class="subtitle">Ein kleines Labor für den JSON-Sprachkern</span>
-        </div>
-      </div>
-      <nav aria-label="Projektlinks">
-        <a href="../js/browser-test.html">Browser-Tests</a>
-        <a href="../js/README.md">Dokumentation</a>
+  <div class="workbench">
+    <header class="titlebar">
+      <div class="brand"><span class="brand-mark">fj@</span><strong>fjson Studio</strong></div>
+      <nav class="menu" aria-label="Datei und Tabs">
+        <button id="new-code" type="button" title="Neuer Code-Tab">＋ Code</button>
+        <button id="new-data" type="button" title="Neuer Daten-Tab">＋ Daten</button>
       </nav>
+      <span class="title-note">JSON-Sprachkern · lokal</span>
     </header>
 
-    <main>
-      <section class="intro" aria-labelledby="heading">
-        <p class="eyebrow">FJ@ · JSON · direkt im Browser</p>
-        <h1 id="heading">Schreibe einen Ausdruck. Sieh, was er tut.</h1>
-        <p>Schreibe ein Programm, lade JSON-Daten als <code>@data</code> und
-          probiere Ausdrücke direkt in der Shell. Alles läuft lokal im Browser.</p>
-      </section>
+    <div class="toolbar" role="toolbar" aria-label="Editoraktionen">
+      <button id="run" class="run-button" type="button" title="Aktiven Tab ausführen (Strg/⌘+Enter)">▶ Ausführen</button>
+      <span class="toolbar-divider" aria-hidden="true"></span>
+      <button id="open" type="button">Datei öffnen</button>
+      <button id="save" type="button" title="Aktiven Tab speichern (Strg/⌘+S)">Speichern</button>
+      <input id="file-input" class="sr-only" type="file" accept=".json,application/json">
+      <span class="toolbar-divider" aria-hidden="true"></span>
+      <label for="example">Beispiel</label>
+      <select id="example">
+        <option value="inc">Funktion · +1</option>
+        <option value="defaults">Standardwert</option>
+        <option value="logic">Logische Suche</option>
+        <option value="recursion">Rekursion</option>
+        <option value="quote">Zitat als Daten</option>
+        <option value="data">Mit @data arbeiten</option>
+      </select>
+      <span class="toolbar-spacer"></span>
+      <button id="reset" type="button" title="Interpreter-Sitzung zurücksetzen">Sitzung zurücksetzen</button>
+    </div>
 
-      <section class="workspace" aria-label="fjson-Editor und Ergebnis">
-        <div class="panel editor-panel">
-          <div class="tabs" role="tablist" aria-label="Arbeitsbereiche">
-            <button id="tab-program" class="tab active" type="button" role="tab"
-              aria-controls="panel-program" aria-selected="true">Programm</button>
-            <button id="tab-data" class="tab" type="button" role="tab"
-              aria-controls="panel-data" aria-selected="false">JSON-Daten</button>
-            <button id="tab-shell" class="tab" type="button" role="tab"
-              aria-controls="panel-shell" aria-selected="false">Shell</button>
-          </div>
+    <div id="tabs" class="tabs" role="tablist" aria-label="Offene Dateien"></div>
 
-          <section id="panel-program" class="tab-panel" role="tabpanel" aria-labelledby="tab-program">
-            <div class="panel-head">
-              <div><span class="panel-kicker">01 / QUELLE</span><h2>Programm</h2></div>
-              <label class="example-picker" for="example">Beispiel
-                <select id="example">
-                  <option value="inc">Funktion · +1</option>
-                  <option value="defaults">Standardwert</option>
-                  <option value="logic">Logische Suche</option>
-                  <option value="recursion">Rekursion</option>
-                  <option value="quote">Zitat als Daten</option>
-                  <option value="data">Mit @data arbeiten</option>
-                </select>
-              </label>
-            </div>
-            <div class="editor-wrap">
-              <pre id="source-highlight" class="highlight" aria-hidden="true"></pre>
-              <label class="sr-only" for="source">fjson-Quelltext</label>
-              <textarea id="source" spellcheck="false" autocapitalize="off"
-                autocomplete="off" autocorrect="off" aria-describedby="editor-help"></textarea>
-            </div>
-            <div class="editor-footer">
-              <span id="editor-help">Gültiges JSON · Strg/⌘ + Enter zum Ausführen</span>
-              <span id="line-count" aria-live="polite">1 Zeile</span>
-            </div>
-            <div class="tab-actions">
-              <button id="load-program" type="button">Datei laden</button>
-              <button id="save-program" type="button">Programm speichern</button>
-              <input id="file-program" class="sr-only" type="file" accept=".json,application/json">
-            </div>
-          </section>
-
-          <section id="panel-data" class="tab-panel" role="tabpanel" aria-labelledby="tab-data" hidden>
-            <div class="panel-head">
-              <div><span class="panel-kicker">02 / EINGABE</span><h2>JSON-Daten</h2></div>
-              <span id="data-status" class="data-status" role="status">Als @data verfügbar</span>
-            </div>
-            <p class="panel-note">Diese Daten werden bei jeder Ausführung als <code>@data</code>
-              gebunden. Alle gültigen JSON-Werte sind erlaubt.</p>
-            <div class="editor-wrap">
-              <pre id="data-highlight" class="highlight" aria-hidden="true"></pre>
-              <label class="sr-only" for="data-source">JSON-Daten</label>
-              <textarea id="data-source" spellcheck="false" autocapitalize="off"
-                autocomplete="off" autocorrect="off"></textarea>
-            </div>
-            <div class="tab-actions">
-              <button id="load-data" type="button">JSON-Datei laden</button>
-              <button id="save-data" type="button">Daten speichern</button>
-              <input id="file-data" class="sr-only" type="file" accept=".json,application/json">
-            </div>
-          </section>
-
-          <section id="panel-shell" class="tab-panel" role="tabpanel" aria-labelledby="tab-shell" hidden>
-            <div class="panel-head">
-              <div><span class="panel-kicker">03 / INTERAKTIV</span><h2>Shell</h2></div>
-              <button id="clear-shell" type="button">Verlauf leeren</button>
-            </div>
-            <p class="panel-note">Ein JSON-Ausdruck pro Aufruf. Deklarationen und
-              <code>@data</code> sind in der aktuellen Sitzung verfügbar.</p>
-            <div id="shell-history" class="shell-history" role="log" aria-live="polite"></div>
-            <div class="shell-entry">
-              <div class="editor-wrap shell-wrap">
-                <pre id="shell-highlight" class="highlight" aria-hidden="true"></pre>
-                <label class="sr-only" for="shell-source">Shell-Ausdruck</label>
-                <textarea id="shell-source" spellcheck="false" autocapitalize="off"
-                  autocomplete="off" autocorrect="off" placeholder='["@plus", 1, 2]'></textarea>
-              </div>
-              <button id="run-shell" class="primary" type="button">Ausführen</button>
-            </div>
-          </section>
+    <main id="workarea" class="workarea">
+      <section id="editor-pane" class="editor-pane" aria-labelledby="editor-title">
+        <div class="pane-header">
+          <span id="editor-title">Input</span>
+          <span id="editor-hint">fjson · Strg/⌘+Enter zum Ausführen</span>
         </div>
-
-        <div class="panel result-panel">
-          <div class="panel-head">
-            <div>
-              <span class="panel-kicker">04 / AUSWERTUNG</span>
-              <h2>Ergebnis</h2>
-            </div>
-            <span id="status" class="status" role="status" aria-live="polite">Bereit</span>
-          </div>
-          <pre id="result" aria-label="Ausgabe">Drücke „Ausführen“, um den Ausdruck auszuwerten.</pre>
-          <div class="result-footer">
-            <span id="steps">Noch nicht ausgeführt</span>
-            <span>Auswertung bleibt lokal</span>
-          </div>
+        <div class="editor-wrap">
+          <pre id="highlight" class="highlight" aria-hidden="true"></pre>
+          <label class="sr-only" for="source">Aktiver JSON-Editor</label>
+          <textarea id="source" spellcheck="false" autocapitalize="off"
+            autocomplete="off" autocorrect="off" aria-describedby="editor-hint"></textarea>
         </div>
       </section>
 
-      <div class="actions">
-        <button id="run" class="primary" type="button">▶ Ausführen</button>
-        <button id="reset" class="secondary" type="button">Sitzung zurücksetzen</button>
-        <span class="action-note">Dateien bleiben lokal · keine Prozess- oder Netzwerk-Capabilities</span>
-      </div>
+      <div id="splitter" class="splitter" role="separator" tabindex="0"
+        aria-label="Größe der Ausgabe ändern" aria-orientation="horizontal"
+        aria-valuemin="100" aria-valuemax="500" aria-valuenow="230"
+        title="Ziehen oder Pfeiltasten verwenden"><span></span></div>
+
+      <section id="output-pane" class="output-pane" aria-label="Ausgabe">
+        <div class="output-header">
+          <div class="output-title"><strong>AUSGABE</strong><span id="output-count">0 Einträge</span></div>
+          <button id="clear-output" type="button">Ausgabe leeren</button>
+        </div>
+        <div id="output" class="output" role="log" aria-live="polite">
+          <p class="empty-output">Ausführen zeigt Ergebnisse und Fehler hier an.</p>
+        </div>
+      </section>
     </main>
 
-    <footer>
-      <span>fjson · Sprachkern 0.3</span>
-      <span>JavaScript-Referenzinterpreter</span>
+    <footer class="statusbar">
+      <span id="status" role="status" aria-live="polite">Bereit</span>
+      <span id="binding-info">@data verfügbar</span>
+      <span class="status-spacer"></span>
+      <span id="line-count">Zeile 1 · 1 Zeile</span>
+      <span>fjson Kern 0.3</span>
     </footer>
   </div>
 </body>
