@@ -90,7 +90,7 @@ Für Bedingungen gilt: `false`, `null`, `0`, `""`, `[]` und `{}` sind falsch; an
 
 `@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. `@try` fängt `EvaluationError` und dessen Unterklassen ab, aber keinen `ResourceLimitError`; ohne Ersatz liefert es `{"error": "Klassenname", "message": "Text"}`. Bereits erfolgte Deklarationen werden durch `@try` nicht zurückgerollt.
 
-Operationen wie `@plus` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Das Paket bietet `@plus`, `@minus`, `@times`, `@divide`, `@eq`, `@le` sowie die Logikfunktionen `@unify`, `@choice`, `@conj` und `@run` als eingebaute Funktionen. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
+Operationen wie `@plus` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Das Paket bietet `@plus`, `@minus`, `@times`, `@divide`, `@eq`, `@le`, `@get` und `@length` sowie die Logikfunktionen `@unify`, `@choice`, `@conj` und `@run` als eingebaute Funktionen. `@get` liest einen Objektschlüssel oder einen Arrayindex; `@length` liefert die Zahl der Einträge eines Objekts oder Arrays. Bei fehlendem Schlüssel oder Index entsteht ein Fehler. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
 
 ## Auswertung und Aufrufe
 
@@ -189,14 +189,25 @@ Die [fjson-IDE als einzelne HTML-Datei](web/fjson-studio.html) enthält
 Interpreter, Oberfläche und Styles vollständig. **Nur diese Datei
 herunterladen und per Doppelklick im Browser öffnen**; ein Webserver,
 Paketmanager und eine Internetverbindung sind dafür nicht nötig. Der
-Editor nimmt JSON-Text entgegen und zeigt Ergebnis oder Fehlermeldung.
-Fünf Beispiele decken Funktionen, Standardwerte, logische Suche,
-Rekursion und `@quote` ab. `Strg+Enter` beziehungsweise `⌘+Enter`
-startet die Auswertung.
+Programm-Tab nimmt JSON-Text entgegen und zeigt Ergebnis oder
+Fehlermeldung. Im Tab **JSON-Daten** lassen sich Daten einfügen oder aus
+einer lokalen `.json`-Datei laden. Sie stehen dem Programm und der Shell
+als `@data` zur Verfügung. Zum Beispiel liefert
+`["@get", "@data", "answer"]` den Wert des Schlüssels `answer`.
+`@get` und `@length` sind auch in Python und Node verfügbar.
+
+Die **Shell** wertet einzelne JSON-Ausdrücke aus und zeigt einen Verlauf.
+Deklarationen aus Programm und Shell bleiben in derselben Sitzung.
+Programm und Daten lassen sich als lokale JSON-Dateien speichern;
+beide Editorfenster und die Shell haben Syntaxfarben. Sechs Beispiele
+decken Funktionen, Standardwerte, logische Suche, Rekursion, `@quote`
+und den Datenzugriff ab. `Strg+Enter` beziehungsweise `⌘+Enter`
+startet den Ausdruck des aktiven Editors.
 
 Die IDE behält globale Deklarationen innerhalb der aktuellen Sitzung.
-„Sitzung zurücksetzen“ erstellt einen neuen Interpreter. Der Code läuft
-lokal im Browser; die IDE stellt keine externen Capabilities bereit.
+„Sitzung zurücksetzen“ erstellt einen neuen Interpreter und leert den
+Shell-Verlauf. Der Code läuft lokal im Browser; Laden und Speichern
+erfolgen durch die Browseroberfläche, nicht durch fjson-Capabilities.
 Änderungen an den Quelldateien lassen sich mit
 `node web/build-standalone.mjs` in die Einzeldatei übernehmen. Die
 [Web-Dokumentation](web/README.md) erklärt beide IDE-Varianten.
