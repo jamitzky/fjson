@@ -19,7 +19,7 @@
     </header>
 
     <div class="toolbar" role="toolbar" aria-label="Editoraktionen">
-      <button id="run" class="run-button" type="button" title="Aktiven Tab ausführen (Strg/⌘+Enter)">▶ Ausführen</button>
+      <button id="run" class="run-button" type="button" title="Code links mit den Daten rechts ausführen (Strg/⌘+Enter)">▶ Code ausführen</button>
       <span class="toolbar-divider" aria-hidden="true"></span>
       <button id="open" type="button">Datei öffnen</button>
       <button id="save" type="button" title="Aktiven Tab speichern (Strg/⌘+S)">Speichern</button>
@@ -56,18 +56,38 @@
     <div id="tabs" class="tabs" role="tablist" aria-label="Offene Dateien"></div>
 
     <main id="workarea" class="workarea">
-      <section id="editor-pane" class="editor-pane" aria-labelledby="editor-title">
-        <div class="pane-header">
-          <span id="editor-title">Input</span>
-          <span id="editor-hint">fjson · Strg/⌘+Enter zum Ausführen</span>
-        </div>
-        <div class="editor-wrap">
-          <pre id="highlight" class="highlight" aria-hidden="true"></pre>
-          <label class="sr-only" for="source">Aktiver JSON-Editor</label>
-          <textarea id="source" spellcheck="false" autocapitalize="off"
-            autocomplete="off" autocorrect="off" aria-describedby="editor-hint"></textarea>
-        </div>
-      </section>
+      <div id="top-pane" class="top-pane">
+        <section id="editor-pane" class="editor-pane" aria-labelledby="editor-title">
+          <div class="pane-header">
+            <span id="editor-title">Input</span>
+            <span id="editor-hint">Code · Strg/⌘+Enter zum Ausführen</span>
+          </div>
+          <div class="editor-wrap">
+            <pre id="highlight" class="highlight" aria-hidden="true"></pre>
+            <label class="sr-only" for="source">Code-Editor</label>
+            <textarea id="source" spellcheck="false" autocapitalize="off"
+              autocomplete="off" autocorrect="off" aria-describedby="editor-hint"></textarea>
+          </div>
+        </section>
+
+        <div id="editor-splitter" class="column-splitter" role="separator" tabindex="0"
+          aria-label="Breite von Code und Daten ändern" aria-orientation="vertical"
+          aria-valuemin="120" aria-valuemax="700" aria-valuenow="500"
+          title="Ziehen oder Pfeiltasten verwenden"><span></span></div>
+
+        <section id="data-pane" class="data-pane" aria-labelledby="data-title">
+          <div class="pane-header">
+            <span id="data-title">Daten</span>
+            <span id="data-hint">JSON-Daten · @data</span>
+          </div>
+          <div class="editor-wrap">
+            <pre id="data-highlight" class="highlight" aria-hidden="true"></pre>
+            <label class="sr-only" for="data-source">Daten-Editor</label>
+            <textarea id="data-source" spellcheck="false" autocapitalize="off"
+              autocomplete="off" autocorrect="off" aria-describedby="data-hint"></textarea>
+          </div>
+        </section>
+      </div>
 
       <div id="splitter" class="splitter" role="separator" tabindex="0"
         aria-label="Größe der Ausgabe ändern" aria-orientation="horizontal"
