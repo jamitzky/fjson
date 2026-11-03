@@ -47,6 +47,24 @@ button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:fo
 .toolbar select { min-width: 160px; max-width: 200px; border: 1px solid #434b59;
   border-radius: .3rem; padding: .32rem .5rem; background: #242831;
   color: #d8dce5; font-size: .73rem; }
+.showcase-menu { position: relative; flex: 0 0 auto; }
+.showcase-menu > button { border: 1px solid #434b59; background: #242831;
+  color: #dce6f0; font-weight: 600; }
+.showcase-menu > button[aria-expanded="true"] { background: #34414d; }
+.menu-popup { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0;
+  width: min(440px, calc(100vw - 24px)); max-height: min(70vh, 580px);
+  overflow: auto; padding: .35rem; border: 1px solid #4b5867;
+  border-radius: .45rem; background: #252c36; box-shadow: 0 12px 30px #0009; }
+.menu-popup[hidden] { display: none; }
+.menu-popup details { border-bottom: 1px solid #37414e; }
+.menu-popup details:last-child { border-bottom: 0; }
+.menu-popup summary { cursor: pointer; padding: .65rem .55rem;
+  color: #b9d8ec; font-size: .77rem; font-weight: 700; }
+.menu-popup button { display: block; width: 100%; text-align: left;
+  padding: .48rem .7rem .48rem 1.55rem; border-radius: .3rem;
+  color: #d5dce6; font-size: .74rem; line-height: 1.35; }
+.menu-popup button:hover, .menu-popup button:focus-visible {
+  background: #39566a; color: white; }
 .toolbar-spacer, .status-spacer { flex: 1; }
 .tabs { display: flex; align-items: stretch; overflow-x: auto; scrollbar-width: thin;
   background: #252a33; border-bottom: 1px solid #343a46; }
@@ -177,30 +195,16 @@ button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:fo
       <button id="save" type="button" title="Aktiven Tab speichern (Strg/⌘+S)">Speichern</button>
       <input id="file-input" class="sr-only" type="file" accept=".json,application/json">
       <span class="toolbar-divider" aria-hidden="true"></span>
-      <label for="example">Beispiel</label>
-      <select id="example">
-        <optgroup label="Grundlagen">
-          <option value="inc">Funktion · +1</option>
-          <option value="defaults">Standardwert</option>
-          <option value="logic">Logische Suche</option>
-          <option value="recursion">Rekursion</option>
-          <option value="quote">Zitat als Daten</option>
-          <option value="data">Mit @data arbeiten</option>
-        </optgroup>
-        <optgroup label="Fred · relationale JSON-Logik">
-          <option value="fred_match">Teilmuster · Name und Stadt</option>
-          <option value="fred_phone">Büronummern · @membero</option>
-          <option value="fred_email">Arbeits-E-Mails · verschachtelte Arrays</option>
-          <option value="fred_path">Pfad nach London · @patho</option>
-          <option value="fred_adult">Volljährig · @guard und @ge</option>
-          <option value="fred_cities">Zwei Städte · @neqo</option>
-          <option value="fred_project">Alter + 1 · @project</option>
-          <option value="fred_graph_city">Graphpfad · Winchester</option>
-          <option value="fred_graph_edges">Graphkanten · Adresse</option>
-          <option value="fred_graph_phone">Graphmuster · Büronummern</option>
-          <option value="fred_graph_rule">Graphregel · volljährig</option>
-        </optgroup>
-      </select>
+      <div id="code-menu" class="showcase-menu">
+        <button id="code-menu-button" type="button" aria-expanded="false"
+          aria-controls="code-menu-content">Beispiele ▾</button>
+        <div id="code-menu-content" class="menu-popup" hidden></div>
+      </div>
+      <div id="shell-menu" class="showcase-menu">
+        <button id="shell-menu-button" type="button" aria-expanded="false"
+          aria-controls="shell-menu-content">Shell-Snippets ▾</button>
+        <div id="shell-menu-content" class="menu-popup" hidden></div>
+      </div>
       <span class="toolbar-spacer"></span>
       <button id="reset" type="button" title="Interpreter-Sitzung zurücksetzen">Sitzung zurücksetzen</button>
     </div>
@@ -893,12 +897,41 @@ class Interpreter {
         throw new EvaluationError(`${name} produced a number outside the safe range`);
       return result;
     });
+    const unary = (name, fn) => new Native(name, 1, value => {
+      const result = fn(number(value, name));
+      if (!Number.isFinite(result) ||
+          (Number.isInteger(result) && !Number.isSafeInteger(result)))
+        throw new EvaluationError(`${name} produced a number outside the safe range`);
+      return result;
+    });
     for (const [name, fn] of [
       ['@plus', (a, b) => a + b], ['@minus', (a, b) => a - b],
       ['@times', (a, b) => a * b], ['@divide', (a, b) => a / b],
+      ['@pow', (a, b) => a ** b], ['@min', Math.min], ['@max', Math.max],
     ]) this.global.values.set(name, binary(name, fn));
+    for (const [name, fn] of [
+      ['@negate', a => -a], ['@abs', Math.abs], ['@floor', Math.floor],
+      ['@ceil', Math.ceil], ['@trunc', Math.trunc],
+      ['@round', a => Math.sign(a) * Math.floor(Math.abs(a) + 0.5)],
+      ['@sqrt', Math.sqrt],
+    ]) this.global.values.set(name, unary(name, fn));
+    this.global.values.set('@mod', new Native('@mod', 2, (a, b) => {
+      if (!Number.isSafeInteger(a) || !Number.isSafeInteger(b))
+        throw new EvaluationError('@mod expects integers');
+      if (b === 0) throw new EvaluationError('@mod division by zero');
+      let result = a % b;
+      if (result !== 0 && (result > 0) !== (b > 0)) result += b;
+      return result;
+    }));
+    this.global.values.set('@lt', new Native('@lt', 2, (a, b) =>
+      number(a, '@lt') < number(b, '@lt')));
     this.global.values.set('@le', new Native('@le', 2, (a, b) =>
       number(a, '@le') <= number(b, '@le')));
+    this.global.values.set('@gt', new Native('@gt', 2, (a, b) =>
+      number(a, '@gt') > number(b, '@gt')));
+    this.global.values.set('@gte', new Native('@gte', 2, (a, b) =>
+      number(a, '@gte') >= number(b, '@gte')));
+    this.global.values.set('@not', new Native('@not', 1, value => !truthy(value)));
     this.global.values.set('@eq', new Native('@eq', 2, jsonEqual));
     this.global.values.set('@get', new Native('@get', 2, (container, key) => {
       if (Array.isArray(container) && Number.isSafeInteger(key)) {
@@ -912,6 +945,40 @@ class Interpreter {
       if (Array.isArray(value)) return value.length;
       if (isRecord(value)) return keys(value).length;
       throw new EvaluationError('@length expects an array or object');
+    }));
+    this.global.values.set('@range', new Native('@range', [1, 2, 3], (...args) => {
+      if (args.some(value => !Number.isSafeInteger(value)))
+        throw new EvaluationError('@range expects integers');
+      const [start, stop, stride] = args.length === 1 ? [0, args[0], 1] :
+        args.length === 2 ? [args[0], args[1], 1] : args;
+      if (stride === 0) throw new EvaluationError('@range step must not be zero');
+      const result = [];
+      for (let value = start; stride > 0 ? value < stop : value > stop; value += stride) {
+        this.tick(0);
+        if (!Number.isSafeInteger(value)) throw new EvaluationError('@range exceeded safe integer range');
+        result.push(value);
+      }
+      return result;
+    }));
+    const sequenceArgs = (name, fn, items, arity) => {
+      if (!(fn instanceof Native || fn instanceof Closure) || !Array.isArray(items))
+        throw new EvaluationError(`${name} expects a function and an array`);
+      if (!this.accepts(fn, arity))
+        throw new ArityError(`${name} callback must accept ${arity} arguments`);
+    };
+    this.global.values.set('@map', new Native('@map', 2, (fn, items) => {
+      sequenceArgs('@map', fn, items, 1);
+      return items.map(item => this.invoke(fn, [item], 0));
+    }));
+    this.global.values.set('@filter', new Native('@filter', 2, (fn, items) => {
+      sequenceArgs('@filter', fn, items, 1);
+      return items.filter(item => truthy(this.invoke(fn, [item], 0)));
+    }));
+    this.global.values.set('@reduce', new Native('@reduce', 3, (fn, items, initial) => {
+      sequenceArgs('@reduce', fn, items, 2);
+      let result = initial;
+      for (const item of items) result = this.invoke(fn, [result, item], 0);
+      return result;
     }));
     this.global.values.set('@unify', new Native('@unify', 2, (a, b) => new UnifyGoal(a, b)));
     this.global.values.set('@match', new Native('@match', 2, (data, pattern) =>
@@ -1106,14 +1173,12 @@ class Interpreter {
   }
 }
 
+// Every lesson is executable fjson. @kommentar and @tipp are ordinary
+// declarations, so the source remains valid JSON without a comment syntax.
 
 const fredData = {
-  FirstName: 'Fred',
-  Surname: 'Smith',
-  Age: 28,
-  Address: {
-    Street: 'Hursley Park', City: 'Winchester', Postcode: 'SO21 2JN',
-  },
+  FirstName: 'Fred', Surname: 'Smith', Age: 28,
+  Address: { Street: 'Hursley Park', City: 'Winchester', Postcode: 'SO21 2JN' },
   Phone: [
     { type: 'home', number: '0203 544 1234' },
     { type: 'office', number: '01962 001234' },
@@ -1125,65 +1190,130 @@ const fredData = {
     { type: 'home', address: ['freddy@my-social.com', 'frederic.smith@very-serious.com'] },
   ],
   Other: {
-    'Over 18 ?': true,
-    Misc: null,
-    'Alternative.Address': {
-      Street: 'Brick Lane', City: 'London', Postcode: 'E1 6RF',
-    },
+    'Over 18 ?': true, Misc: null,
+    'Alternative.Address': { Street: 'Brick Lane', City: 'London', Postcode: 'E1 6RF' },
   },
 };
 
-const examples = {
-  inc: ['@let', { '@inc': ['@function', ['@x'], ['@plus', '@x', 1]] }, ['@inc', 41]],
-  defaults: ['@let', { '@inc': ['@function', { '@x': 1 }, ['@plus', '@x', 1]] },
-    ['@plus', ['@inc'], ['@inc', 41]]],
-  logic: ['@run', 2, '!X', ['@choice',
-    ['@unify', '!X', 'alice'], ['@unify', '!X', 'bob']]],
-  recursion: ['@letrec', { '@factorial': ['@function', ['@n'],
-    ['@if', ['@le', '@n', 1], 1,
-      ['@times', '@n', ['@factorial', ['@minus', '@n', 1]]]]] },
-  ['@factorial', 5]],
-  quote: ['@quote', { '@message': ['@plus', 40, 2], symbol: '!X' }],
-  data: ['@plus', ['@get', '@data', 'answer'], 1],
-  fred_match: ['@run', 1, { name: '!First', surname: '!Last' },
-    ['@match', '@data', { FirstName: '!First', Surname: '!Last',
-      Address: { City: 'Winchester' } }]],
-  fred_phone: ['@run', 10, '!Number', ['@conj',
-    ['@patho', '@data', ['Phone'], '!Phones'],
-    ['@membero', '!Phones', { type: 'office', number: '!Number' }]]],
-  fred_email: ['@run', 10, '!Address', ['@conj',
-    ['@patho', '@data', ['Email'], '!Emails'],
-    ['@conj', ['@membero', '!Emails', { type: 'work', address: '!Addresses' }],
-      ['@membero', '!Addresses', '!Address']]]],
-  fred_path: ['@run', 1, '!Path', ['@patho', '@data', '!Path', 'London']],
-  fred_adult: ['@run', 1, '!Age', ['@conj',
-    ['@guard', ['@ge', '!Age', 18]],
-    ['@match', '@data', { Age: '!Age' }]]],
-  fred_cities: ['@run', 1,
-    { person: '!Name', main_city: '!City1', alternative_city: '!City2' },
-    ['@conj', ['@neqo', '!City1', '!City2'],
-      ['@match', '@data', { FirstName: '!Name',
-        Address: { City: '!City1' },
-        Other: { 'Alternative.Address': { City: '!City2' } } }]]],
-  fred_project: ['@run', 1, '!Next', ['@conj',
-    ['@project', '@plus', ['!Age', 1], '!Next'],
-    ['@match', '@data', { Age: '!Age' }]]],
-  fred_graph_city: ['@let', { '@g': ['@graph', '@data'] },
-    ['@run', 1, '!City', ['@patho', '@g', ['Address', 'City'], '!City']]],
-  fred_graph_edges: ['@let', { '@g': ['@graph', '@data'] },
-    ['@run', 1, '!City', ['@conj',
-      ['@edgeo', '@g', 'Address', '!Address'],
-      ['@edgeo', '!Address', 'City', '!City']]]],
-  fred_graph_phone: ['@let', { '@g': ['@graph', '@data'] },
-    ['@run', 10, '!Number', ['@matcho', '@g',
-      ['@record', { Phone: ['@some',
-        ['@record', { type: 'office', number: '!Number' }]] }]]]],
-  fred_graph_rule: ['@let', {
-    '@adult': ['@function', ['@person', '@age'],
-      ['@conj', ['@edgeo', '@person', 'Age', '@age'], ['@ge', '@age', 18]]],
-    '@g': ['@graph', '@data'],
-  }, ['@run', 1, '!Age', ['@adult', '@g', '!Age']]],
+const refsData = {
+  people: [{ id: 'person:fred', name: 'Fred Smith', employer: { '$ref': 'company:acme' } }],
+  companies: [{ id: 'company:acme', name: 'ACME', office: { City: 'Winchester' } }],
 };
+
+const lesson = (id, title, note, program, expected, data = null, tip = null) =>
+  ({ id, title, note, program, expected, data, tip });
+const fizzLabel = ['@if', ['@eq', ['@mod', '@n', 15], 0], 'FizzBuzz',
+  ['@if', ['@eq', ['@mod', '@n', 3], 0], 'Fizz',
+    ['@if', ['@eq', ['@mod', '@n', 5], 0], 'Buzz', '@n']]];
+
+const showcaseGroups = [
+  { title: '01 · Einstieg und JSON', lessons: [
+    lesson('hello', 'Hallo, JSON!', 'Ein gewöhnlicher String ist bereits ein vollständiges fjson-Programm.', 'Hallo fjson!', 'Hallo fjson!'),
+    lesson('literal_array', 'Datenarray', 'Ein Array ohne @-Funktionsnamen an erster Stelle wird als Datenarray ausgewertet.', [1, 'zwei', true, null], [1, 'zwei', true, null]),
+    lesson('declarations', 'Globale Deklaration', 'Ein Objekt mit @-Schlüsseln bindet Namen. Der letzte Wert ist das Ergebnis.', { '@x': 40, '@antwort': ['@plus', '@x', 2] }, 42),
+    lesson('let_local', '@let · lokal', '@let bindet Werte nur für seinen Rumpf.', ['@let', { '@preis': 19, '@anzahl': 3 }, ['@times', '@preis', '@anzahl']], 57),
+    lesson('quote_name', '@quote · Bezeichner als Daten', '@quote verhindert die Auflösung von @namen und !Variablen.', ['@quote', ['@unbekannt', '!X']], ['@unbekannt', '!X']),
+    lesson('quote_object', '@quote · Deklarationsobjekt als Daten', 'Ohne @quote wäre dieses Objekt eine Deklaration.', ['@quote', { '@farbe': 'blau' }], { '@farbe': 'blau' }),
+    lesson('get_data', '@get · Daten lesen', '@data bezeichnet den Inhalt des rechten Daten-Editors.', ['@plus', ['@get', '@data', 'answer'], 1], 42),
+    lesson('length', '@length · zählen', '@length zählt die Elemente eines Arrays oder die Felder eines Objekts.', ['@length', ['@get', '@data', 'items']], 3),
+  ] },
+  { title: '02 · Funktionen und Bindungen', lessons: [
+    lesson('function_inc', '@function · Inkrement', 'Eine Funktion ist ein Wert. @let gibt ihr hier den Namen @inc.', ['@let', { '@inc': ['@function', ['@x'], ['@plus', '@x', 1]] }, ['@inc', 41]], 42),
+    lesson('function_defaults', '@function · Standardwert', 'Ein Parameterobjekt legt Standardwerte fest; Aufrufe dürfen sie überschreiben.', ['@let', { '@inc': ['@function', { '@x': 1 }, ['@plus', '@x', 1]] }, ['@plus', ['@inc'], ['@inc', 41]]], 44),
+    lesson('closure', 'Lexikalische Closure', 'Die Funktion merkt sich @basis aus der Umgebung ihrer Definition.', ['@let', { '@basis': 40, '@addiere': ['@function', ['@x'], ['@plus', '@basis', '@x']] }, ['@addiere', 2]], 42),
+    lesson('higher_order', 'Funktion als Argument', '@map erhält eine Funktion als normalen Wert.', ['@let', { '@doppelt': ['@function', ['@x'], ['@times', '@x', 2]] }, ['@map', '@doppelt', [1, 2, 3]]], [2, 4, 6]),
+    lesson('apply_native', '@apply · Argumentliste', '@apply ruft eine Funktion mit einer bereits erzeugten Argumentliste auf.', ['@apply', '@plus', [20, 22]], 42),
+    lesson('apply_closure', '@apply · eigene Funktion', '@apply funktioniert genauso mit einer fjson-Closure.', ['@apply', ['@function', ['@x'], ['@times', '@x', 2]], [21]], 42),
+    lesson('letrec_factorial', '@letrec · Fakultät', '@letrec erlaubt der Funktion, sich im eigenen Rumpf aufzurufen.', ['@letrec', { '@fak': ['@function', ['@n'], ['@if', ['@le', '@n', 1], 1, ['@times', '@n', ['@fak', ['@minus', '@n', 1]]]]] }, ['@fak', 5]], 120),
+    lesson('letrec_even', '@letrec · gegenseitige Rekursion', 'Zwei Funktionen können sich mit @letrec gegenseitig aufrufen.', ['@letrec', {
+      '@gerade': ['@function', ['@n'], ['@if', ['@le', '@n', 0], true, ['@ungerade', ['@minus', '@n', 1]]]],
+      '@ungerade': ['@function', ['@n'], ['@if', ['@le', '@n', 0], false, ['@gerade', ['@minus', '@n', 1]]]],
+    }, ['@gerade', 8]], true),
+  ] },
+  { title: '03 · Entscheidungen und Fehler', lessons: [
+    lesson('if_positive', '@if · verzweigen', 'Nur der gewählte Zweig wird ausgewertet.', ['@if', ['@gt', 7, 0], 'positiv', 'nicht positiv'], 'positiv'),
+    lesson('if_even', '@if · gerade Zahl', '@mod liefert bei ganzen Zahlen den Rest; @eq vergleicht JSON-Werte.', ['@if', ['@eq', ['@mod', 42, 2], 0], 'gerade', 'ungerade'], 'gerade'),
+    lesson('and_short', '@and · Kurzschluss', '@and stoppt beim ersten falschen Wert. @unbekannt wird nicht aufgelöst.', ['@and', 0, '@unbekannt'], 0),
+    lesson('and_values', '@and · alle Bedingungen', 'Sind alle Werte wahr, liefert @and den letzten Operanden.', ['@and', ['@gt', 5, 2], ['@lt', 5, 8], 'beide erfüllt'], 'beide erfüllt'),
+    lesson('or_fallback', '@or · Ersatzwert', '@or liefert den ersten wahren Wert, hier 42.', ['@or', 0, '', 42], 42),
+    lesson('or_short', '@or · Kurzschluss', '@or wertet spätere Operanden nach einem wahren Wert nicht mehr aus.', ['@or', 'gefunden', '@unbekannt'], 'gefunden'),
+    lesson('not', '@not · umkehren', '@not ist eine reine Bibliotheksfunktion für die Wahrheit eines Wertes.', ['@not', []], true),
+    lesson('try_fallback', '@try · Fehler abfangen', '@try fängt einen Auswertungsfehler und wertet dann den Ersatz aus.', ['@try', ['@get', { answer: 42 }, 'missing'], 42], 42),
+    lesson('try_report', '@try · Fehlerobjekt', 'Ohne Ersatz gibt @try ein Objekt mit Fehlertyp und Meldung zurück.', ['@try', '@unbekannt'], { error: 'ResolutionError', message: 'unknown reference: @unbekannt' }),
+  ] },
+  { title: '04 · Arithmetik', lessons: [
+    lesson('arithmetic', '+ − × ÷', 'Die vier Grundrechenarten sind normale Funktionen und lassen sich verschachteln.', ['@divide', ['@plus', ['@times', 6, 7], 2], 2], 22),
+    lesson('power_sqrt', 'Potenz und Wurzel', '@pow berechnet Potenzen, @sqrt die nichtnegative Quadratwurzel.', ['@sqrt', ['@pow', 12, 2]], 12),
+    lesson('modulo', 'Modulo mit negativen Zahlen', '@mod arbeitet mit ganzen Zahlen; der Rest folgt dem Vorzeichen des Divisors.', ['@mod', -7, 3], 2),
+    lesson('rounding', 'Runden und Abschneiden', '@floor, @ceil, @trunc und @round unterscheiden sich bei negativen Werten.', [['@floor', -2.7], ['@ceil', -2.7], ['@trunc', -2.7], ['@round', -2.5]], [-3, -2, -2, -3]),
+    lesson('minmax', 'Minimum und Maximum', '@min und @max vergleichen zwei Zahlen.', ['@minus', ['@max', 12, 7], ['@min', 12, 7]], 5),
+    lesson('absolute', 'Betrag und Vorzeichen', '@abs liefert einen Betrag; @negate wechselt das Vorzeichen.', ['@plus', ['@abs', -9], ['@negate', 2]], 7),
+    lesson('comparisons', 'Zahlen vergleichen', '@lt, @le, @gt und @gte liefern boolesche Werte. @ge gehört dagegen zur verzögerten Logik.', [['@lt', 2, 3], ['@le', 3, 3], ['@gt', 4, 3], ['@gte', 3, 3]], [true, true, true, true]),
+  ] },
+  { title: '05 · Bereiche und Listen', lessons: [
+    lesson('range_simple', '@range · 0 bis n−1', '@range mit einem Argument beginnt bei null; das Ende ist exklusiv.', ['@range', 5], [0, 1, 2, 3, 4]),
+    lesson('range_steps', '@range · Schrittweite', 'Start, exklusives Ende und Schrittweite können ausdrücklich angegeben werden.', ['@range', 2, 11, 2], [2, 4, 6, 8, 10]),
+    lesson('range_backwards', '@range · rückwärts', 'Mit negativer Schrittweite kann ein Bereich absteigen.', ['@range', 5, 0, -1], [5, 4, 3, 2, 1]),
+    lesson('map_squares', '@map · Quadrate', '@map ruft die Funktion für jedes Element auf und sammelt die Ergebnisse.', ['@map', ['@function', ['@x'], ['@times', '@x', '@x']], ['@range', 1, 6]], [1, 4, 9, 16, 25]),
+    lesson('map_rows', '@map · Objekte bauen', 'Eine Funktion darf für jedes Element ein neues JSON-Objekt erzeugen.', ['@map', ['@function', ['@n'], { number: '@n', square: ['@times', '@n', '@n'] }], ['@range', 1, 4]], [{ number: 1, square: 1 }, { number: 2, square: 4 }, { number: 3, square: 9 }]),
+    lesson('filter_even', '@filter · gerade Zahlen', '@filter behält ein Element, wenn die Funktion einen wahren Wert liefert.', ['@filter', ['@function', ['@n'], ['@eq', ['@mod', '@n', 2], 0]], ['@range', 1, 11]], [2, 4, 6, 8, 10]),
+    lesson('reduce_sum', '@reduce · Summe', '@reduce erhält eine Funktion, ein Array und einen Anfangswert.', ['@reduce', '@plus', ['@range', 1, 6], 0], 15),
+    lesson('reduce_product', '@reduce · Produkt', 'Mit @times statt @plus wird aus derselben Struktur ein Produkt.', ['@reduce', '@times', ['@range', 1, 6], 1], 120),
+    lesson('reduce_average', 'Mittelwert', 'map/filter/reduce lassen sich wie gewöhnliche Funktionsaufrufe verschachteln.', ['@let', { '@zahlen': ['@range', 1, 6] }, ['@divide', ['@reduce', '@plus', '@zahlen', 0], ['@length', '@zahlen']]], 3),
+    lesson('map_filter_reduce', 'Quadratsumme gerader Zahlen', 'Eine kleine Datenpipeline ohne zusätzliche Sprachsyntax.', ['@reduce', '@plus', ['@map', ['@function', ['@n'], ['@times', '@n', '@n']], ['@filter', ['@function', ['@n'], ['@eq', ['@mod', '@n', 2], 0]], ['@range', 1, 7]]], 0], 56),
+    lesson('fizzbuzz', 'FizzBuzz mit @map', 'Eine klassische Transformation: @map erzeugt für jede Zahl einen Wert, @if wählt die Beschriftung.',
+      ['@map', ['@function', ['@n'], fizzLabel], ['@range', 1, 16]],
+      [1, 2, 'Fizz', 4, 'Buzz', 'Fizz', 7, 8, 'Fizz', 'Buzz', 11, 'Fizz', 13, 14, 'FizzBuzz']),
+    lesson('fred_office_pipeline', 'Freds Büronummern ohne Logik', '@filter und @map können denselben Datensatz auch funktional abfragen.', ['@map',
+      ['@function', ['@phone'], ['@get', '@phone', 'number']],
+      ['@filter', ['@function', ['@phone'], ['@eq', ['@get', '@phone', 'type'], 'office']],
+        ['@get', '@data', 'Phone']]], ['01962 001234', '01962 001235'], 'fred'),
+  ] },
+  { title: '06 · Logik und JSON-Daten', lessons: [
+    lesson('logic_unify', '@unify · Variable binden', '@run löst ein Goal und ersetzt !X im Ergebnis durch seinen gebundenen Wert.', ['@run', 1, '!X', ['@unify', '!X', 42]], [42]),
+    lesson('logic_choice', '@choice · Alternativen', 'Jede Alternative kann eine eigene Lösung liefern.', ['@run', 2, '!X', ['@choice', ['@unify', '!X', 'Alice'], ['@unify', '!X', 'Bob']]], ['Alice', 'Bob']),
+    lesson('logic_match', '@match · Teilobjekt', 'Nicht genannte Felder im Datensatz stören das Muster nicht.', ['@run', 1, '!Name', ['@match', '@data', { FirstName: '!Name', Address: { City: 'Winchester' } }]], ['Fred'], 'fred'),
+    lesson('logic_member', '@membero · Arrayelemente', '@membero durchsucht ein Array relational.', ['@run', 4, '!N', ['@membero', [3, 5, 7], '!N']], [3, 5, 7]),
+    lesson('logic_path_forward', '@patho · Wert finden', 'Ein bekannter Pfad liefert den Wert an dieser Stelle.', ['@run', 1, '!City', ['@patho', '@data', ['Address', 'City'], '!City']], ['Winchester'], 'fred'),
+    lesson('logic_path_reverse', '@patho · Pfad finden', 'Ein unbekannter Pfad kann durch einen bekannten Wert gefunden werden.', ['@run', 1, '!Path', ['@patho', '@data', '!Path', 'London']], [['Other', 'Alternative.Address', 'City']], 'fred'),
+    lesson('logic_constraint', '@neqo und @ge · verzögert', 'Constraints bleiben erhalten, bis !Age durch das Muster gebunden ist.', ['@run', 1, '!Age', ['@conj', ['@neqo', '!Age', 17], ['@conj', ['@guard', ['@ge', '!Age', 18]], ['@match', '@data', { Age: '!Age' }]]]], [28], 'fred'),
+    lesson('logic_project', '@project · berechnen', '@project übergibt gebundene Logikwerte an eine gewöhnliche Funktion.', ['@run', 1, '!Next', ['@conj', ['@project', '@plus', ['!Age', 1], '!Next'], ['@match', '@data', { Age: '!Age' }]]], [29], 'fred'),
+  ] },
+  { title: '07 · JSON als Graph', lessons: [
+    lesson('graph_edge', '@edgeo · direkte Kante', 'Objektschlüssel und Arrayindizes sind Kanten. Ein Graphknoten bleibt als Handle erhalten.', ['@let', { '@g': ['@graph', '@data'] }, ['@run', 1, '!City', ['@conj', ['@edgeo', '@g', 'Address', '!A'], ['@edgeo', '!A', 'City', '!City']]]], ['Winchester'], 'fred'),
+    lesson('graph_matcho', '@matcho · mehrere Büronummern', '@record prüft Teilobjekte; @some liefert für jedes passende Arrayelement eine Lösung.', ['@run', 10, '!Number', ['@matcho', '@data', ['@record', { Phone: ['@some', ['@record', { type: 'office', number: '!Number' }]] }]]], ['01962 001234', '01962 001235'], 'fred'),
+    lesson('graph_node', '@nodeo · ID nachschlagen', '@nodeo findet einen Knoten anhand seines id-Feldes.', ['@let', { '@g': ['@graph', '@data'] }, ['@run', 1, '!Name', ['@conj', ['@nodeo', '@g', 'company:acme', '!Company'], ['@edgeo', '!Company', 'name', '!Name']]]], ['ACME'], 'refs'),
+    lesson('graph_refs', '@graph · Referenzen folgen', 'Nur {"refs":true} macht aus $ref eine Kante zum Zielobjekt.', ['@let', { '@g': ['@graph', '@data', { refs: true }] }, ['@run', 1, '!City', ['@conj', ['@nodeo', '@g', 'person:fred', '!Person'], ['@patho', '!Person', ['employer', 'office', 'City'], '!City']]]], ['Winchester'], 'refs'),
+  ] },
+];
+
+function lessonSource(item) {
+  const source = { '@kommentar': 'Hinweis: ' + item.note };
+  if (item.tip) source['@tipp'] = 'Tipp: ' + item.tip;
+  source['@ergebnis'] = item.program;
+  return source;
+}
+
+const shellGroups = [
+  { title: 'Schnell rechnen', snippets: [
+    { title: '40 + 2', source: ['@plus', 40, 2], expected: 42 },
+    { title: 'Quadratwurzel', source: ['@sqrt', 144], expected: 12 },
+    { title: 'Modulo', source: ['@mod', -7, 3], expected: 2 },
+    { title: 'Runden', source: ['@round', 2.5], expected: 3 },
+    { title: 'Bereich', source: ['@range', 1, 6], expected: [1, 2, 3, 4, 5] },
+  ] },
+  { title: 'Listen', snippets: [
+    { title: 'Summe', source: ['@reduce', '@plus', [1, 2, 3, 4], 0], expected: 10 },
+    { title: 'Quadrate', source: ['@map', ['@function', ['@x'], ['@times', '@x', '@x']], [1, 2, 3]], expected: [1, 4, 9] },
+    { title: 'Gerade Zahlen', source: ['@filter', ['@function', ['@x'], ['@eq', ['@mod', '@x', 2], 0]], [1, 2, 3, 4]], expected: [2, 4] },
+  ] },
+  { title: 'Daten und Logik', snippets: [
+    { title: '@data lesen', source: ['@get', '@data', 'answer'], expected: 41 },
+    { title: 'Fred: Stadt', source: ['@get', ['@get', '@data', 'Address'], 'City'], expected: 'Winchester', data: 'fred' },
+    { title: 'Zwei Lösungen', source: ['@run', 2, '!X', ['@choice', ['@unify', '!X', 'ja'], ['@unify', '!X', 'nein']]], expected: ['ja', 'nein'] },
+  ] },
+];
+
 
 const byId = id => document.querySelector('#' + id);
 const editor = byId('source');
@@ -1205,7 +1335,12 @@ const editorTitle = byId('editor-title');
 const editorHint = byId('editor-hint');
 const dataTitle = byId('data-title');
 const dataHint = byId('data-hint');
-const example = byId('example');
+const codeMenu = byId('code-menu');
+const codeMenuButton = byId('code-menu-button');
+const codeMenuContent = byId('code-menu-content');
+const shellMenu = byId('shell-menu');
+const shellMenuButton = byId('shell-menu-button');
+const shellMenuContent = byId('shell-menu-content');
 const fileInput = byId('file-input');
 const workarea = byId('workarea');
 const lowerPane = byId('lower-pane');
@@ -1398,7 +1533,7 @@ function addTab(kind, initial = false) {
     binding: kind === 'data' ? '@data' + (number === 1 ? '' : number) : null,
     content: kind === 'data' ? (number === 1
       ? '{\n  "answer": 41,\n  "items": [1, 2, 3]\n}' : '{}') :
-      initial ? formatExample(examples.inc) : '["@plus", 1, 2]',
+      initial ? formatExample(lessonSource(showcaseGroups[1].lessons[0])) : '["@plus", 1, 2]',
     filename: null,
     dirty: false,
   };
@@ -1657,22 +1792,85 @@ byId('reset').addEventListener('click', () => {
   clearOutput();
   setStatus('Neue Interpreter-Sitzung');
 });
-example.addEventListener('change', () => {
+function closeMenu(content, button) {
+  content.hidden = true;
+  button.setAttribute('aria-expanded', 'false');
+}
+
+function toggleMenu(content, button, otherContent, otherButton) {
+  const opening = content.hidden;
+  closeMenu(otherContent, otherButton);
+  content.hidden = !opening;
+  button.setAttribute('aria-expanded', String(opening));
+}
+
+function loadDemoData(preset) {
+  if (!preset) return;
+  const data = tabs.find(tab => tab.binding === '@data') ?? addTab('data');
+  data.binding = '@data';
+  data.label = preset === 'fred' ? 'Fred · Daten' : 'Referenzen · Daten';
+  data.filename = preset === 'fred' ? 'fred.json' : 'graph_refs.json';
+  data.content = formatExample(preset === 'fred' ? fredData : refsData);
+  data.dirty = true;
+  activateTab(data);
+}
+
+function loadLesson(item) {
   const code = selectedCode ?? addTab('code');
-  if (example.value.startsWith('fred_')) {
-    const data = tabs.find(tab => tab.binding === '@data') ?? addTab('data');
-    data.binding = '@data';
-    data.label = 'Fred · Daten';
-    data.filename = 'fred.json';
-    data.content = formatExample(fredData);
-    data.dirty = true;
-    activateTab(data);
-  }
-  code.content = formatExample(examples[example.value]);
+  loadDemoData(item.data);
+  code.content = formatExample(lessonSource(item));
   code.dirty = true;
   activateTab(code);
-  setStatus(example.value.startsWith('fred_') ?
-    'Fred-Beispiel geladen · @data ersetzt' : 'Beispiel geladen');
+  closeMenu(codeMenuContent, codeMenuButton);
+  setStatus(item.title + ' geladen' + (item.data ? ' · @data ersetzt' : ''));
+}
+
+function loadSnippet(item) {
+  loadDemoData(item.data);
+  shellSource.value = formatExample(item.source);
+  updateShell();
+  closeMenu(shellMenuContent, shellMenuButton);
+  setStatus(item.title + ' in die Shell eingefügt' +
+    (item.data ? ' · @data ersetzt' : ''));
+  shellSource.focus?.();
+}
+
+function fillMenu(content, groups, itemsKey, onChoose) {
+  content.replaceChildren();
+  content.hidden = true;
+  for (const group of groups) {
+    const section = document.createElement('details');
+    const heading = document.createElement('summary');
+    heading.textContent = group.title;
+    section.append(heading);
+    for (const item of group[itemsKey]) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = item.title;
+      button.title = item.note ?? item.title;
+      button.dataset.example = item.id ?? item.title;
+      button.addEventListener('click', () => onChoose(item));
+      section.append(button);
+    }
+    content.append(section);
+  }
+}
+
+fillMenu(codeMenuContent, showcaseGroups, 'lessons', loadLesson);
+fillMenu(shellMenuContent, shellGroups, 'snippets', loadSnippet);
+codeMenuButton.addEventListener('click', () => toggleMenu(
+  codeMenuContent, codeMenuButton, shellMenuContent, shellMenuButton));
+shellMenuButton.addEventListener('click', () => toggleMenu(
+  shellMenuContent, shellMenuButton, codeMenuContent, codeMenuButton));
+document.addEventListener?.('click', event => {
+  if (!codeMenu.contains(event.target)) closeMenu(codeMenuContent, codeMenuButton);
+  if (!shellMenu.contains(event.target)) closeMenu(shellMenuContent, shellMenuButton);
+});
+document.addEventListener?.('keydown', event => {
+  if (event.key === 'Escape') {
+    closeMenu(codeMenuContent, codeMenuButton);
+    closeMenu(shellMenuContent, shellMenuButton);
+  }
 });
 editor.addEventListener('input', () => {
   selectedCode.content = editor.value;
