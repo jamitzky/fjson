@@ -51,6 +51,10 @@ Der Rumpf wird erst beim Aufruf ausgeführt. Funktionen sind Werte: Sie können 
 Statt einer Parameterliste darf \`@function\` ein Objekt verwenden. Der Wert zu jedem Parameternamen ist sein Standardausdruck. Im Beispiel funktioniert \`@inc\` mit und ohne Argument.
 
 Standardausdrücke werden **bei der Erzeugung der Funktion** ausgewertet, nicht bei jedem Aufruf. Ein einzelner Parameterstring wie \`"@x"\` ist keine gültige Parameterspezifikation.`),
+    step('tour_list', 'Arrays aus Werten bauen', 'list_ast', `
+Ein gewöhnliches Array mit einem Namen an erster Stelle wäre ein Aufruf. **@list** nimmt dagegen beliebig viele bereits ausgewertete Argumente und erzeugt daraus ein Datenarray. Auch null Argumente sind erlaubt.
+
+Hier wird der Funktionsname mit @quote als Datenwert festgehalten und zusammen mit dem Wert von @x in ein neues Array gesetzt. So kann fjson einen Ausdruck als Daten konstruieren, ohne ihn sofort auszuführen. Für @apply kann @list die Argumentliste erzeugen.`),
     step('tour_closure', 'Closures merken sich ihre Umgebung', 'closure', `
 Die Funktion im Beispiel verwendet \`@basis\`, obwohl dieser Name kein Parameter ist. Sie merkt sich die Umgebung, in der sie erzeugt wurde. Das nennt man eine **lexikalische Closure**.
 
