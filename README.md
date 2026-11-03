@@ -90,7 +90,7 @@ Für Bedingungen gilt: `false`, `null`, `0`, `""`, `[]` und `{}` sind falsch; an
 
 `@list` ist eine variadische Bibliotheksfunktion: `[...,]` kann einen ausgewerteten `@`-Wert an erster Stelle nicht eindeutig als Datenarray darstellen. `["@list", "@y"]` erzeugt dagegen ein Array mit dem Wert von `@y`; `["@list"]` ergibt `[]`. Mit `["@list", ["@quote", "@plus"], "@x", 1]` lässt sich ein Ausdruck als Datenwert zusammensetzen, ohne ihn auszuführen.\n\n`@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. `@try` fängt `EvaluationError` und dessen Unterklassen ab, aber keinen `ResourceLimitError`; ohne Ersatz liefert es `{"error": "Klassenname", "message": "Text"}`. Bereits erfolgte Deklarationen werden durch `@try` nicht zurückgerollt.
 
-Operationen wie `@plus`, `@range`, `@map`, `@filter` und `@reduce` sind aufrufbare Bibliotheksfunktionen, keine reservierten Sprachformen. Das Paket bietet Grundarithmetik, Rundung, Zahlenvergleiche, JSON-Zugriff sowie die Logikfunktionen `@unify`, `@matcho`, `@membero`, `@patho`, `@neqo`, `@ge`, `@project`, `@choice`, `@conj` und `@run`. [SHOWCASE.md](SHOWCASE.md) erklärt die Zahlen- und Listenoperationen; die [IDE](web/README.md) bietet 58 Beispiele, elf Shell-Snippets und ein geführtes Tutorial mit 28 Schritten. `@get` liest einen Objektschlüssel oder einen Arrayindex; `@length` zählt Einträge. Bei fehlendem Schlüssel oder Index entsteht ein Fehler. `@compose` und `@curry` sind noch nicht als Bibliotheksfunktionen enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
+Operationen wie `@plus`, `@range`, `@map`, `@filter` und `@reduce` sind aufrufbare Bibliotheksfunktionen, keine reservierten Sprachformen. Das Paket bietet Grundarithmetik, Rundung, Zahlenvergleiche, JSON-Zugriff sowie die Logikfunktionen `@unify`, `@matcho`, `@membero`, `@patho`, `@neqo`, `@ge`, `@project`, `@choice`, `@conj` und `@run`. [SHOWCASE.md](SHOWCASE.md) erklärt die Zahlen- und Listenoperationen; die [IDE](web/README.md) bietet 73 Beispiele, elf Shell-Snippets und ein geführtes Tutorial mit 43 Schritten. `@get` liest einen Objektschlüssel oder einen Arrayindex; `@length` zählt Einträge. Bei fehlendem Schlüssel oder Index entsteht ein Fehler. `@compose` und `@curry` sind noch nicht als Bibliotheksfunktionen enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
 
 Der separate [Modul-Loader](MODULES.md) verarbeitet JSONL-Direktiven wie
 `["@import", "math"]` und `@namespace`. Er bindet Funktionen bei Bedarf
@@ -214,7 +214,7 @@ die Breite von Shell und Ergebnis. Beide Trenner funktionieren per Ziehen
 oder Pfeiltasten. Deklarationen aus Code und Shell bleiben
 in derselben Sitzung. Die Toolbar lädt und speichert lokale JSON-Dateien
 für den aktiven Tab; beide Editoren haben Syntaxfarben. **Beispiele**
-enthält [58 ausführbare Lektionen](SHOWCASE.md) in sieben Untermenüs,
+enthält [73 ausführbare Lektionen](SHOWCASE.md) in acht Untermenüs,
 darunter alle reservierten Sprachformen, Arithmetik, `@range`, `@map`,
 `@filter`, `@reduce`, Logik und Graphabfragen. **Shell-Snippets** fügt
 elf kurze Ausdrücke zum Experimentieren in die Shell ein. Datenbeispiele
