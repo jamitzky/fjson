@@ -4,14 +4,14 @@ import { runInNewContext } from 'node:vm';
 import { buildStandalone } from '../web/build-standalone.mjs';
 
 class Element {
-  constructor() {
+  constructor(tag = 'div') {
+    this.tag = tag;
     this.value = '';
     this.textContent = '';
     this.innerHTML = '';
     this.className = '';
     this.disabled = false;
-    this.hidden = false;
-    this.style = {};
+    this.dataset = {};
     this.children = [];
     this.listeners = new Map();
     this.attributes = new Map();
@@ -19,21 +19,32 @@ class Element {
     this.scrollTop = 0;
     this.scrollLeft = 0;
     this.scrollHeight = 0;
+    this.selectionStart = 0;
+    this.style = {
+      values: new Map(),
+      setProperty(name, value) { this.values.set(name, value); },
+    };
   }
   addEventListener(name, fn) { this.listeners.set(name, fn); }
   setAttribute(name, value) { this.attributes.set(name, value); }
   append(...children) { this.children.push(...children); }
   replaceChildren() { this.children = []; }
   click() { this.clicked = true; return this.listeners.get('click')?.(); }
+  getBoundingClientRect() {
+    return { height: this.tag === 'workarea' ? 600 : 230 };
+  }
+  setPointerCapture() {}
+  releasePointerCapture() {}
 }
 
 function documentFor(ids) {
-  const elements = new Map(ids.map(id => [id, new Element()]));
+  const elements = new Map(ids.map(id => [id, new Element(
+    id === '#workarea' ? 'workarea' : 'div')]));
   elements.created = [];
   globalThis.document = {
     querySelector: selector => elements.get(selector),
-    createElement: () => {
-      const element = new Element();
+    createElement: tag => {
+      const element = new Element(tag);
       elements.created.push(element);
       return element;
     },
@@ -49,100 +60,118 @@ globalThis.fetch = async url => ({
 await import('./browser-test.mjs');
 for (let attempt = 0; attempt < 20 && browser.get('#run').disabled; attempt++)
   await new Promise(resolve => setTimeout(resolve, 0));
-const expectedBrowserTests = JSON.parse(readFileSync(
+const browserCount = JSON.parse(readFileSync(
   new URL('./conformance.json', import.meta.url), 'utf8')).length + 5;
 assert.equal(browser.get('#summary').textContent,
-  expectedBrowserTests + ' von ' + expectedBrowserTests + ' Tests bestanden');
-assert.equal(browser.get('#results').children.length, expectedBrowserTests);
+  browserCount + ' von ' + browserCount + ' Tests bestanden');
+assert.equal(browser.get('#results').children.length, browserCount);
 assert.ok(browser.get('#results').children.every(item => item.className === 'pass'));
 await browser.get('#run').click();
-assert.equal(browser.get('#results').children.length, expectedBrowserTests);
+assert.equal(browser.get('#results').children.length, browserCount);
 
 const ideIds = [
-  'source', 'source-highlight', 'data-source', 'data-highlight', 'shell-source',
-  'shell-highlight', 'example', 'result', 'status', 'steps', 'line-count',
-  'data-status', 'shell-history', 'run', 'run-shell', 'clear-shell', 'reset',
-  'load-program', 'save-program', 'file-program', 'load-data', 'save-data',
-  'file-data', 'tab-program', 'tab-data', 'tab-shell',
-  'panel-program', 'panel-data', 'panel-shell',
-].map(id => '#' + id);
+  '#tabs', '#output', '#output-count', '#status', '.statusbar', '#binding-info',
+  '#line-count', '#editor-title', '#editor-hint', '#example', '#file-input',
+  '#workarea', '#output-pane', '#splitter', '#source', '#highlight',
+  '#new-code', '#new-data', '#run', '#open', '#save', '#reset', '#clear-output',
+];
 
 async function checkIde(elements) {
   const get = id => elements.get('#' + id);
-  assert.ok(get('source').value.includes('@inc'));
-  assert.match(get('source-highlight').innerHTML, /tok-name/);
-  get('run').click();
-  assert.equal(get('result').textContent, '42');
-  assert.equal(get('status').textContent, 'Erfolgreich');
+  const tabs = get('tabs');
+  const editor = get('source');
+  const output = get('output');
+  const result = () => output.children.at(-1).children[1].textContent;
+  const edit = text => {
+    editor.value = text;
+    editor.listeners.get('input')();
+  };
+  const selectTab = index => tabs.children[index].children[0].click();
 
-  get('example').value = 'logic';
-  get('example').listeners.get('change')();
+  assert.equal(tabs.children.length, 3);
+  assert.equal(tabs.children[0].children[0].children[1].textContent, 'Input');
+  assert.equal(tabs.children[1].children[0].children[1].textContent, 'Daten');
+  assert.equal(tabs.children[2].children[0].children[1].textContent, 'Shell');
+  assert.match(editor.value, /@inc/);
+  assert.match(get('highlight').innerHTML, /tok-name/);
   get('run').click();
-  assert.equal(get('result').textContent, '[\n  "alice",\n  "bob"\n]');
+  assert.equal(result(), '42');
+  assert.equal(get('output-count').textContent, '1 Eintrag');
 
-  get('tab-data').click();
-  assert.equal(get('panel-program').hidden, true);
-  assert.equal(get('panel-data').hidden, false);
-  assert.equal(get('tab-data').attributes.get('aria-selected'), 'true');
-  get('file-data').files = [{ text: async () => '{"answer":41,"items":[1,2,3]}' }];
-  await get('file-data').listeners.get('change')();
+  get('new-data').click();
+  assert.equal(tabs.children.length, 4);
+  assert.equal(get('editor-hint').textContent.includes('@data2'), true);
+  edit('{"answer":7}');
+  assert.match(get('highlight').innerHTML, /tok-key/);
+  assert.match(tabs.children[3].children[0].children[2].textContent, /●/);
+
+  selectTab(0);
   get('example').value = 'data';
   get('example').listeners.get('change')();
   get('run').click();
-  assert.equal(get('result').textContent, '42');
+  assert.equal(result(), '42');
+  edit('["@plus", ["@get", "@data2", "answer"], 1]');
+  get('run').click();
+  assert.equal(result(), '8');
 
-  get('data-source').value = '{"answer":5}';
-  get('data-source').listeners.get('input')();
+  get('new-code').click();
+  assert.equal(tabs.children.length, 5);
+  edit('{"@n":9}');
   get('run').click();
-  assert.equal(get('result').textContent, '6');
-  get('save-data').click();
-  assert.equal(elements.created.at(-1).download, 'daten.json');
-  assert.equal(elements.created.at(-1).clicked, true);
+  assert.equal(result(), '9');
+  selectTab(2);
+  edit('["@plus","@n",1]');
+  get('run').click();
+  assert.equal(result(), '10');
 
-  get('data-source').value = '[1,]';
-  get('run').click();
-  assert.equal(get('data-status').textContent, 'Ungültiges JSON');
-  assert.equal(get('steps').textContent, 'JSON wurde nicht ausgewertet');
-  get('data-source').value = '{"answer":41}';
+  selectTab(3);
+  get('file-input').files = [{ name: 'extra.json', text: async () => '{"answer":12}' }];
+  await get('file-input').listeners.get('change')();
+  assert.equal(editor.value, '{"answer":12}');
+  assert.equal(get('editor-title').textContent, 'extra.json');
+  get('save').click();
+  const download = elements.created.filter(node => node.tag === 'a').at(-1);
+  assert.equal(download.download, 'extra.json');
+  assert.equal(download.clicked, true);
 
-  get('tab-shell').click();
-  get('shell-source').value = '["@get","@data","answer"]';
-  get('run-shell').click();
-  assert.equal(get('result').textContent, '41');
-  assert.equal(get('shell-history').children.length, 1);
-  get('shell-source').value = '{"@n":9}';
-  get('run-shell').click();
-  get('shell-source').value = '["@plus","@n",1]';
-  get('run-shell').click();
-  assert.equal(get('result').textContent, '10');
-  get('clear-shell').click();
-  assert.equal(get('shell-history').children.length, 0);
+  const splitter = get('splitter');
+  splitter.listeners.get('pointerdown')({ clientY: 300, pointerId: 1 });
+  splitter.listeners.get('pointermove')({ clientY: 250, pointerId: 1 });
+  assert.equal(get('workarea').style.values.get('--output-height'), '280px');
+  splitter.listeners.get('pointerup')({ pointerId: 1 });
+  splitter.listeners.get('keydown')({ key: 'ArrowDown', preventDefault() {} });
+  assert.equal(get('workarea').style.values.get('--output-height'), '256px');
+  assert.equal(splitter.attributes.get('aria-valuenow'), '256');
 
-  get('tab-program').click();
-  get('source').value = '["@missing"]';
+  tabs.children[3].children[1].click();
+  assert.equal(tabs.children.length, 4);
+  selectTab(0);
+  edit('["@get","@data2","answer"]');
   get('run').click();
-  assert.match(get('result').textContent, /ResolutionError/);
-  get('source').value = '{"@answer":42}';
-  get('run').click();
-  get('source').value = '"@answer"';
-  get('run').click();
-  assert.equal(get('result').textContent, '42');
-  get('save-program').click();
-  assert.equal(elements.created.at(-1).download, 'programm.fjson.json');
+  assert.match(result(), /ResolutionError/);
+
+  get('clear-output').click();
+  assert.equal(get('output-count').textContent, '0 Einträge');
   get('reset').click();
+  selectTab(3);
+  edit('"@n"');
   get('run').click();
-  assert.match(get('result').textContent, /ResolutionError/);
-  get('source').value = '[1,]';
+  assert.match(result(), /ResolutionError/);
+
+  selectTab(1);
+  edit('[1,]');
+  selectTab(0);
+  edit('["@plus",1,2]');
   get('run').click();
-  assert.equal(get('steps').textContent, 'JSON wurde nicht ausgewertet');
+  assert.match(result(), /SyntaxError/);
+  assert.match(get('status').textContent, /Daten/);
 }
 
-const ide = documentFor(ideIds);
-ide.get('#example').value = 'inc';
+const modular = documentFor(ideIds);
 await import('../web/app.mjs');
-await checkIde(ide);
-console.log('Browser-Testseite: ' + expectedBrowserTests + '/' +
-  expectedBrowserTests + '; modulare IDE: Daten, Tabs, Shell, Dateien und Fehler geprüft');
+await checkIde(modular);
+console.log('Browser-Testseite: ' + browserCount + '/' + browserCount +
+  '; IDE: Tabs, Daten, Ausgabe, Dateien und Splitter geprüft');
 
 const standalone = readFileSync(new URL('../web/fjson-studio.html', import.meta.url), 'utf8');
 assert.equal(standalone, buildStandalone(), 'Standalone-Datei muss dem Build entsprechen');
@@ -150,7 +179,6 @@ assert.doesNotMatch(standalone, /<(?:script|link)\b[^>]*(?:src|href)=/i);
 const scripts = [...standalone.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
 assert.equal(scripts.length, 1);
 const offline = documentFor(ideIds);
-offline.get('#example').value = 'inc';
 runInNewContext(scripts[0][1], {
   document: globalThis.document, URL, Blob, setTimeout,
 });
