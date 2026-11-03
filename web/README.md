@@ -1,25 +1,39 @@
 # fjson Studio
 
-Diese kleine IDE ist eine statische Web-App. Sie lädt direkt
-[`../js/fjson.mjs`](../js/fjson.mjs) und benötigt weder Build-Schritt noch
-Paketmanager. Der Editor nimmt JSON-Quelltext entgegen; **Ausführen**
-wertet ihn im Browser aus. Deklarationen bleiben in der aktuellen
-Interpreter-Sitzung erhalten. **Sitzung zurücksetzen** erstellt einen
-frischen Interpreter. `Strg+Enter` beziehungsweise `⌘+Enter` führt den
-Editorinhalt ebenfalls aus.
+## Einzeldatei für den Offline-Einsatz
 
-Aus dem Repository-Verzeichnis einen lokalen Webserver starten:
+[`fjson-studio.html`](fjson-studio.html) enthält den vollständigen
+JavaScript-Interpreter, die IDE und das CSS. Diese eine Datei herunterladen
+und lokal im Browser öffnen, zum Beispiel per Doppelklick. Ein Webserver
+und eine Internetverbindung sind nicht erforderlich.
+
+Der Editor nimmt JSON-Quelltext entgegen. **Ausführen** oder
+`Strg+Enter`/`⌘+Enter` wertet ihn aus. Fünf Beispiele zeigen Funktionen,
+Standardwerte, logische Suche, Rekursion und `@quote`. Globale
+Deklarationen bleiben während der Sitzung erhalten; **Sitzung
+zurücksetzen** löscht sie.
+
+## Quelldateien und Entwicklung
+
+[`index.html`](index.html), [`app.mjs`](app.mjs) und
+[`style.css`](style.css) sind die modulare Variante. Sie verwenden
+[`../js/fjson.mjs`](../js/fjson.mjs). Nach Änderungen am Interpreter,
+an der App oder am CSS wird die Einzeldatei neu erzeugt:
+
+```powershell
+node web/build-standalone.mjs
+node js/test-pages.mjs
+```
+
+Für die modulare Variante und die
+[Browser-Testseite](../js/browser-test.html) einen lokalen Server aus
+dem Repository-Verzeichnis starten:
 
 ```powershell
 python -m http.server 8000
 ```
 
-Danach `http://localhost:8000/web/` öffnen. Die gesonderte
-[Browser-Testseite](../js/browser-test.html) liegt unter
-`http://localhost:8000/js/browser-test.html`.
-
-Die App verwendet nur den reinen Sprachkern und die Logikbibliothek.
-Programme erhalten keine Datei-, Prozess- oder Netzwerk-Capabilities.
-Der JSON-Quelltext wird lokal im Browser ausgewertet; die App versendet
-ihn nicht an einen Server. Der Webserver liefert lediglich die statischen
-Dateien und die Testfälle aus.
+Anschließend `http://localhost:8000/web/` beziehungsweise
+`http://localhost:8000/js/browser-test.html` öffnen. Die Einzeldatei
+braucht diesen Server nicht. Alle Auswertungen erfolgen lokal im Browser;
+die IDE bietet keine Datei-, Prozess- oder Netzwerk-Capabilities.
