@@ -20,7 +20,6 @@ from .logic import (
     EdgeGoal,
     GeGoal,
     Goal,
-    GraphPathGoal,
     LogicScope,
     LogicVar,
     MatchGoal,
@@ -251,7 +250,7 @@ class Interpreter:
             "@unify": Native("@unify", 2, UnifyGoal),
             "@match": Native("@match", 2, MatchGoal),
             "@membero": Native("@membero", 2, MemberGoal),
-            "@patho": Native("@patho", (3, 4), self._logic_patho),
+            "@patho": Native("@patho", 3, PathGoal),
             "@graph": Native("@graph", (1, 2), JsonGraph),
             "@edgeo": Native("@edgeo", 3, EdgeGoal),
             "@matcho": Native("@matcho", 2, MatchoGoal),
@@ -498,10 +497,6 @@ class Interpreter:
             )
         except GraphError as exc:
             raise EvaluationError(str(exc)) from exc
-
-    @staticmethod
-    def _logic_patho(*args: Any) -> Goal:
-        return PathGoal(*args) if len(args) == 3 else GraphPathGoal(*args)
 
     @staticmethod
     def _logic_record(fields: Any) -> RecordPattern:
