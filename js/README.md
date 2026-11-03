@@ -18,6 +18,7 @@ Aus dem Repository-Verzeichnis:
 
 ```powershell
 node js/test.mjs
+node js/test-modules.mjs
 node js/test-pages.mjs
 node js/example.ts
 ```
@@ -45,6 +46,12 @@ console.log(result); // 42
 Objektschlüssel zurück. `fjson.eval(value)` wertet bereits erzeugte
 JavaScript-Werte aus. Definitionen bleiben innerhalb einer
 Interpreter-Instanz erhalten.
+
+`modules.mjs` stellt den separaten JSONL-Modul-Loader bereit. Er importiert
+`math` und `logic` als qualifizierte Namensräume und nimmt eigene Module aus
+einer expliziten Registry entgegen. Details und Beispiele stehen in
+[MODULES.md](../MODULES.md). Der Loader ändert keine Auswertungsregel von
+`fjson.mjs`.
 
 ## Browser
 
