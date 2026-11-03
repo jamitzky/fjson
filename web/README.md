@@ -25,6 +25,11 @@ Arrayindex; `@length` zählt Einträge. Ungültige JSON-Daten stoppen die
 Auswertung mit einer Fehlermeldung. Der aktive Editor zeigt Syntaxfarben
 für Bezeichner, Strings, Zahlen und JSON-Zeichen.
 
+Für Abfragen über verschachtelte Daten stehen auch `@match`, `@membero`
+und `@patho` zur Verfügung. Die Beispiele in
+[LOGIC_JSON.md](../LOGIC_JSON.md) lassen sich mit einem geladenen
+Daten-Tab ausführen; dessen Bindung heißt standardmäßig `@data`.
+
 **Ausführen** oder `Strg+Enter`/`⌘+Enter` wertet den aktiven Code-Tab aus.
 Ein Daten-Tab zeigt beim Ausführen seinen JSON-Wert im Ergebnisbereich.
 Die **Shell liegt unten links** und hat einen eigenen Ausführen-Knopf
