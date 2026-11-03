@@ -81,6 +81,10 @@ const examples = {
 const byId = id => document.querySelector('#' + id);
 const editor = byId('source');
 const highlight = byId('highlight');
+const dataEditor = byId('data-source');
+const dataHighlight = byId('data-highlight');
+const editorPane = byId('editor-pane');
+const dataPane = byId('data-pane');
 const shellSource = byId('shell-source');
 const shellHighlight = byId('shell-highlight');
 const tabStrip = byId('tabs');
@@ -92,10 +96,14 @@ const bindingInfo = byId('binding-info');
 const lineCount = byId('line-count');
 const editorTitle = byId('editor-title');
 const editorHint = byId('editor-hint');
+const dataTitle = byId('data-title');
+const dataHint = byId('data-hint');
 const example = byId('example');
 const fileInput = byId('file-input');
 const workarea = byId('workarea');
 const lowerPane = byId('lower-pane');
+const topPane = byId('top-pane');
+const editorSplitter = byId('editor-splitter');
 const shellPane = byId('shell-pane');
 const splitter = byId('splitter');
 const columnSplitter = byId('column-splitter');
@@ -103,6 +111,8 @@ const columnSplitter = byId('column-splitter');
 let interpreter = new Interpreter();
 let tabs = [];
 let active = null;
+let selectedCode = null;
+let selectedData = null;
 let nextId = 1;
 let codeCount = 0;
 let dataCount = 0;
@@ -111,6 +121,8 @@ let outputHeight = 230;
 let drag = null;
 let shellWidth = 380;
 let columnDrag = null;
+let codeWidth = 500;
+let editorDrag = null;
 
 function escapeHtml(value) {
   return value.replace(/[&<>"]/g, char => ({
@@ -137,15 +149,48 @@ function colorize(value) {
   return result + escapeHtml(value.slice(end)) + '\n';
 }
 
-function updateEditor() {
-  highlight.innerHTML = colorize(editor.value);
-  highlight.scrollTop = editor.scrollTop;
-  highlight.scrollLeft = editor.scrollLeft;
-  const lines = editor.value.split(/\r\n|\n|\r/).length;
-  const currentLine = editor.value.slice(0, editor.selectionStart ?? 0)
+function updateLineCount(source) {
+  const lines = source.value.split(/\r\n|\n|\r/).length;
+  const currentLine = source.value.slice(0, source.selectionStart ?? 0)
     .split(/\r\n|\n|\r/).length;
   lineCount.textContent = 'Zeile ' + currentLine + ' · ' + lines +
     (lines === 1 ? ' Zeile' : ' Zeilen');
+}
+
+function updateEditor(source, colored) {
+  colored.innerHTML = colorize(source.value);
+  colored.scrollTop = source.scrollTop;
+  colored.scrollLeft = source.scrollLeft;
+  if ((source === editor && active === selectedCode) ||
+      (source === dataEditor && active === selectedData)) updateLineCount(source);
+}
+
+const updateCode = () => updateEditor(editor, highlight);
+const updateData = () => updateEditor(dataEditor, dataHighlight);
+
+function formatExample(value, depth = 0) {
+  const leaf = item => item === null || typeof item !== 'object';
+  if (leaf(value)) return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    if (value.every(leaf)) return JSON.stringify(value);
+    const prefix = value.findIndex(item => !leaf(item));
+    const first = prefix < 0 ? value.length : prefix;
+    const head = '[' + value.slice(0, first).map(JSON.stringify).join(', ');
+    const lines = [head + (first ? ',' : '')];
+    for (let i = first; i < value.length; i++)
+      lines.push('  '.repeat(depth + 1) + formatExample(value[i], depth + 1) +
+        (i + 1 < value.length ? ',' : ''));
+    lines.push('  '.repeat(depth) + ']');
+    return lines.join('\n');
+  }
+  const entries = Object.entries(value);
+  if (entries.every(([, item]) => leaf(item))) return JSON.stringify(value);
+  const lines = ['{'];
+  entries.forEach(([key, item], i) => lines.push('  '.repeat(depth + 1) +
+    JSON.stringify(key) + ': ' + formatExample(item, depth + 1) +
+    (i + 1 < entries.length ? ',' : '')));
+  lines.push('  '.repeat(depth) + '}');
+  return lines.join('\n');
 }
 
 function updateShell() {
@@ -168,7 +213,8 @@ function renderTabs() {
   tabStrip.replaceChildren();
   for (const tab of tabs) {
     const slot = document.createElement('div');
-    slot.className = tab === active ? 'tab-slot active' : 'tab-slot';
+    slot.className = tab === active ? 'tab-slot active' :
+      tab === selectedCode || tab === selectedData ? 'tab-slot selected' : 'tab-slot';
     slot.dataset.kind = tab.kind;
     const select = document.createElement('button');
     select.className = 'tab-select';
@@ -202,18 +248,37 @@ function renderTabs() {
   }
 }
 
+function activateFocus(tab) {
+  if (!tab || active === tab) return;
+  active = tab;
+  editorPane.className = tab.kind === 'code' ? 'editor-pane selected' : 'editor-pane';
+  dataPane.className = tab.kind === 'data' ? 'data-pane selected' : 'data-pane';
+  updateLineCount(tab.kind === 'data' ? dataEditor : editor);
+  renderTabs();
+}
+
 function activateTab(tab) {
   active = tab;
-  editor.value = tab.content;
-  editor.scrollTop = 0;
-  editor.scrollLeft = 0;
-  editorTitle.textContent = tab.label;
-  editorHint.textContent = tab.kind === 'data'
-    ? 'JSON-Daten · im Programm als ' + tab.binding + ' verfügbar'
-    : 'fjson · Strg/⌘+Enter zum Ausführen';
+  const source = tab.kind === 'data' ? dataEditor : editor;
+  if (tab.kind === 'data') {
+    selectedData = tab;
+    dataTitle.textContent = tab.label;
+    dataHint.textContent = 'JSON-Daten · im Programm als ' + tab.binding + ' verfügbar';
+  } else {
+    selectedCode = tab;
+    editorTitle.textContent = tab.label;
+    editorHint.textContent = 'Code · Strg/⌘+Enter zum Ausführen';
+  }
+  source.value = tab.content;
+  source.scrollTop = 0;
+  source.scrollLeft = 0;
+  editorPane.className = active === selectedCode ? 'editor-pane selected' : 'editor-pane';
+  dataPane.className = active === selectedData ? 'data-pane selected' : 'data-pane';
   bindingInfo.textContent = dataBindings();
   renderTabs();
-  updateEditor();
+  if (tab.kind === 'data') updateData();
+  else updateCode();
+  updateLineCount(source);
 }
 
 function addTab(kind, initial = false) {
@@ -226,7 +291,7 @@ function addTab(kind, initial = false) {
     binding: kind === 'data' ? '@data' + (number === 1 ? '' : number) : null,
     content: kind === 'data' ? (number === 1
       ? '{\n  "answer": 41,\n  "items": [1, 2, 3]\n}' : '{}') :
-      initial ? JSON.stringify(examples.inc, null, 2) : '["@plus", 1, 2]',
+      initial ? formatExample(examples.inc) : '["@plus", 1, 2]',
     filename: null,
     dirty: false,
   };
@@ -239,12 +304,14 @@ function addTab(kind, initial = false) {
 function closeTab(tab) {
   const index = tabs.indexOf(tab);
   if (index < 0) return;
+  const previousActive = active;
   tabs.splice(index, 1);
   if (tab.binding) interpreter.global.values.delete(tab.binding);
-  if (tab === active) {
-    activateTab(tabs[Math.min(index, tabs.length - 1)] ??
-      addTab('code'));
+  if (tab === selectedCode || tab === selectedData) {
+    const replacement = tabs.find(item => item.kind === tab.kind) ?? addTab(tab.kind);
+    activateTab(replacement);
   } else renderTabs();
+  if (previousActive !== tab && tabs.includes(previousActive)) activateFocus(previousActive);
   bindingInfo.textContent = dataBindings();
 }
 
@@ -299,16 +366,14 @@ function appendOutput(tab, result, failed) {
 }
 
 function runActive() {
-  if (!active) return;
+  if (!selectedCode) return;
   try {
-    const values = bindDataTabs();
-    const result = active.kind === 'data'
-      ? values.find(([name]) => name === active.binding)?.[1]
-      : interpreter.run(active.content);
-    appendOutput(active, format(result), false);
-    setStatus(active.label + ' ausgeführt · ' + interpreter.steps + ' Schritte');
+    bindDataTabs();
+    const result = interpreter.run(selectedCode.content);
+    appendOutput(selectedCode, format(result), false);
+    setStatus(selectedCode.label + ' ausgeführt · ' + interpreter.steps + ' Schritte');
   } catch (error) {
-    appendOutput(active, error.name + ': ' + error.message, true);
+    appendOutput(selectedCode, error.name + ': ' + error.message, true);
     setStatus(error.name + ': ' + error.message, true);
   }
 }
@@ -414,6 +479,39 @@ function setShellWidth(width) {
   columnSplitter.setAttribute('aria-valuenow', String(shellWidth));
 }
 
+function setCodeWidth(width) {
+  const max = Math.max(120, topPane.getBoundingClientRect().width - 127);
+  codeWidth = Math.max(120, Math.min(max, Math.round(width)));
+  topPane.style.setProperty('--code-width', codeWidth + 'px');
+  editorSplitter.setAttribute('aria-valuemax', String(max));
+  editorSplitter.setAttribute('aria-valuenow', String(codeWidth));
+}
+
+editorSplitter.addEventListener('pointerdown', event => {
+  editorDrag = {
+    x: event.clientX,
+    width: editorPane.getBoundingClientRect().width || codeWidth,
+  };
+  editorSplitter.className = 'column-splitter dragging';
+  editorSplitter.setPointerCapture?.(event.pointerId);
+});
+editorSplitter.addEventListener('pointermove', event => {
+  if (editorDrag) setCodeWidth(editorDrag.width + event.clientX - editorDrag.x);
+});
+for (const name of ['pointerup', 'pointercancel']) {
+  editorSplitter.addEventListener(name, event => {
+    editorDrag = null;
+    editorSplitter.className = 'column-splitter';
+    editorSplitter.releasePointerCapture?.(event.pointerId);
+  });
+}
+editorSplitter.addEventListener('keydown', event => {
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    event.preventDefault();
+    setCodeWidth(codeWidth + (event.key === 'ArrowRight' ? 24 : -24));
+  }
+});
+
 columnSplitter.addEventListener('pointerdown', event => {
   columnDrag = {
     x: event.clientX,
@@ -453,32 +551,54 @@ byId('reset').addEventListener('click', () => {
   setStatus('Neue Interpreter-Sitzung');
 });
 example.addEventListener('change', () => {
-  const code = active?.kind === 'code' ? active :
-    tabs.find(tab => tab.kind === 'code') ?? addTab('code');
+  const code = selectedCode ?? addTab('code');
   if (example.value.startsWith('fred_')) {
     const data = tabs.find(tab => tab.binding === '@data') ?? addTab('data');
     data.binding = '@data';
     data.label = 'Fred · Daten';
     data.filename = 'fred.json';
-    data.content = JSON.stringify(fredData, null, 2);
+    data.content = formatExample(fredData);
     data.dirty = true;
+    activateTab(data);
   }
-  code.content = JSON.stringify(examples[example.value], null, 2);
+  code.content = formatExample(examples[example.value]);
   code.dirty = true;
   activateTab(code);
   setStatus(example.value.startsWith('fred_') ?
     'Fred-Beispiel geladen · @data ersetzt' : 'Beispiel geladen');
 });
 editor.addEventListener('input', () => {
-  active.content = editor.value;
-  active.dirty = true;
-  updateEditor();
+  selectedCode.content = editor.value;
+  selectedCode.dirty = true;
+  activateFocus(selectedCode);
+  updateCode();
   renderTabs();
 });
-editor.addEventListener('scroll', updateEditor);
-editor.addEventListener('click', updateEditor);
-editor.addEventListener('keyup', updateEditor);
+dataEditor.addEventListener('input', () => {
+  selectedData.content = dataEditor.value;
+  selectedData.dirty = true;
+  activateFocus(selectedData);
+  updateData();
+  renderTabs();
+});
+editor.addEventListener('scroll', updateCode);
+editor.addEventListener('click', () => { activateFocus(selectedCode); updateCode(); });
+editor.addEventListener('keyup', updateCode);
+dataEditor.addEventListener('scroll', updateData);
+dataEditor.addEventListener('click', () => { activateFocus(selectedData); updateData(); });
+dataEditor.addEventListener('keyup', updateData);
 editor.addEventListener('keydown', event => {
+  activateFocus(selectedCode);
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    event.preventDefault();
+    runActive();
+  } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault();
+    saveActive();
+  }
+});
+dataEditor.addEventListener('keydown', event => {
+  activateFocus(selectedData);
   if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
     event.preventDefault();
     runActive();
@@ -503,4 +623,5 @@ activateTab(tabs[0]);
 shellSource.value = '["@plus", 1, 2]';
 updateShell();
 setShellWidth(shellPane.getBoundingClientRect().width || shellWidth);
+setCodeWidth(editorPane.getBoundingClientRect().width || codeWidth);
 setStatus('Bereit');
