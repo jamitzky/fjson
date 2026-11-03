@@ -2,7 +2,7 @@
 
 import unittest
 
-from fjson import EvaluationError, Interpreter, ResourceLimitError
+from fjson import ArityError, EvaluationError, Interpreter, ResourceLimitError
 
 
 class GraphTests(unittest.TestCase):
@@ -22,7 +22,11 @@ class GraphTests(unittest.TestCase):
             ["@record", {"Phone": ["@some", ["@record", {
                 "type": "office", "number": "!N"}]]}]]]), ["123", "789"])
         self.assertEqual(fj.eval(["@run", 1, "!City", ["@patho", "@person",
-            "@person", ["Address", "City"], "!City"]]), ["Winchester"])
+            ["Address", "City"], "!City"]]), ["Winchester"])
+        self.assertEqual(fj.eval(["@run", 1, "!City", ["@patho", person,
+            ["Address", "City"], "!City"]]), ["Winchester"])
+        with self.assertRaises(ArityError):
+            fj.eval(["@patho", "@person", "@person", ["Address"], "!Value"])
         fj.eval({"@adult": ["@function", ["@person", "@age"],
             ["@conj", ["@edgeo", "@person", "Age", "@age"],
                 ["@ge", "@age", 18]]]})
@@ -35,8 +39,9 @@ class GraphTests(unittest.TestCase):
         fj = Interpreter()
         fj.eval({"@literal": ["@graph", ["@quote", data]]})
         fj.eval({"@linked": ["@graph", ["@quote", data], {"refs": True}]})
-        query = lambda graph: ["@run", 1, "!City",
-            ["@patho", graph, "fred", ["employer", "office", "City"], "!City"]]
+        query = lambda graph: ["@run", 1, "!City", ["@conj",
+            ["@nodeo", graph, "fred", "!Person"],
+            ["@patho", "!Person", ["employer", "office", "City"], "!City"]]]
         self.assertEqual(fj.eval(query("@literal")), [])
         self.assertEqual(fj.eval(query("@linked")), ["Winchester"])
         self.assertEqual(fj.eval(["@run", 1, "!Node",
@@ -61,7 +66,7 @@ class GraphTests(unittest.TestCase):
         bounded = Interpreter(max_steps=40)
         bounded.eval({"@g": ["@graph", {"a": [1, 2, 3, 4, 5]}]})
         with self.assertRaises(ResourceLimitError):
-            bounded.eval(["@run", 10, "!Path", ["@patho", "@g", "@g", "!Path", "!Value"]])
+            bounded.eval(["@run", 10, "!Path", ["@patho", "@g", "!Path", "!Value"]])
 
 
 if __name__ == "__main__":
