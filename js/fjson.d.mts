@@ -21,6 +21,30 @@ export class ConjGoal extends Goal {
   constructor(left: Goal, right: Goal);
   readonly left: Goal; readonly right: Goal;
 }
+export class MatchGoal extends Goal {
+  constructor(data: unknown, pattern: unknown);
+  readonly data: unknown; readonly pattern: unknown;
+}
+export class MemberGoal extends Goal {
+  constructor(items: unknown, item: unknown);
+  readonly items: unknown; readonly item: unknown;
+}
+export class PathGoal extends Goal {
+  constructor(data: unknown, path: unknown, value: unknown);
+  readonly data: unknown; readonly path: unknown; readonly value: unknown;
+}
+export class NeqGoal extends Goal {
+  constructor(left: unknown, right: unknown);
+  readonly left: unknown; readonly right: unknown;
+}
+export class GeGoal extends Goal {
+  constructor(left: unknown, right: unknown);
+  readonly left: unknown; readonly right: unknown;
+}
+export class ProjectGoal extends Goal {
+  constructor(fn: unknown, args: unknown[], result: unknown);
+  readonly fn: unknown; readonly args: unknown[]; readonly result: unknown;
+}
 export class Closure {
   readonly names: string[];
   readonly defaults: unknown[] | null;
