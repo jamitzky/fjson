@@ -27,12 +27,23 @@
       <span class="toolbar-divider" aria-hidden="true"></span>
       <label for="example">Beispiel</label>
       <select id="example">
-        <option value="inc">Funktion · +1</option>
-        <option value="defaults">Standardwert</option>
-        <option value="logic">Logische Suche</option>
-        <option value="recursion">Rekursion</option>
-        <option value="quote">Zitat als Daten</option>
-        <option value="data">Mit @data arbeiten</option>
+        <optgroup label="Grundlagen">
+          <option value="inc">Funktion · +1</option>
+          <option value="defaults">Standardwert</option>
+          <option value="logic">Logische Suche</option>
+          <option value="recursion">Rekursion</option>
+          <option value="quote">Zitat als Daten</option>
+          <option value="data">Mit @data arbeiten</option>
+        </optgroup>
+        <optgroup label="Fred · relationale JSON-Logik">
+          <option value="fred_match">Teilmuster · Name und Stadt</option>
+          <option value="fred_phone">Büronummern · @membero</option>
+          <option value="fred_email">Arbeits-E-Mails · verschachtelte Arrays</option>
+          <option value="fred_path">Pfad nach London · @patho</option>
+          <option value="fred_adult">Volljährig · @guard und @ge</option>
+          <option value="fred_cities">Zwei Städte · @neqo</option>
+          <option value="fred_project">Alter + 1 · @project</option>
+        </optgroup>
       </select>
       <span class="toolbar-spacer"></span>
       <button id="reset" type="button" title="Interpreter-Sitzung zurücksetzen">Sitzung zurücksetzen</button>
