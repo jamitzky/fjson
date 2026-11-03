@@ -8,6 +8,23 @@ export class ArityError extends EvaluationError {}
 export class ResourceLimitError extends FjsonError {}
 
 export class LogicVar { constructor(name: string); readonly name: string; }
+export class JsonGraph {
+  constructor(data: unknown, options?: { refs?: boolean; id_key?: string; ref_key?: string });
+  readonly data: unknown;
+  readonly root: GraphNode;
+  node(path?: (string | number)[]): GraphNode;
+}
+export class GraphNode {
+  constructor(graph: JsonGraph, path: (string | number)[]);
+  readonly graph: JsonGraph;
+  readonly path: (string | number)[];
+  readonly value: unknown;
+}
+export class RecordPattern {
+  constructor(fields: Record<string, unknown>);
+  readonly fields: Record<string, unknown>;
+}
+export class SomePattern { constructor(item: unknown); readonly item: unknown; }
 export class Goal {}
 export class UnifyGoal extends Goal {
   constructor(left: unknown, right: unknown);
@@ -32,6 +49,23 @@ export class MemberGoal extends Goal {
 export class PathGoal extends Goal {
   constructor(data: unknown, path: unknown, value: unknown);
   readonly data: unknown; readonly path: unknown; readonly value: unknown;
+}
+export class EdgeGoal extends Goal {
+  constructor(source: unknown, key: unknown, target: unknown);
+  readonly source: unknown; readonly key: unknown; readonly target: unknown;
+}
+export class GraphPathGoal extends Goal {
+  constructor(graph: unknown, start: unknown, path: unknown, value: unknown);
+  readonly graph: unknown; readonly start: unknown;
+  readonly path: unknown; readonly value: unknown;
+}
+export class MatchoGoal extends Goal {
+  constructor(data: unknown, pattern: unknown);
+  readonly data: unknown; readonly pattern: unknown;
+}
+export class NodeGoal extends Goal {
+  constructor(graph: unknown, identifier: unknown, node: unknown);
+  readonly graph: unknown; readonly identifier: unknown; readonly node: unknown;
 }
 export class NeqGoal extends Goal {
   constructor(left: unknown, right: unknown);
@@ -61,5 +95,6 @@ export class Interpreter {
   readonly maxDepth: number;
   readonly steps: number;
   run(source: string): unknown;
-  eval(expression: JsonValue | LogicVar | Goal | Closure): unknown;
+  eval(expression: JsonValue | LogicVar | Goal | Closure | JsonGraph | GraphNode |
+    RecordPattern | SomePattern): unknown;
 }
