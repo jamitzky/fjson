@@ -35,9 +35,27 @@
           aria-controls="shell-menu-content">Shell-Snippets ▾</button>
         <div id="shell-menu-content" class="menu-popup" hidden></div>
       </div>
+      <div id="tutorial-menu" class="showcase-menu">
+        <button id="tutorial-menu-button" type="button" aria-expanded="false"
+          aria-controls="tutorial-menu-content">Tutorial ▾</button>
+        <div id="tutorial-menu-content" class="menu-popup" hidden></div>
+      </div>
       <span class="toolbar-spacer"></span>
       <button id="reset" type="button" title="Interpreter-Sitzung zurücksetzen">Sitzung zurücksetzen</button>
     </div>
+
+    <aside id="tutorial-panel" class="tutorial-panel" aria-labelledby="tutorial-title" hidden>
+      <div class="tutorial-header">
+        <div><span id="tutorial-progress"></span><h2 id="tutorial-title"></h2></div>
+        <button id="tutorial-close" type="button" aria-label="Tutorial schließen">×</button>
+      </div>
+      <article id="tutorial-body" class="tutorial-body"></article>
+      <div class="tutorial-actions">
+        <button id="tutorial-prev" type="button">← Zurück</button>
+        <button id="tutorial-run" type="button">Beispiel laden und ausführen</button>
+        <button id="tutorial-next" type="button">Weiter →</button>
+      </div>
+    </aside>
 
     <div id="tabs" class="tabs" role="tablist" aria-label="Offene Dateien"></div>
 
