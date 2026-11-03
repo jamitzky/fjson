@@ -190,6 +190,10 @@ button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:fo
           <option value="fred_adult">Volljährig · @guard und @ge</option>
           <option value="fred_cities">Zwei Städte · @neqo</option>
           <option value="fred_project">Alter + 1 · @project</option>
+          <option value="fred_graph_city">Graphpfad · Winchester</option>
+          <option value="fred_graph_edges">Graphkanten · Adresse</option>
+          <option value="fred_graph_phone">Graphmuster · Büronummern</option>
+          <option value="fred_graph_rule">Graphregel · volljährig</option>
         </optgroup>
       </select>
       <span class="toolbar-spacer"></span>
@@ -412,6 +416,84 @@ class Native {
   constructor(name, arity, fn) { this.name = name; this.arity = arity; this.fn = fn; }
 }
 
+class JsonGraph {
+  constructor(data, options = {}) {
+    if (!isRecord(options) || keys(options).some(key => !['refs', 'id_key', 'ref_key'].includes(key)))
+      throw new EvaluationError('@graph options must contain only refs, id_key and ref_key');
+    this.followRefs = options.refs ?? false;
+    this.idKey = options.id_key ?? 'id';
+    this.refKey = options.ref_key ?? '$ref';
+    if (typeof this.followRefs !== 'boolean' ||
+        [this.idKey, this.refKey].some(key => typeof key !== 'string' || !key))
+      throw new EvaluationError('invalid @graph reference options');
+    this.data = data; this.nodes = new Map(); this.ids = null;
+  }
+  node(path = []) {
+    const key = JSON.stringify(path);
+    if (!this.nodes.has(key)) this.nodes.set(key, new GraphNode(this, path));
+    return this.nodes.get(key);
+  }
+  get root() { return this.node(); }
+  indexIds(step) {
+    if (this.ids !== null) return this.ids;
+    const result = new Map(), work = [{ path: [], value: this.data, ancestors: new Set() }];
+    while (work.length) {
+      step();
+      const { path, value, ancestors } = work.pop();
+      if (!Array.isArray(value) && !isRecord(value)) continue;
+      if (ancestors.has(value)) continue;
+      const next = new Set(ancestors); next.add(value);
+      if (isRecord(value) && Object.hasOwn(value, this.idKey) &&
+          typeof value[this.idKey] === 'string') {
+        const id = value[this.idKey];
+        if (result.has(id)) throw new EvaluationError(`duplicate graph id: ${id}`);
+        result.set(id, this.node(path));
+      }
+      const entries = rawEdges(value);
+      for (let i = entries.length - 1; i >= 0; i--) {
+        const [key, child] = entries[i];
+        work.push({ path: [...path, key], value: child, ancestors: next });
+      }
+    }
+    this.ids = result;
+    return result;
+  }
+  byId(id, step) { return this.indexIds(step).get(id); }
+  start(value, step) {
+    if (value === this) return this.root;
+    if (value instanceof GraphNode && value.graph === this) return value;
+    if (typeof value === 'string') return this.byId(value, step);
+    return null;
+  }
+  edges(node, step) {
+    return rawEdges(node.value).map(([key, child]) => {
+      step();
+      if (this.followRefs && isRecord(child) && keys(child).length === 1 &&
+          Object.hasOwn(child, this.refKey) && typeof child[this.refKey] === 'string') {
+        const target = this.byId(child[this.refKey], step);
+        if (!target) throw new EvaluationError(`unknown graph reference: ${child[this.refKey]}`);
+        return [key, target];
+      }
+      return [key, Array.isArray(child) || isRecord(child) ? this.node([...node.path, key]) : child];
+    });
+  }
+}
+
+class GraphNode {
+  constructor(graph, path) { this.graph = graph; this.path = path; }
+  get value() { return this.path.reduce((value, key) => value[key], this.graph.data); }
+}
+class RecordPattern {
+  constructor(fields) { this.fields = fields; }
+}
+class SomePattern {
+  constructor(item) { this.item = item; }
+}
+function rawEdges(value) {
+  return Array.isArray(value) ? value.map((item, i) => [i, item]) :
+    isRecord(value) ? keys(value).map(key => [key, value[key]]) : [];
+}
+
 class Closure {
   constructor(names, defaults, body, environment) {
     this.names = names; this.defaults = defaults; this.body = body; this.environment = environment;
@@ -442,6 +524,18 @@ class MemberGoal extends Goal {
 }
 class PathGoal extends Goal {
   constructor(data, path, value) { super(); this.data = data; this.path = path; this.value = value; }
+}
+class EdgeGoal extends Goal {
+  constructor(source, key, target) { super(); Object.assign(this, { source, key, target }); }
+}
+class GraphPathGoal extends Goal {
+  constructor(graph, start, path, value) { super(); Object.assign(this, { graph, start, path, value }); }
+}
+class MatchoGoal extends Goal {
+  constructor(data, pattern) { super(); Object.assign(this, { data, pattern }); }
+}
+class NodeGoal extends Goal {
+  constructor(graph, identifier, node) { super(); Object.assign(this, { graph, identifier, node }); }
 }
 class NeqGoal extends Goal {
   constructor(left, right) { super(); this.left = left; this.right = right; }
@@ -589,11 +683,60 @@ function reify(term, substitutions, step) {
       if (!free.has(value)) free.set(value, free.size);
       return { var: value.name, index: free.get(value) };
     }
+    if (value instanceof GraphNode) return { node: [...value.path] };
+    if (value instanceof JsonGraph) return { node: [] };
     if (Array.isArray(value)) return value.map(visit);
     if (isRecord(value)) return record(keys(value).map(key => [key, visit(value[key])]));
     return value;
   };
   return visit(term);
+}
+
+function matcho(data, pattern, substitutions, step) {
+  step(); data = walk(data, substitutions, step);
+  if (data instanceof GraphNode) data = data.value;
+  else if (data instanceof JsonGraph) data = data.data;
+  if (pattern instanceof RecordPattern) {
+    if (!isRecord(data) || keys(pattern.fields).some(key => !Object.hasOwn(data, key))) return [];
+    let states = [substitutions];
+    for (const key of keys(pattern.fields))
+      states = states.flatMap(state => matcho(data[key], pattern.fields[key], state, step));
+    return states;
+  }
+  if (pattern instanceof SomePattern)
+    return Array.isArray(data) ? data.flatMap(item => matcho(item, pattern.item, substitutions, step)) : [];
+  const next = match(data, pattern, substitutions, step);
+  return next === null ? [] : [next];
+}
+
+function graphAtPath(graph, start, path, step) {
+  if (!Array.isArray(path)) return [false, null];
+  let current = start;
+  for (const key of path) {
+    step();
+    if (!(current instanceof GraphNode)) return [false, null];
+    const edge = graph.edges(current, step).find(([label]) => jsonEqual(label, key));
+    if (!edge) return [false, null];
+    current = edge[1];
+  }
+  return [true, current];
+}
+
+function graphPaths(graph, start, step) {
+  const result = [], work = [{ path: [], node: start, ancestors: new Set() }];
+  while (work.length) {
+    step();
+    const { path, node, ancestors } = work.pop();
+    result.push([path, node]);
+    if (!(node instanceof GraphNode) || ancestors.has(node)) continue;
+    const next = new Set(ancestors); next.add(node);
+    const edges = graph.edges(node, step);
+    for (let i = edges.length - 1; i >= 0; i--) {
+      const [key, target] = edges[i];
+      work.push({ path: [...path, key], node: target, ancestors: next });
+    }
+  }
+  return result;
 }
 
 function sameSubstitutions(left, right) {
@@ -673,6 +816,48 @@ function search(goal, query, limit, step, project) {
           if (next !== null) work.push({ pending: rest, substitutions: next, delayed });
         }
       }
+    } else if (head instanceof EdgeGoal) {
+      const source = walk(head.source, substitutions, step);
+      if (!(source instanceof LogicVar)) {
+        const edges = source instanceof JsonGraph ? source.edges(source.root, step) :
+          source instanceof GraphNode ? source.graph.edges(source, step) : rawEdges(source);
+        for (const [key, target] of edges.reverse()) {
+          let next = unify(head.key, key, substitutions, step);
+          if (next !== null) next = unify(head.target, target, next, step);
+          if (next !== null) work.push({ pending: rest, substitutions: next, delayed });
+        }
+      }
+    } else if (head instanceof MatchoGoal) {
+      for (const next of matcho(head.data, head.pattern, substitutions, step).reverse())
+        work.push({ pending: rest, substitutions: next, delayed });
+    } else if (head instanceof NodeGoal) {
+      const graph = walk(head.graph, substitutions, step);
+      if (graph instanceof JsonGraph) {
+        const id = walk(head.identifier, substitutions, step);
+        const entries = id instanceof LogicVar ? [...graph.indexIds(step)] :
+          typeof id === 'string' ? [[id, graph.byId(id, step)]] : [];
+        for (const [key, node] of entries.reverse()) {
+          if (!node) continue;
+          let next = unify(head.identifier, key, substitutions, step);
+          if (next !== null) next = unify(head.node, node, next, step);
+          if (next !== null) work.push({ pending: rest, substitutions: next, delayed });
+        }
+      }
+    } else if (head instanceof GraphPathGoal) {
+      const graph = walk(head.graph, substitutions, step);
+      if (graph instanceof JsonGraph) {
+        const start = graph.start(walk(head.start, substitutions, step), step);
+        if (start) {
+          const [known, path] = resolved(head.path, substitutions, step);
+          const [found, value] = known ? graphAtPath(graph, start, path, step) : [false, null];
+          const candidates = known ? (found ? [[path, value]] : []) : graphPaths(graph, start, step);
+          for (const [candidatePath, candidateValue] of candidates.reverse()) {
+            let next = unify(head.path, candidatePath, substitutions, step);
+            if (next !== null) next = unify(head.value, candidateValue, next, step);
+            if (next !== null) work.push({ pending: rest, substitutions: next, delayed });
+          }
+        }
+      }
     } else if (head instanceof NeqGoal || head instanceof GeGoal || head instanceof ProjectGoal) {
       work.push({ pending: rest, substitutions, delayed: [...delayed, head] });
     } else if (head instanceof ChoiceGoal) {
@@ -724,8 +909,21 @@ class Interpreter {
       new MatchGoal(data, pattern)));
     this.global.values.set('@membero', new Native('@membero', 2, (items, item) =>
       new MemberGoal(items, item)));
-    this.global.values.set('@patho', new Native('@patho', 3, (data, path, value) =>
-      new PathGoal(data, path, value)));
+    this.global.values.set('@patho', new Native('@patho', [3, 4], (...args) =>
+      args.length === 3 ? new PathGoal(...args) : new GraphPathGoal(...args)));
+    this.global.values.set('@graph', new Native('@graph', [1, 2], (...args) =>
+      new JsonGraph(...args)));
+    this.global.values.set('@edgeo', new Native('@edgeo', 3, (source, key, target) =>
+      new EdgeGoal(source, key, target)));
+    this.global.values.set('@matcho', new Native('@matcho', 2, (data, pattern) =>
+      new MatchoGoal(data, pattern)));
+    this.global.values.set('@nodeo', new Native('@nodeo', 3, (graph, id, node) =>
+      new NodeGoal(graph, id, node)));
+    this.global.values.set('@record', new Native('@record', 1, fields => {
+      if (!isRecord(fields)) throw new EvaluationError('@record expects an object');
+      return new RecordPattern(fields);
+    }));
+    this.global.values.set('@some', new Native('@some', 1, item => new SomePattern(item)));
     this.global.values.set('@neqo', new Native('@neqo', 2, (a, b) => new NeqGoal(a, b)));
     this.global.values.set('@ge', new Native('@ge', 2, (a, b) => new GeGoal(a, b)));
     this.global.values.set('@guard', new Native('@guard', 1, goal => {
@@ -773,7 +971,7 @@ class Interpreter {
     if (expr.length !== expected) throw new ArityError(`${expr[0]} expects ${expected - 1} operands`);
   }
   accepts(fn, count) {
-    if (fn instanceof Native) return fn.arity === count;
+    if (fn instanceof Native) return Array.isArray(fn.arity) ? fn.arity.includes(count) : fn.arity === count;
     if (fn instanceof Closure) return fn.minArity <= count && count <= fn.maxArity;
     return false;
   }
@@ -803,7 +1001,9 @@ class Interpreter {
       return expr;
     }
     if (expr instanceof LogicVar || expr instanceof Goal ||
-        expr instanceof Native || expr instanceof Closure) return expr;
+        expr instanceof Native || expr instanceof Closure || expr instanceof JsonGraph ||
+        expr instanceof GraphNode || expr instanceof RecordPattern ||
+        expr instanceof SomePattern) return expr;
     if (isRecord(expr)) {
       const names = keys(expr);
       const declarations = names.filter(name => name.startsWith('@'));
@@ -959,6 +1159,21 @@ const examples = {
   fred_project: ['@run', 1, '!Next', ['@conj',
     ['@project', '@plus', ['!Age', 1], '!Next'],
     ['@match', '@data', { Age: '!Age' }]]],
+  fred_graph_city: ['@let', { '@g': ['@graph', '@data'] },
+    ['@run', 1, '!City', ['@patho', '@g', '@g', ['Address', 'City'], '!City']]],
+  fred_graph_edges: ['@let', { '@g': ['@graph', '@data'] },
+    ['@run', 1, '!City', ['@conj',
+      ['@edgeo', '@g', 'Address', '!Address'],
+      ['@edgeo', '!Address', 'City', '!City']]]],
+  fred_graph_phone: ['@let', { '@g': ['@graph', '@data'] },
+    ['@run', 10, '!Number', ['@matcho', '@g',
+      ['@record', { Phone: ['@some',
+        ['@record', { type: 'office', number: '!Number' }]] }]]]],
+  fred_graph_rule: ['@let', {
+    '@adult': ['@function', ['@person', '@age'],
+      ['@conj', ['@edgeo', '@person', 'Age', '@age'], ['@ge', '@age', 18]]],
+    '@g': ['@graph', '@data'],
+  }, ['@run', 1, '!Age', ['@adult', '@g', '!Age']]],
 };
 
 const byId = id => document.querySelector('#' + id);
