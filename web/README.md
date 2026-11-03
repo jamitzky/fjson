@@ -37,14 +37,16 @@ und `@patho` zur Verfügung. Die Beispiele in
 [LOGIC_JSON.md](../LOGIC_JSON.md) lassen sich mit einem geladenen
 Daten-Tab ausführen; dessen Bindung heißt standardmäßig `@data`.
 
-Das Menü **Beispiele** enthält 58 Lektionen in sieben aufklappbaren
+Das Menü **Beispiele** enthält 73 Lektionen in acht aufklappbaren
 Themenbereichen: JSON-Grundlagen, Funktionen, Kontrollfluss, Arithmetik,
-Bereiche und Listen, Logik sowie Graphabfragen. Das getrennte Menü
+Bereiche und Listen, Logik, Graphabfragen sowie J-Komposition. Das getrennte Menü
 **Shell-Snippets** fügt elf kurze Ausdrücke in die Shell ein, ohne sie
-sofort auszuführen. **Tutorial** führt mit 28 Schritten durch Grundlagen,
-Funktionen, Daten, relationale Abfragen, Graphen und Module. Jeder Schritt
+sofort auszuführen. **Tutorial** führt mit 43 Schritten durch Grundlagen,
+Funktionen, Daten, relationale Abfragen, Graphen, Module und J-Funktionskomposition. Jeder Schritt
 zeigt eine Erklärung mit Navigation und kann sein Beispiel direkt laden und
 ausführen. Die Texte sind auch in der Offline-Datei enthalten.
+Die J-Beispiele laden die [J-Bibliothek](../J_MODULE.md) bei der Ausführung
+in die gemeinsame Sitzung; nach einem Sitzungsreset geschieht das erneut.
 [SHOWCASE.md](../SHOWCASE.md) führt durch die Themen
 und erklärt die neuen Rechen- und Listenoperationen. Jedes längere
 Beispiel enthält eine `@kommentar`-Deklaration direkt im ausführbaren
