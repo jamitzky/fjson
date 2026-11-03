@@ -174,12 +174,23 @@ button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:fo
       <span class="toolbar-divider" aria-hidden="true"></span>
       <label for="example">Beispiel</label>
       <select id="example">
-        <option value="inc">Funktion · +1</option>
-        <option value="defaults">Standardwert</option>
-        <option value="logic">Logische Suche</option>
-        <option value="recursion">Rekursion</option>
-        <option value="quote">Zitat als Daten</option>
-        <option value="data">Mit @data arbeiten</option>
+        <optgroup label="Grundlagen">
+          <option value="inc">Funktion · +1</option>
+          <option value="defaults">Standardwert</option>
+          <option value="logic">Logische Suche</option>
+          <option value="recursion">Rekursion</option>
+          <option value="quote">Zitat als Daten</option>
+          <option value="data">Mit @data arbeiten</option>
+        </optgroup>
+        <optgroup label="Fred · relationale JSON-Logik">
+          <option value="fred_match">Teilmuster · Name und Stadt</option>
+          <option value="fred_phone">Büronummern · @membero</option>
+          <option value="fred_email">Arbeits-E-Mails · verschachtelte Arrays</option>
+          <option value="fred_path">Pfad nach London · @patho</option>
+          <option value="fred_adult">Volljährig · @guard und @ge</option>
+          <option value="fred_cities">Zwei Städte · @neqo</option>
+          <option value="fred_project">Alter + 1 · @project</option>
+        </optgroup>
       </select>
       <span class="toolbar-spacer"></span>
       <button id="reset" type="button" title="Interpreter-Sitzung zurücksetzen">Sitzung zurücksetzen</button>
@@ -887,6 +898,32 @@ class Interpreter {
 }
 
 
+const fredData = {
+  FirstName: 'Fred',
+  Surname: 'Smith',
+  Age: 28,
+  Address: {
+    Street: 'Hursley Park', City: 'Winchester', Postcode: 'SO21 2JN',
+  },
+  Phone: [
+    { type: 'home', number: '0203 544 1234' },
+    { type: 'office', number: '01962 001234' },
+    { type: 'office', number: '01962 001235' },
+    { type: 'mobile', number: '077 7700 1234' },
+  ],
+  Email: [
+    { type: 'work', address: ['fred.smith@my-work.com', 'fsmith@my-work.com'] },
+    { type: 'home', address: ['freddy@my-social.com', 'frederic.smith@very-serious.com'] },
+  ],
+  Other: {
+    'Over 18 ?': true,
+    Misc: null,
+    'Alternative.Address': {
+      Street: 'Brick Lane', City: 'London', Postcode: 'E1 6RF',
+    },
+  },
+};
+
 const examples = {
   inc: ['@let', { '@inc': ['@function', ['@x'], ['@plus', '@x', 1]] }, ['@inc', 41]],
   defaults: ['@let', { '@inc': ['@function', { '@x': 1 }, ['@plus', '@x', 1]] },
@@ -899,6 +936,29 @@ const examples = {
   ['@factorial', 5]],
   quote: ['@quote', { '@message': ['@plus', 40, 2], symbol: '!X' }],
   data: ['@plus', ['@get', '@data', 'answer'], 1],
+  fred_match: ['@run', 1, { name: '!First', surname: '!Last' },
+    ['@match', '@data', { FirstName: '!First', Surname: '!Last',
+      Address: { City: 'Winchester' } }]],
+  fred_phone: ['@run', 10, '!Number', ['@conj',
+    ['@patho', '@data', ['Phone'], '!Phones'],
+    ['@membero', '!Phones', { type: 'office', number: '!Number' }]]],
+  fred_email: ['@run', 10, '!Address', ['@conj',
+    ['@patho', '@data', ['Email'], '!Emails'],
+    ['@conj', ['@membero', '!Emails', { type: 'work', address: '!Addresses' }],
+      ['@membero', '!Addresses', '!Address']]]],
+  fred_path: ['@run', 1, '!Path', ['@patho', '@data', '!Path', 'London']],
+  fred_adult: ['@run', 1, '!Age', ['@conj',
+    ['@guard', ['@ge', '!Age', 18]],
+    ['@match', '@data', { Age: '!Age' }]]],
+  fred_cities: ['@run', 1,
+    { person: '!Name', main_city: '!City1', alternative_city: '!City2' },
+    ['@conj', ['@neqo', '!City1', '!City2'],
+      ['@match', '@data', { FirstName: '!Name',
+        Address: { City: '!City1' },
+        Other: { 'Alternative.Address': { City: '!City2' } } }]]],
+  fred_project: ['@run', 1, '!Next', ['@conj',
+    ['@project', '@plus', ['!Age', 1], '!Next'],
+    ['@match', '@data', { Age: '!Age' }]]],
 };
 
 const byId = id => document.querySelector('#' + id);
@@ -1278,10 +1338,19 @@ byId('reset').addEventListener('click', () => {
 example.addEventListener('change', () => {
   const code = active?.kind === 'code' ? active :
     tabs.find(tab => tab.kind === 'code') ?? addTab('code');
+  if (example.value.startsWith('fred_')) {
+    const data = tabs.find(tab => tab.binding === '@data') ?? addTab('data');
+    data.binding = '@data';
+    data.label = 'Fred · Daten';
+    data.filename = 'fred.json';
+    data.content = JSON.stringify(fredData, null, 2);
+    data.dirty = true;
+  }
   code.content = JSON.stringify(examples[example.value], null, 2);
   code.dirty = true;
   activateTab(code);
-  setStatus('Beispiel geladen');
+  setStatus(example.value.startsWith('fred_') ?
+    'Fred-Beispiel geladen · @data ersetzt' : 'Beispiel geladen');
 });
 editor.addEventListener('input', () => {
   active.content = editor.value;
