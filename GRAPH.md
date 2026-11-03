@@ -75,8 +75,8 @@ ist, liefert diese Abfrage `"Winchester"`:
 Die folgende Abfrage liefert beide Büronummern. `@some` verzweigt über
 Arrayelemente, `@record` ignoriert nicht genannte Felder. Dieselbe
 logische Variable kann an mehreren Stellen eine Gleichheitsbedingung
-ausdrücken. Die ältere Operation `@match` bleibt für ein einzelnes
-partielles Muster ohne `@some` erhalten.
+ausdrücken. `@matcho` akzeptiert auch ein einfaches partielles
+Objektmuster ohne `@some`.
 
 ```json
 ["@let", {"@g": ["@graph", "@person"]},
