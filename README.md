@@ -90,7 +90,7 @@ Für Bedingungen gilt: `false`, `null`, `0`, `""`, `[]` und `{}` sind falsch; an
 
 `@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. `@try` fängt `EvaluationError` und dessen Unterklassen ab, aber keinen `ResourceLimitError`; ohne Ersatz liefert es `{"error": "Klassenname", "message": "Text"}`. Bereits erfolgte Deklarationen werden durch `@try` nicht zurückgerollt.
 
-Operationen wie `@plus` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Das Paket bietet `@plus`, `@minus`, `@times`, `@divide`, `@eq`, `@le`, `@get` und `@length` sowie die Logikfunktionen `@unify`, `@choice`, `@conj` und `@run` als eingebaute Funktionen. `@get` liest einen Objektschlüssel oder einen Arrayindex; `@length` liefert die Zahl der Einträge eines Objekts oder Arrays. Bei fehlendem Schlüssel oder Index entsteht ein Fehler. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
+Operationen wie `@plus` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Das Paket bietet `@plus`, `@minus`, `@times`, `@divide`, `@eq`, `@le`, `@get` und `@length` sowie die Logikfunktionen `@unify`, `@match`, `@membero`, `@patho`, `@neqo`, `@ge`, `@guard`, `@project`, `@choice`, `@conj` und `@run` als eingebaute Funktionen. `@get` liest einen Objektschlüssel oder einen Arrayindex; `@length` liefert die Zahl der Einträge eines Objekts oder Arrays. Bei fehlendem Schlüssel oder Index entsteht ein Fehler. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
 
 ## Auswertung und Aufrufe
 
@@ -136,7 +136,7 @@ assert fjson(["@quote", "!X"]) == "!X"
     ["@unify", "!X", "bob"]]]
 ```
 
-Ergebnis: `["alice", "bob"]`. Die Bibliothek vereinigt Listen und Objekte strukturell, prüft den Occurs-Check und trennt Suchzweige. Jeder Funktionsaufruf gibt seinen inneren `!`-Namen einen frischen Geltungsbereich; so lassen sich Variablen einer mehrfach verwendeten Klausel frisch erzeugen. Die genaue Semantik, weitere ausführbare Beispiele und die Grenzen der derzeit tiefenorientierten Suche stehen in [LOGIC.md](LOGIC.md).
+Ergebnis: `["alice", "bob"]`. Die Bibliothek vereinigt Listen und Objekte strukturell, prüft den Occurs-Check und trennt Suchzweige. Jeder Funktionsaufruf gibt seinen inneren `!`-Namen einen frischen Geltungsbereich; so lassen sich Variablen einer mehrfach verwendeten Klausel frisch erzeugen. `@match` prüft partielle JSON-Objekte, `@membero` durchsucht Arrays, und `@patho` findet Werte oder Pfade. `@neqo`, `@guard` mit `@ge` und `@project` unterstützen verzögerte Bedingungen und Berechnungen. Die genaue Semantik und Grenzen stehen in [LOGIC.md](LOGIC.md) und [LOGIC_JSON.md](LOGIC_JSON.md); [examples/fred.json](examples/fred.json) liefert verschachtelte Beispieldaten.
 
 Ein minimales Programm zum Binden und Aufrufen der Funktion soll so aussehen:
 
@@ -273,7 +273,7 @@ Das Kommando gibt das Ergebnis als JSON aus. Closures, logische Variablen und Go
 ## Nächste Schritte
 
 1. Bibliotheksfunktionen wie `@map`, `@filter`, `@compose` und `@curry` auf dem Sprachkern aufbauen.
-2. Die Logikbibliothek um verzögerte rekursive Goals und faire Suche erweitern; anonyme Variablen und Klauseldatenbanken gesondert spezifizieren.
+2. Die Logikbibliothek um verzögerte rekursive Regeln und faire Suche erweitern; anonyme Variablen und Klauseldatenbanken gesondert spezifizieren.
 3. Die weitergehenden FJ@-Metafunktionsregeln getrennt vom Präfixkern spezifizieren und testen; syntaktische Varianten für `fj@nice` entwerfen.
 4. Host-Policies um Quoten und Ablaufzeiten erweitern, die Adapter gegen weitere Randfälle prüfen und numerische Kerne getrennt vom reinen Sprachkern ergänzen.
 
