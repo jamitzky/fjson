@@ -14,5 +14,14 @@
   {"name":"try_fallback","program":["@try","@unknown",42],"expected":42},
   {"name":"get_object","program":["@get",{"answer":42},"answer"],"expected":42},
   {"name":"get_array","program":["@get",[40,42],1],"expected":42},
-  {"name":"length","program":["@length",{"first":1,"second":2}],"expected":2}
+  {"name":"length","program":["@length",{"first":1,"second":2}],"expected":2},
+  {"name":"partial_match","program":["@run",1,"!Name",["@match",{"FirstName":"Fred","Age":28},{"FirstName":"!Name"}]],"expected":["Fred"]},
+  {"name":"membero","program":["@run",2,"!N",["@membero",[1,2,3],"!N"]],"expected":[1,2]},
+  {"name":"patho_forward","program":["@run",1,"!City",["@patho",{"Address":{"City":"Winchester"}},["Address","City"],"!City"]],"expected":["Winchester"]},
+  {"name":"patho_reverse","program":["@run",1,"!Path",["@patho",{"Other":{"Alternative.Address":{"City":"London"}}},"!Path","London"]],"expected":[["Other","Alternative.Address","City"]]},
+  {"name":"neqo_delayed","program":["@run",1,"!X",["@conj",["@neqo","!X",1],["@unify","!X",2]]],"expected":[2]},
+  {"name":"guard_delayed","program":["@run",1,"!Age",["@conj",["@guard",["@ge","!Age",18]],["@match",{"Age":28},{"Age":"!Age"}]]],"expected":[28]},
+  {"name":"project_delayed","program":["@run",1,"!Next",["@conj",["@project","@plus",["!Age",1],"!Next"],["@match",{"Age":28},{"Age":"!Age"}]]],"expected":[29]},
+  {"name":"patho_all_paths","program":["@run",3,"!Path",["@patho",{"a":1,"b":2},"!Path","!Value"]],"expected":[[],["a"],["b"]]},
+  {"name":"neqo_unresolved","program":["@run",1,"!X",["@neqo","!X",1]],"expected":[]}
 ]
