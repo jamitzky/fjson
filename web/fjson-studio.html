@@ -423,6 +423,24 @@ class ChoiceGoal extends Goal {
 class ConjGoal extends Goal {
   constructor(left, right) { super(); this.left = left; this.right = right; }
 }
+class MatchGoal extends Goal {
+  constructor(data, pattern) { super(); this.data = data; this.pattern = pattern; }
+}
+class MemberGoal extends Goal {
+  constructor(items, item) { super(); this.items = items; this.item = item; }
+}
+class PathGoal extends Goal {
+  constructor(data, path, value) { super(); this.data = data; this.path = path; this.value = value; }
+}
+class NeqGoal extends Goal {
+  constructor(left, right) { super(); this.left = left; this.right = right; }
+}
+class GeGoal extends Goal {
+  constructor(left, right) { super(); this.left = left; this.right = right; }
+}
+class ProjectGoal extends Goal {
+  constructor(fn, args, result) { super(); this.fn = fn; this.args = args; this.result = result; }
+}
 
 function walk(term, substitutions, step) {
   while (term instanceof LogicVar && substitutions.has(term)) {
@@ -477,6 +495,81 @@ function unify(left, right, substitutions, step) {
   return result;
 }
 
+function match(data, pattern, substitutions, step) {
+  let result = new Map(substitutions);
+  const pending = [[data, pattern]];
+  while (pending.length) {
+    step();
+    let [value, expected] = pending.pop();
+    value = walk(value, result, step); expected = walk(expected, result, step);
+    if (value instanceof LogicVar) return null;
+    if (isRecord(value) && isRecord(expected)) {
+      const names = keys(expected);
+      if (names.some(key => !Object.hasOwn(value, key))) return null;
+      for (const key of names) pending.push([value[key], expected[key]]);
+      continue;
+    }
+    if (Array.isArray(value) && Array.isArray(expected)) {
+      if (value.length !== expected.length) return null;
+      for (let i = 0; i < value.length; i++) pending.push([value[i], expected[i]]);
+      continue;
+    }
+    result = unify(value, expected, result, step);
+    if (result === null) return null;
+  }
+  return result;
+}
+
+function resolved(term, substitutions, step) {
+  step();
+  const value = walk(term, substitutions, step);
+  if (value instanceof LogicVar) return [false, null];
+  if (Array.isArray(value)) {
+    const parts = value.map(item => resolved(item, substitutions, step));
+    return [parts.every(([ok]) => ok), parts.map(([, item]) => item)];
+  }
+  if (isRecord(value)) {
+    const parts = keys(value).map(key => [key, resolved(value[key], substitutions, step)]);
+    return [parts.every(([, [ok]]) => ok),
+      record(parts.map(([key, [, item]]) => [key, item]))];
+  }
+  return [true, value];
+}
+
+function paths(data, step) {
+  const result = [], work = [{ path: [], value: data, ancestors: new Set() }];
+  while (work.length) {
+    step();
+    const { path, value, ancestors } = work.pop();
+    result.push([path, value]);
+    if (Array.isArray(value) || isRecord(value)) {
+      if (ancestors.has(value)) continue;
+      const next = new Set(ancestors); next.add(value);
+      const entries = Array.isArray(value) ? value.map((item, i) => [i, item]) :
+        keys(value).map(key => [key, value[key]]);
+      for (let i = entries.length - 1; i >= 0; i--) {
+        const [key, item] = entries[i];
+        work.push({ path: [...path, key], value: item, ancestors: next });
+      }
+    }
+  }
+  return result;
+}
+
+function atPath(data, path, step) {
+  if (!Array.isArray(path)) return [false, null];
+  let value = data;
+  for (const key of path) {
+    step();
+    if (isRecord(value) && typeof key === 'string' && Object.hasOwn(value, key))
+      value = value[key];
+    else if (Array.isArray(value) && Number.isSafeInteger(key) &&
+             key >= 0 && key < value.length) value = value[key];
+    else return [false, null];
+  }
+  return [true, value];
+}
+
 function reify(term, substitutions, step) {
   const free = new Map();
   const visit = value => {
@@ -492,21 +585,90 @@ function reify(term, substitutions, step) {
   return visit(term);
 }
 
-function search(goal, query, limit, step) {
-  const results = [], work = [{ pending: [goal], substitutions: new Map() }];
+function sameSubstitutions(left, right) {
+  return left.size === right.size && [...left].every(([key, value]) => right.get(key) === value);
+}
+
+function settle(delayed, substitutions, step, project) {
+  let remaining = delayed;
+  let current = substitutions;
+  while (remaining.length) {
+    const next = [];
+    let progressed = false;
+    for (const goal of remaining) {
+      step();
+      if (goal instanceof NeqGoal) {
+        const possible = unify(goal.left, goal.right, current, step);
+        if (possible === null) progressed = true;
+        else if (sameSubstitutions(possible, current)) return null;
+        else next.push(goal);
+      } else if (goal instanceof GeGoal) {
+        const [leftReady, left] = resolved(goal.left, current, step);
+        const [rightReady, right] = resolved(goal.right, current, step);
+        if (!leftReady || !rightReady) next.push(goal);
+        else if (typeof left !== 'number' || typeof right !== 'number' ||
+                 !Number.isFinite(left) || !Number.isFinite(right) || left < right) return null;
+        else progressed = true;
+      } else if (goal instanceof ProjectGoal) {
+        const [ready, args] = resolved(goal.args, current, step);
+        if (!ready) next.push(goal);
+        else {
+          current = unify(goal.result, project(goal.fn, args), current, step);
+          if (current === null) return null;
+          progressed = true;
+        }
+      } else throw new TypeError('unsupported delayed goal');
+    }
+    if (!progressed) return null;
+    remaining = next;
+  }
+  return current;
+}
+
+function search(goal, query, limit, step, project) {
+  const results = [], work = [{ pending: [goal], substitutions: new Map(), delayed: [] }];
   while (work.length && results.length < limit) {
     step();
-    const { pending, substitutions } = work.pop();
-    if (!pending.length) { results.push(reify(query, substitutions, step)); continue; }
+    const { pending, substitutions, delayed } = work.pop();
+    if (!pending.length) {
+      const state = settle(delayed, substitutions, step, project);
+      if (state !== null) results.push(reify(query, state, step));
+      continue;
+    }
     const [head, ...rest] = pending;
     if (head instanceof UnifyGoal) {
       const next = unify(head.left, head.right, substitutions, step);
-      if (next !== null) work.push({ pending: rest, substitutions: next });
+      if (next !== null) work.push({ pending: rest, substitutions: next, delayed });
+    } else if (head instanceof MatchGoal) {
+      const next = match(head.data, head.pattern, substitutions, step);
+      if (next !== null) work.push({ pending: rest, substitutions: next, delayed });
+    } else if (head instanceof MemberGoal) {
+      const items = walk(head.items, substitutions, step);
+      if (Array.isArray(items)) {
+        for (let i = items.length - 1; i >= 0; i--) {
+          const next = unify(items[i], head.item, substitutions, step);
+          if (next !== null) work.push({ pending: rest, substitutions: next, delayed });
+        }
+      }
+    } else if (head instanceof PathGoal) {
+      const data = walk(head.data, substitutions, step);
+      if (!(data instanceof LogicVar)) {
+        const [known, path] = resolved(head.path, substitutions, step);
+        const [found, value] = known ? atPath(data, path, step) : [false, null];
+        const candidates = known ? (found ? [[path, value]] : []) : paths(data, step);
+        for (const [path, value] of candidates.reverse()) {
+          let next = unify(head.path, path, substitutions, step);
+          if (next !== null) next = unify(head.value, value, next, step);
+          if (next !== null) work.push({ pending: rest, substitutions: next, delayed });
+        }
+      }
+    } else if (head instanceof NeqGoal || head instanceof GeGoal || head instanceof ProjectGoal) {
+      work.push({ pending: rest, substitutions, delayed: [...delayed, head] });
     } else if (head instanceof ChoiceGoal) {
-      work.push({ pending: [head.right, ...rest], substitutions });
-      work.push({ pending: [head.left, ...rest], substitutions });
+      work.push({ pending: [head.right, ...rest], substitutions, delayed });
+      work.push({ pending: [head.left, ...rest], substitutions, delayed });
     } else if (head instanceof ConjGoal) {
-      work.push({ pending: [head.left, head.right, ...rest], substitutions });
+      work.push({ pending: [head.left, head.right, ...rest], substitutions, delayed });
     } else throw new TypeError('unsupported logic goal');
   }
   return results;
@@ -547,6 +709,23 @@ class Interpreter {
       throw new EvaluationError('@length expects an array or object');
     }));
     this.global.values.set('@unify', new Native('@unify', 2, (a, b) => new UnifyGoal(a, b)));
+    this.global.values.set('@match', new Native('@match', 2, (data, pattern) =>
+      new MatchGoal(data, pattern)));
+    this.global.values.set('@membero', new Native('@membero', 2, (items, item) =>
+      new MemberGoal(items, item)));
+    this.global.values.set('@patho', new Native('@patho', 3, (data, path, value) =>
+      new PathGoal(data, path, value)));
+    this.global.values.set('@neqo', new Native('@neqo', 2, (a, b) => new NeqGoal(a, b)));
+    this.global.values.set('@ge', new Native('@ge', 2, (a, b) => new GeGoal(a, b)));
+    this.global.values.set('@guard', new Native('@guard', 1, goal => {
+      if (!(goal instanceof Goal)) throw new EvaluationError('@guard expects a goal');
+      return goal;
+    }));
+    this.global.values.set('@project', new Native('@project', 3, (fn, args, result) => {
+      if (!(fn instanceof Native || fn instanceof Closure) || !Array.isArray(args))
+        throw new EvaluationError('@project expects a function and argument array');
+      return new ProjectGoal(fn, args, result);
+    }));
     this.global.values.set('@choice', new Native('@choice', 2, (a, b) => {
       if (!(a instanceof Goal) || !(b instanceof Goal)) throw new EvaluationError('@choice expects two goals');
       return new ChoiceGoal(a, b);
@@ -559,7 +738,8 @@ class Interpreter {
       if (!Number.isSafeInteger(limit) || limit < 0)
         throw new EvaluationError('@run expects a nonnegative integer limit');
       if (!(goal instanceof Goal)) throw new EvaluationError('@run expects a goal');
-      return search(goal, query, limit, () => this.tick(0));
+      return search(goal, query, limit, () => this.tick(0),
+        (fn, args) => this.invoke(fn, args, 0));
     }));
   }
 
