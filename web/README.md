@@ -7,7 +7,14 @@ JavaScript-Interpreter, die IDE und das CSS. Diese eine Datei herunterladen
 und lokal im Browser öffnen, zum Beispiel per Doppelklick. Ein Webserver
 und eine Internetverbindung sind nicht erforderlich.
 
-Die Arbeitsfläche startet oben mit den Tabs **Input** und **Daten**.
+Die Arbeitsfläche startet mit **Code links und Daten rechts**. Beide
+Editoren bleiben gleichzeitig sichtbar; der senkrechte Trenner zwischen
+ihnen ist verschiebbar. Ein Code-Tab wechselt nur den linken Editor, ein
+Daten-Tab nur den rechten. Die Toolbar führt immer den sichtbaren Code mit
+allen offenen Daten-Tabs aus. Öffnen und Speichern beziehen sich auf den
+zuletzt ausgewählten Tab.
+
+Die Arbeitsfläche startet mit den Tabs **Input** und **Daten**.
 Im Menü oben erzeugen **＋ Code** und **＋ Daten** weitere Tabs. Der erste
 Daten-Tab ist als `@data` verfügbar, weitere als `@data2`, `@data3` usw.
 Diese Namen bleiben einem Tab zugeordnet; beim Schließen eines Daten-Tabs
@@ -38,10 +45,12 @@ Beim Auswählen eines Fred-Beispiels wird der Inhalt des `@data`-Tabs
 durch [examples/fred.json](../examples/fred.json) ersetzt. Der Datensatz
 ist auch in der Offline-HTML-Datei enthalten; dafür ist kein Laden über
 das Netzwerk nötig. Vorherige Änderungen am `@data`-Tab bei Bedarf
-zuerst speichern.
+zuerst speichern. Die Beispiele sind kompakt formatiert: einfache Listen
+und Objekte stehen jeweils auf einer Zeile, während verschachtelte
+Ausdrücke eingerückt bleiben.
 
-**Ausführen** oder `Strg+Enter`/`⌘+Enter` wertet den aktiven Code-Tab aus.
-Ein Daten-Tab zeigt beim Ausführen seinen JSON-Wert im Ergebnisbereich.
+**Code ausführen** oder `Strg+Enter`/`⌘+Enter` wertet den links sichtbaren
+Code mit den rechts sichtbaren Daten aus.
 Die **Shell liegt unten links** und hat einen eigenen Ausführen-Knopf
 sowie `Strg+Enter`/`⌘+Enter`. **Ergebnisse und Fehler stehen unten rechts**.
 Der waagerechte Trenner über dem unteren Bereich verändert seine Höhe;
