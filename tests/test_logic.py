@@ -123,17 +123,17 @@ class LogicLibraryTests(unittest.TestCase):
     def test_partial_match_and_shared_variables(self):
         self.fred()
         query = ["@run", 1, ["!First", "!Last"],
-                 ["@match", "@person", {
+                 ["@matcho", "@person", {
                      "FirstName": "!First", "Surname": "!Last",
                      "Address": {"City": "Winchester"},
                  }]]
         self.assertEqual(self.fj(query), [["Fred", "Smith"]])
         self.assertEqual(self.fj(["@run", 1, "!X",
-            ["@match", "@person", {"FirstName": "!X", "Surname": "!X"}]]), [])
+            ["@matcho", "@person", {"FirstName": "!X", "Surname": "!X"}]]), [])
         self.assertEqual(self.fj(["@run", 1, 1,
-            ["@match", "@person", {"Other": {"Misc": None}}]]), [1])
+            ["@matcho", "@person", {"Other": {"Misc": None}}]]), [1])
         self.assertEqual(self.fj(["@run", 1, 1,
-            ["@match", "@person", {"Other": {"Missing": None}}]]), [])
+            ["@matcho", "@person", {"Other": {"Missing": None}}]]), [])
         self.assertEqual(self.fj(["@run", 1, 1,
             ["@unify", "@person", {"FirstName": "Fred"}]]), [])
 
@@ -151,6 +151,17 @@ class LogicLibraryTests(unittest.TestCase):
         self.assertEqual(self.fj(work_email),
                          ["fred.smith@my-work.com", "fsmith@my-work.com"])
 
+    def test_membero_and_some_have_distinct_semantics(self):
+        data = [{"a": 1, "b": 2}]
+        self.assertEqual(self.fj(["@run", 1, "!X",
+            ["@membero", data, {"a": "!X"}]]), [])
+        self.assertEqual(self.fj(["@run", 1, "!X",
+            ["@matcho", data, ["@some", ["@record", {"a": "!X"}]]]]), [1])
+        self.assertEqual(self.fj(["@run", 1, "!X",
+            ["@membero", ["!X"], 1]]), [1])
+        self.assertEqual(self.fj(["@run", 1, "!X",
+            ["@matcho", ["!X"], ["@some", 1]]]), [])
+
     def test_patho_forward_and_reverse(self):
         self.fred()
         self.assertEqual(self.fj(["@run", 1, "!City",
@@ -165,12 +176,12 @@ class LogicLibraryTests(unittest.TestCase):
             ["@patho", {"a": 1, "b": 2}, "!Path", "!Value"]]),
             [[], ["a"], ["b"]])
 
-    def test_delayed_neq_guard_and_project(self):
+    def test_delayed_neq_ge_and_project(self):
         self.fred()
         cities = ["@run", 1,
             {"person": "!Name", "main_city": "!City1", "alternative_city": "!City2"},
             ["@conj", ["@neqo", "!City1", "!City2"],
-                ["@match", "@person", {
+                ["@matcho", "@person", {
                     "FirstName": "!Name", "Address": {"City": "!City1"},
                     "Other": {"Alternative.Address": {"City": "!City2"}},
                 }]]]
@@ -178,15 +189,15 @@ class LogicLibraryTests(unittest.TestCase):
             "person": "Fred", "main_city": "Winchester", "alternative_city": "London",
         }])
         self.assertEqual(self.fj(["@run", 1, "!Age", ["@conj",
-            ["@guard", ["@ge", "!Age", 18]],
-            ["@match", "@person", {"Age": "!Age"}]]]), [28])
+            ["@ge", "!Age", 18],
+            ["@matcho", "@person", {"Age": "!Age"}]]]), [28])
         self.fj({"@adult": ["@function", ["@candidate"], ["@conj",
-            ["@match", "@candidate", {"Age": "!Age"}],
-            ["@guard", ["@ge", "!Age", 18]]]]})
+            ["@matcho", "@candidate", {"Age": "!Age"}],
+            ["@ge", "!Age", 18]]]})
         self.assertEqual(self.fj(["@run", 1, True, ["@adult", "@person"]]), [True])
         self.assertEqual(self.fj(["@run", 1, "!Next", ["@conj",
             ["@project", "@plus", ["!Age", 1], "!Next"],
-            ["@match", "@person", {"Age": "!Age"}]]]), [29])
+            ["@matcho", "@person", {"Age": "!Age"}]]]), [29])
         self.assertEqual(self.fj(["@run", 1, "!X", ["@neqo", "!X", 1]]), [])
         self.assertEqual(self.fj(["@run", 1, "!X", ["@conj",
             ["@neqo", "!X", 1], ["@unify", "!X", 1]]]), [])
@@ -197,7 +208,7 @@ class LogicLibraryTests(unittest.TestCase):
         self.assertEqual(self.fj(["@run", 1, "!X", ["@conj",
             ["@neqo", {"x": "!X"}, {"x": 1}], ["@unify", "!X", 1]]]), [])
         self.assertEqual(self.fj(["@run", 1, "!Age", ["@conj",
-            ["@guard", ["@ge", "!Age", 18]], ["@unify", "!Age", 17]]]), [])
+            ["@ge", "!Age", 18], ["@unify", "!Age", 17]]]), [])
 
 
 if __name__ == "__main__":
