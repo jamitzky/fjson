@@ -71,7 +71,7 @@ die Tests automatisch; der Knopf startet sie erneut. Die kleine
 
 Für die IDE gibt es zusätzlich eine
 [vollständig eigenständige HTML-Datei](../web/fjson-studio.html). Sie
-enthält `fjson.mjs`, die 28 Tutorial-Schritte, den App-Code und die Styles inline. Die Datei kann
+enthält `fjson.mjs`, die 43 Tutorial-Schritte, den App-Code und die Styles inline. Die Datei kann
 allein heruntergeladen und ohne Webserver über `file://` geöffnet werden.
 Sie wird aus den modularen Quelldateien mit
 `node web/build-standalone.mjs` erzeugt; `node js/test-pages.mjs` prüft
