@@ -12,7 +12,7 @@ export function buildStandalone() {
 
 if (!page.includes('<link rel="stylesheet" href="./style.css">') ||
     !page.includes('<script type="module" src="./app.mjs"></script>') ||
-    !app.startsWith("import { Closure, Goal, Interpreter, LogicVar } from '../js/fjson.mjs';")) {
+    !app.startsWith("import { Closure, Goal, Interpreter, LogicVar, parseJson } from '../js/fjson.mjs';")) {
   throw new Error('Die Vorlagen haben sich geändert; Standalone-Build prüfen.');
 }
 if (/<\/script/i.test(runtime + app) || /<\/style/i.test(style)) {
@@ -23,7 +23,7 @@ const inlineRuntime = runtime.replace(/^export (class|function) /gm, '$1 ');
 if (/^export\s/m.test(inlineRuntime)) {
   throw new Error('Nicht unterstützter ES-Modul-Export im Interpreter.');
 }
-const inlineApp = app.replace(/^import \{ Closure, Goal, Interpreter, LogicVar \} from '\.\.\/js\/fjson\.mjs';\r?\n/, '');
+const inlineApp = app.replace(/^import \{ Closure, Goal, Interpreter, LogicVar, parseJson \} from '\.\.\/js\/fjson\.mjs';\r?\n/, '');
   return page
   .replace('<link rel="stylesheet" href="./style.css">', `<style>\n${style}</style>`)
   .replace('<script type="module" src="./app.mjs"></script>', '')
