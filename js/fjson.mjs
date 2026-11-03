@@ -646,6 +646,7 @@ export class Interpreter {
       if (isRecord(value)) return keys(value).length;
       throw new EvaluationError('@length expects an array or object');
     }));
+    this.global.values.set('@list', new Native('@list', null, (...items) => items));
     this.global.values.set('@range', new Native('@range', [1, 2, 3], (...args) => {
       if (args.some(value => !Number.isSafeInteger(value)))
         throw new EvaluationError('@range expects integers');
@@ -741,7 +742,8 @@ export class Interpreter {
     if (expr.length !== expected) throw new ArityError(`${expr[0]} expects ${expected - 1} operands`);
   }
   accepts(fn, count) {
-    if (fn instanceof Native) return Array.isArray(fn.arity) ? fn.arity.includes(count) : fn.arity === count;
+    if (fn instanceof Native) return fn.arity === null ||
+      (Array.isArray(fn.arity) ? fn.arity.includes(count) : fn.arity === count);
     if (fn instanceof Closure) return fn.minArity <= count && count <= fn.maxArity;
     return false;
   }
