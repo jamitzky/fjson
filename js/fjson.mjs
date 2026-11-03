@@ -603,12 +603,41 @@ export class Interpreter {
         throw new EvaluationError(`${name} produced a number outside the safe range`);
       return result;
     });
+    const unary = (name, fn) => new Native(name, 1, value => {
+      const result = fn(number(value, name));
+      if (!Number.isFinite(result) ||
+          (Number.isInteger(result) && !Number.isSafeInteger(result)))
+        throw new EvaluationError(`${name} produced a number outside the safe range`);
+      return result;
+    });
     for (const [name, fn] of [
       ['@plus', (a, b) => a + b], ['@minus', (a, b) => a - b],
       ['@times', (a, b) => a * b], ['@divide', (a, b) => a / b],
+      ['@pow', (a, b) => a ** b], ['@min', Math.min], ['@max', Math.max],
     ]) this.global.values.set(name, binary(name, fn));
+    for (const [name, fn] of [
+      ['@negate', a => -a], ['@abs', Math.abs], ['@floor', Math.floor],
+      ['@ceil', Math.ceil], ['@trunc', Math.trunc],
+      ['@round', a => Math.sign(a) * Math.floor(Math.abs(a) + 0.5)],
+      ['@sqrt', Math.sqrt],
+    ]) this.global.values.set(name, unary(name, fn));
+    this.global.values.set('@mod', new Native('@mod', 2, (a, b) => {
+      if (!Number.isSafeInteger(a) || !Number.isSafeInteger(b))
+        throw new EvaluationError('@mod expects integers');
+      if (b === 0) throw new EvaluationError('@mod division by zero');
+      let result = a % b;
+      if (result !== 0 && (result > 0) !== (b > 0)) result += b;
+      return result;
+    }));
+    this.global.values.set('@lt', new Native('@lt', 2, (a, b) =>
+      number(a, '@lt') < number(b, '@lt')));
     this.global.values.set('@le', new Native('@le', 2, (a, b) =>
       number(a, '@le') <= number(b, '@le')));
+    this.global.values.set('@gt', new Native('@gt', 2, (a, b) =>
+      number(a, '@gt') > number(b, '@gt')));
+    this.global.values.set('@gte', new Native('@gte', 2, (a, b) =>
+      number(a, '@gte') >= number(b, '@gte')));
+    this.global.values.set('@not', new Native('@not', 1, value => !truthy(value)));
     this.global.values.set('@eq', new Native('@eq', 2, jsonEqual));
     this.global.values.set('@get', new Native('@get', 2, (container, key) => {
       if (Array.isArray(container) && Number.isSafeInteger(key)) {
@@ -622,6 +651,40 @@ export class Interpreter {
       if (Array.isArray(value)) return value.length;
       if (isRecord(value)) return keys(value).length;
       throw new EvaluationError('@length expects an array or object');
+    }));
+    this.global.values.set('@range', new Native('@range', [1, 2, 3], (...args) => {
+      if (args.some(value => !Number.isSafeInteger(value)))
+        throw new EvaluationError('@range expects integers');
+      const [start, stop, stride] = args.length === 1 ? [0, args[0], 1] :
+        args.length === 2 ? [args[0], args[1], 1] : args;
+      if (stride === 0) throw new EvaluationError('@range step must not be zero');
+      const result = [];
+      for (let value = start; stride > 0 ? value < stop : value > stop; value += stride) {
+        this.tick(0);
+        if (!Number.isSafeInteger(value)) throw new EvaluationError('@range exceeded safe integer range');
+        result.push(value);
+      }
+      return result;
+    }));
+    const sequenceArgs = (name, fn, items, arity) => {
+      if (!(fn instanceof Native || fn instanceof Closure) || !Array.isArray(items))
+        throw new EvaluationError(`${name} expects a function and an array`);
+      if (!this.accepts(fn, arity))
+        throw new ArityError(`${name} callback must accept ${arity} arguments`);
+    };
+    this.global.values.set('@map', new Native('@map', 2, (fn, items) => {
+      sequenceArgs('@map', fn, items, 1);
+      return items.map(item => this.invoke(fn, [item], 0));
+    }));
+    this.global.values.set('@filter', new Native('@filter', 2, (fn, items) => {
+      sequenceArgs('@filter', fn, items, 1);
+      return items.filter(item => truthy(this.invoke(fn, [item], 0)));
+    }));
+    this.global.values.set('@reduce', new Native('@reduce', 3, (fn, items, initial) => {
+      sequenceArgs('@reduce', fn, items, 2);
+      let result = initial;
+      for (const item of items) result = this.invoke(fn, [result, item], 0);
+      return result;
     }));
     this.global.values.set('@unify', new Native('@unify', 2, (a, b) => new UnifyGoal(a, b)));
     this.global.values.set('@match', new Native('@match', 2, (data, pattern) =>
