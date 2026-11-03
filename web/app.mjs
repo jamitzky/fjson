@@ -17,6 +17,8 @@ const examples = {
 const byId = id => document.querySelector('#' + id);
 const editor = byId('source');
 const highlight = byId('highlight');
+const shellSource = byId('shell-source');
+const shellHighlight = byId('shell-highlight');
 const tabStrip = byId('tabs');
 const output = byId('output');
 const outputCount = byId('output-count');
@@ -29,8 +31,10 @@ const editorHint = byId('editor-hint');
 const example = byId('example');
 const fileInput = byId('file-input');
 const workarea = byId('workarea');
-const outputPane = byId('output-pane');
+const lowerPane = byId('lower-pane');
+const shellPane = byId('shell-pane');
 const splitter = byId('splitter');
+const columnSplitter = byId('column-splitter');
 
 let interpreter = new Interpreter();
 let tabs = [];
@@ -41,6 +45,8 @@ let dataCount = 0;
 let outputEntries = 0;
 let outputHeight = 230;
 let drag = null;
+let shellWidth = 380;
+let columnDrag = null;
 
 function escapeHtml(value) {
   return value.replace(/[&<>"]/g, char => ({
@@ -78,6 +84,12 @@ function updateEditor() {
     (lines === 1 ? ' Zeile' : ' Zeilen');
 }
 
+function updateShell() {
+  shellHighlight.innerHTML = colorize(shellSource.value);
+  shellHighlight.scrollTop = shellSource.scrollTop;
+  shellHighlight.scrollLeft = shellSource.scrollLeft;
+}
+
 function setStatus(message, failed = false) {
   status.textContent = message;
   statusbar.className = failed ? 'statusbar error' : 'statusbar';
@@ -102,7 +114,7 @@ function renderTabs() {
     select.setAttribute('aria-label', tab.label);
     const icon = document.createElement('span');
     icon.className = 'tab-icon';
-    icon.textContent = tab.kind === 'data' ? '{}' : tab.kind === 'shell' ? '>' : '◇';
+    icon.textContent = tab.kind === 'data' ? '{}' : '◇';
     select.append(icon);
     const label = document.createElement('span');
     label.textContent = tab.label;
@@ -115,15 +127,13 @@ function renderTabs() {
     }
     select.addEventListener('click', () => activateTab(tab));
     slot.append(select);
-    if (tab.kind !== 'shell') {
-      const close = document.createElement('button');
-      close.className = 'tab-close';
-      close.type = 'button';
-      close.textContent = '×';
-      close.setAttribute('aria-label', tab.label + ' schließen');
-      close.addEventListener('click', () => closeTab(tab));
-      slot.append(close);
-    }
+    const close = document.createElement('button');
+    close.className = 'tab-close';
+    close.type = 'button';
+    close.textContent = '×';
+    close.setAttribute('aria-label', tab.label + ' schließen');
+    close.addEventListener('click', () => closeTab(tab));
+    slot.append(close);
     tabStrip.append(slot);
   }
 }
@@ -136,27 +146,23 @@ function activateTab(tab) {
   editorTitle.textContent = tab.label;
   editorHint.textContent = tab.kind === 'data'
     ? 'JSON-Daten · im Programm als ' + tab.binding + ' verfügbar'
-    : tab.kind === 'shell'
-      ? 'Shell · Ausdrücke teilen sich die Interpreter-Sitzung'
-      : 'fjson · Strg/⌘+Enter zum Ausführen';
+    : 'fjson · Strg/⌘+Enter zum Ausführen';
   bindingInfo.textContent = dataBindings();
   renderTabs();
   updateEditor();
 }
 
 function addTab(kind, initial = false) {
-  const number = kind === 'code' ? ++codeCount : kind === 'data' ? ++dataCount : 0;
+  const number = kind === 'code' ? ++codeCount : ++dataCount;
   const tab = {
     id: nextId++,
     kind,
-    label: kind === 'shell' ? 'Shell' :
-      kind === 'data' ? (number === 1 ? 'Daten' : 'Daten ' + number) :
-        (number === 1 ? 'Input' : 'Input ' + number),
+    label: kind === 'data' ? (number === 1 ? 'Daten' : 'Daten ' + number) :
+      (number === 1 ? 'Input' : 'Input ' + number),
     binding: kind === 'data' ? '@data' + (number === 1 ? '' : number) : null,
-    content: kind === 'shell' ? '["@plus", 1, 2]' :
-      kind === 'data' ? (number === 1
-        ? '{\n  "answer": 41,\n  "items": [1, 2, 3]\n}' : '{}') :
-        initial ? JSON.stringify(examples.inc, null, 2) : '["@plus", 1, 2]',
+    content: kind === 'data' ? (number === 1
+      ? '{\n  "answer": 41,\n  "items": [1, 2, 3]\n}' : '{}') :
+      initial ? JSON.stringify(examples.inc, null, 2) : '["@plus", 1, 2]',
     filename: null,
     dirty: false,
   };
@@ -243,11 +249,25 @@ function runActive() {
   }
 }
 
+function runShell() {
+  if (!shellSource.value.trim()) return;
+  const shell = { label: 'Shell', binding: null };
+  try {
+    bindDataTabs();
+    const result = interpreter.run(shellSource.value);
+    appendOutput(shell, format(result), false);
+    setStatus('Shell ausgeführt · ' + interpreter.steps + ' Schritte');
+  } catch (error) {
+    appendOutput(shell, error.name + ': ' + error.message, true);
+    setStatus(error.name + ': ' + error.message, true);
+  }
+}
+
 function saveActive() {
   if (!active) return;
   const filename = active.filename ??
     (active.kind === 'data' ? active.binding.slice(1) + '.json' :
-      active.kind === 'shell' ? 'shell.fjson.json' : 'input' + active.id + '.fjson.json');
+      'input' + active.id + '.fjson.json');
   const url = URL.createObjectURL(new Blob([active.content], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url;
@@ -300,7 +320,7 @@ function setOutputHeight(height) {
 splitter.addEventListener('pointerdown', event => {
   drag = {
     y: event.clientY,
-    height: outputPane.getBoundingClientRect().height || outputHeight,
+    height: lowerPane.getBoundingClientRect().height || outputHeight,
   };
   splitter.className = 'splitter dragging';
   splitter.setPointerCapture?.(event.pointerId);
@@ -322,9 +342,43 @@ splitter.addEventListener('keydown', event => {
   }
 });
 
+function setShellWidth(width) {
+  const max = Math.max(120, lowerPane.getBoundingClientRect().width - 127);
+  shellWidth = Math.max(120, Math.min(max, Math.round(width)));
+  lowerPane.style.setProperty('--shell-width', shellWidth + 'px');
+  columnSplitter.setAttribute('aria-valuemax', String(max));
+  columnSplitter.setAttribute('aria-valuenow', String(shellWidth));
+}
+
+columnSplitter.addEventListener('pointerdown', event => {
+  columnDrag = {
+    x: event.clientX,
+    width: shellPane.getBoundingClientRect().width || shellWidth,
+  };
+  columnSplitter.className = 'column-splitter dragging';
+  columnSplitter.setPointerCapture?.(event.pointerId);
+});
+columnSplitter.addEventListener('pointermove', event => {
+  if (columnDrag) setShellWidth(columnDrag.width + event.clientX - columnDrag.x);
+});
+for (const name of ['pointerup', 'pointercancel']) {
+  columnSplitter.addEventListener(name, event => {
+    columnDrag = null;
+    columnSplitter.className = 'column-splitter';
+    columnSplitter.releasePointerCapture?.(event.pointerId);
+  });
+}
+columnSplitter.addEventListener('keydown', event => {
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    event.preventDefault();
+    setShellWidth(shellWidth + (event.key === 'ArrowRight' ? 24 : -24));
+  }
+});
+
 byId('new-code').addEventListener('click', () => addTab('code'));
 byId('new-data').addEventListener('click', () => addTab('data'));
 byId('run').addEventListener('click', runActive);
+byId('run-shell').addEventListener('click', runShell);
 byId('open').addEventListener('click', () => fileInput.click());
 byId('save').addEventListener('click', saveActive);
 byId('clear-output').addEventListener('click', clearOutput);
@@ -361,8 +415,19 @@ editor.addEventListener('keydown', event => {
   }
 });
 
+shellSource.addEventListener('input', updateShell);
+shellSource.addEventListener('scroll', updateShell);
+shellSource.addEventListener('keydown', event => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    event.preventDefault();
+    runShell();
+  }
+});
+
 addTab('code', true);
 addTab('data', true);
-addTab('shell', true);
 activateTab(tabs[0]);
+shellSource.value = '["@plus", 1, 2]';
+updateShell();
+setShellWidth(shellPane.getBoundingClientRect().width || shellWidth);
 setStatus('Bereit');
