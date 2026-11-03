@@ -1,0 +1,15 @@
+[
+  {"name":"addition","program":["@plus",40,2],"expected":42},
+  {"name":"default_parameter","program":["@let",{"@inc":["@function",{"@x":1},["@plus","@x",1]]},["@plus",["@inc"],["@inc",41]]],"expected":44},
+  {"name":"closure","program":["@let",{"@n":1,"@f":["@function",["@x"],["@plus","@x","@n"]]},["@f",41]],"expected":42},
+  {"name":"letrec","program":["@letrec",{"@even":["@function",["@n"],["@if",["@le","@n",0],true,["@odd",["@minus","@n",1]]]],"@odd":["@function",["@n"],["@if",["@le","@n",0],false,["@even",["@minus","@n",1]]]]},["@even",8]],"expected":true},
+  {"name":"quote","program":["@quote",["@unknown","!X"]],"expected":["@unknown","!X"]},
+  {"name":"empty_array_false","program":["@if",[],1,2],"expected":2},
+  {"name":"short_circuit","program":["@and",0,"@unknown"],"expected":0},
+  {"name":"apply_values","program":["@apply",["@function",["@x"],"@x"],[["@quote",["@unknown",2]]]],"expected":["@unknown",2]},
+  {"name":"choice","program":["@run",2,"!X",["@choice",["@unify","!X","alice"],["@unify","!X","bob"]]],"expected":["alice","bob"]},
+  {"name":"occurs_check","program":["@run",1,"!X",["@unify","!X",["node","!X"]]],"expected":[]},
+  {"name":"record_unify","program":["@run",1,["!X","!Y"],["@unify",{"left":"!X","right":"!Y"},{"right":2,"left":1}]],"expected":[[1,2]]},
+  {"name":"unbound_markers","program":["@run",1,["!X","!X","!Y"],["@unify",1,1]],"expected":[[{"var":"X","index":0},{"var":"X","index":0},{"var":"Y","index":1}]]},
+  {"name":"try_fallback","program":["@try","@unknown",42],"expected":42}
+]
