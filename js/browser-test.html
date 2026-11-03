@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>fjson · Browser-Test</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; }
+    body { margin: 0; background: #f4f6f7; color: #17252b; }
+    main { max-width: 900px; margin: 3rem auto; padding: 0 1.2rem; }
+    h1 { margin-bottom: .4rem; }
+    p { line-height: 1.55; }
+    .bar { display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0; }
+    button { border: 0; border-radius: .55rem; padding: .7rem 1rem;
+      background: #126b66; color: white; font: inherit; cursor: pointer; }
+    button:hover { background: #0d514d; }
+    #summary { font-weight: 700; }
+    ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+    li { background: white; border: 1px solid #d9e1e4; border-radius: .65rem;
+      padding: .8rem 1rem; display: flex; justify-content: space-between; gap: 1rem; }
+    li.pass::after { content: "Bestanden"; color: #147354; font-weight: 700; }
+    li.fail { border-color: #c44; }
+    li.fail::after { content: "Fehler"; color: #a22; font-weight: 700; }
+    li small { display: block; color: #8d1b1b; margin-top: .3rem; }
+    code { background: #e8ecee; padding: .1rem .3rem; border-radius: .2rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>fjson im Browser testen</h1>
+    <p>Diese Seite lädt <code>fjson.mjs</code> im Browser und führt die
+      gemeinsamen Python-/JavaScript-Fälle sowie Browser-Checks aus.</p>
+    <div class="bar">
+      <button id="run" type="button">Tests erneut ausführen</button>
+      <span id="summary" role="status" aria-live="polite">Tests starten …</span>
+    </div>
+    <ol id="results" aria-label="Testergebnisse"></ol>
+    <p>Die Seite benötigt einen lokalen Webserver. Sie führt keine Datei-,
+      Prozess- oder Netzwerk-Capabilities aus; nur die Testdaten werden vom
+      selben Server geladen.</p>
+  </main>
+  <script type="module" src="./browser-test.mjs"></script>
+</body>
+</html>
