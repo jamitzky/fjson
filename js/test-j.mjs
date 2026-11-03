@@ -3,9 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { Interpreter } from './fjson.mjs';
 import { ModuleLoader } from './modules.mjs';
+import { jModuleSource } from '../web/j-library.mjs';
 
 const source = readFileSync(new URL('../modules/j.fjsonl', import.meta.url), 'utf8');
 const cases = JSON.parse(readFileSync(new URL('../modules/j_cases.json', import.meta.url), 'utf8'));
+
+test('offline IDE embeds the exact J module source', () => {
+  assert.equal(jModuleSource.replace(/\r\n/g, '\n'), source.replace(/\r\n/g, '\n'));
+});
 
 test('J module uses only existing fjson runtime forms', () => {
   const fj = new Interpreter();
