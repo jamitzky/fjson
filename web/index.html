@@ -25,30 +25,16 @@
       <button id="save" type="button" title="Aktiven Tab speichern (Strg/⌘+S)">Speichern</button>
       <input id="file-input" class="sr-only" type="file" accept=".json,application/json">
       <span class="toolbar-divider" aria-hidden="true"></span>
-      <label for="example">Beispiel</label>
-      <select id="example">
-        <optgroup label="Grundlagen">
-          <option value="inc">Funktion · +1</option>
-          <option value="defaults">Standardwert</option>
-          <option value="logic">Logische Suche</option>
-          <option value="recursion">Rekursion</option>
-          <option value="quote">Zitat als Daten</option>
-          <option value="data">Mit @data arbeiten</option>
-        </optgroup>
-        <optgroup label="Fred · relationale JSON-Logik">
-          <option value="fred_match">Teilmuster · Name und Stadt</option>
-          <option value="fred_phone">Büronummern · @membero</option>
-          <option value="fred_email">Arbeits-E-Mails · verschachtelte Arrays</option>
-          <option value="fred_path">Pfad nach London · @patho</option>
-          <option value="fred_adult">Volljährig · @guard und @ge</option>
-          <option value="fred_cities">Zwei Städte · @neqo</option>
-          <option value="fred_project">Alter + 1 · @project</option>
-          <option value="fred_graph_city">Graphpfad · Winchester</option>
-          <option value="fred_graph_edges">Graphkanten · Adresse</option>
-          <option value="fred_graph_phone">Graphmuster · Büronummern</option>
-          <option value="fred_graph_rule">Graphregel · volljährig</option>
-        </optgroup>
-      </select>
+      <div id="code-menu" class="showcase-menu">
+        <button id="code-menu-button" type="button" aria-expanded="false"
+          aria-controls="code-menu-content">Beispiele ▾</button>
+        <div id="code-menu-content" class="menu-popup" hidden></div>
+      </div>
+      <div id="shell-menu" class="showcase-menu">
+        <button id="shell-menu-button" type="button" aria-expanded="false"
+          aria-controls="shell-menu-content">Shell-Snippets ▾</button>
+        <div id="shell-menu-content" class="menu-popup" hidden></div>
+      </div>
       <span class="toolbar-spacer"></span>
       <button id="reset" type="button" title="Interpreter-Sitzung zurücksetzen">Sitzung zurücksetzen</button>
     </div>
