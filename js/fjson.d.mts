@@ -38,10 +38,6 @@ export class ConjGoal extends Goal {
   constructor(left: Goal, right: Goal);
   readonly left: Goal; readonly right: Goal;
 }
-export class MatchGoal extends Goal {
-  constructor(data: unknown, pattern: unknown);
-  readonly data: unknown; readonly pattern: unknown;
-}
 export class MemberGoal extends Goal {
   constructor(items: unknown, item: unknown);
   readonly items: unknown; readonly item: unknown;
