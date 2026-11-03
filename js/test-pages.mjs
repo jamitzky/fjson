@@ -83,7 +83,8 @@ const ideIds = [
 const pageSource = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
 for (const name of [
   'fred_match', 'fred_phone', 'fred_email', 'fred_path',
-  'fred_adult', 'fred_cities', 'fred_project',
+  'fred_adult', 'fred_cities', 'fred_project', 'fred_graph_city',
+  'fred_graph_edges', 'fred_graph_phone', 'fred_graph_rule',
 ]) assert.ok(pageSource.includes('value="' + name + '"'), name + ' fehlt in der Auswahl');
 
 async function checkIde(elements) {
@@ -201,6 +202,10 @@ async function checkIde(elements) {
       person: 'Fred', main_city: 'Winchester', alternative_city: 'London',
     }]],
     ['fred_project', [29]],
+    ['fred_graph_city', ['Winchester']],
+    ['fred_graph_edges', ['Winchester']],
+    ['fred_graph_phone', ['01962 001234', '01962 001235']],
+    ['fred_graph_rule', [28]],
   ];
   for (const [name, expected] of fredCases) {
     get('example').value = name;
