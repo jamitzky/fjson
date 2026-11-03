@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>fjson Studio</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">fj@</span>
+        <div>
+          <strong>fjson Studio</strong>
+          <span class="subtitle">Ein kleines Labor für den JSON-Sprachkern</span>
+        </div>
+      </div>
+      <nav aria-label="Projektlinks">
+        <a href="../js/browser-test.html">Browser-Tests</a>
+        <a href="../js/README.md">Dokumentation</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="heading">
+        <p class="eyebrow">FJ@ · JSON · direkt im Browser</p>
+        <h1 id="heading">Schreibe einen Ausdruck. Sieh, was er tut.</h1>
+        <p>Der Interpreter läuft vollständig in deinem Browser. Wähle ein
+          Beispiel oder bearbeite den JSON-Code selbst. Die Sitzung behält
+          globale Deklarationen, bis du sie zurücksetzt.</p>
+      </section>
+
+      <section class="workspace" aria-label="fjson-Editor und Ergebnis">
+        <div class="panel editor-panel">
+          <div class="panel-head">
+            <div>
+              <span class="panel-kicker">01 / QUELLE</span>
+              <h2>Programm</h2>
+            </div>
+            <label class="example-picker" for="example">
+              Beispiel
+              <select id="example">
+                <option value="inc">Funktion · +1</option>
+                <option value="defaults">Standardwert</option>
+                <option value="logic">Logische Suche</option>
+                <option value="recursion">Rekursion</option>
+                <option value="quote">Zitat als Daten</option>
+              </select>
+            </label>
+          </div>
+          <label class="sr-only" for="source">fjson-Quelltext</label>
+          <textarea id="source" spellcheck="false" autocapitalize="off"
+            autocomplete="off" autocorrect="off" aria-describedby="editor-help"></textarea>
+          <div class="editor-footer">
+            <span id="editor-help">Gültiges JSON · Strg/⌘ + Enter zum Ausführen</span>
+            <span id="line-count" aria-live="polite">1 Zeile</span>
+          </div>
+        </div>
+
+        <div class="panel result-panel">
+          <div class="panel-head">
+            <div>
+              <span class="panel-kicker">02 / AUSWERTUNG</span>
+              <h2>Ergebnis</h2>
+            </div>
+            <span id="status" class="status" role="status" aria-live="polite">Bereit</span>
+          </div>
+          <pre id="result" aria-label="Ausgabe">Drücke „Ausführen“, um den Ausdruck auszuwerten.</pre>
+          <div class="result-footer">
+            <span id="steps">Noch nicht ausgeführt</span>
+            <span>Auswertung bleibt lokal</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button id="run" class="primary" type="button">▶ Ausführen</button>
+        <button id="reset" class="secondary" type="button">Sitzung zurücksetzen</button>
+        <span class="action-note">Keine Datei-, Prozess- oder Netzwerk-Capabilities</span>
+      </div>
+    </main>
+
+    <footer>
+      <span>fjson · Sprachkern 0.3</span>
+      <span>JavaScript-Referenzinterpreter</span>
+    </footer>
+  </div>
+</body>
+</html>
