@@ -60,7 +60,6 @@ button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:fo
   font-size: .76rem; }
 .tab-icon { color: #78b7ea; margin-right: .5rem; font-family: Consolas, monospace; }
 .tab-slot[data-kind="data"] .tab-icon { color: #d7a96a; }
-.tab-slot[data-kind="shell"] .tab-icon { color: #8ed9b1; }
 .tab-close { margin-right: .35rem; border-radius: .2rem;
   padding: .15rem .38rem; font-size: .85rem; }
 .tab-close:hover { background: #46505d; }
@@ -98,6 +97,21 @@ button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:fo
 .splitter:hover, .splitter.dragging, .splitter:focus-visible { background: #4e8fbe; }
 .splitter span { display: block; width: 42px; height: 2px; border-radius: 3px;
   background: #8996a9; }
+.lower-pane { --shell-width: 42%; min-width: 0; min-height: 0; display: grid;
+  grid-template-columns: minmax(120px, var(--shell-width)) 7px minmax(120px, 1fr); }
+.shell-pane { min-width: 0; min-height: 0; display: flex; flex-direction: column;
+  background: #20242b; }
+.shell-editor { min-height: 0; }
+.shell-editor textarea, .shell-editor .highlight { padding: .75rem 1rem; }
+.shell-help { padding: .35rem .75rem; border-top: 1px solid #343a46;
+  color: #8392a5; font-size: .67rem; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.column-splitter { display: grid; place-items: center; cursor: col-resize;
+  background: #343b47; touch-action: none; }
+.column-splitter:hover, .column-splitter.dragging,
+.column-splitter:focus-visible { background: #4e8fbe; }
+.column-splitter span { display: block; width: 2px; height: 42px;
+  border-radius: 3px; background: #8996a9; }
 .output-pane { min-height: 0; display: flex; flex-direction: column;
   background: #191c22; }
 .output-header { min-height: 34px; display: flex; align-items: center;
@@ -106,6 +120,7 @@ button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:fo
 .output-title { display: flex; align-items: center; gap: .9rem;
   color: #c6cfdb; font-size: .68rem; letter-spacing: .09em; }
 #output-count { color: #8190a4; font-weight: 400; letter-spacing: 0; }
+#run-shell { color: #8ed9b1; font-weight: 700; }
 .output { flex: 1; min-height: 0; overflow: auto; padding: .5rem 1rem 1rem;
   font: .82rem/1.55 Consolas, "Cascadia Code", monospace; }
 .empty-output { color: #7f8b9d; }
@@ -191,15 +206,36 @@ button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:fo
         aria-valuemin="100" aria-valuemax="500" aria-valuenow="230"
         title="Ziehen oder Pfeiltasten verwenden"><span></span></div>
 
-      <section id="output-pane" class="output-pane" aria-label="Ausgabe">
-        <div class="output-header">
-          <div class="output-title"><strong>AUSGABE</strong><span id="output-count">0 Einträge</span></div>
-          <button id="clear-output" type="button">Ausgabe leeren</button>
-        </div>
-        <div id="output" class="output" role="log" aria-live="polite">
-          <p class="empty-output">Ausführen zeigt Ergebnisse und Fehler hier an.</p>
-        </div>
-      </section>
+      <div id="lower-pane" class="lower-pane">
+        <section id="shell-pane" class="shell-pane" aria-label="Shell-Eingabe">
+          <div class="output-header">
+            <div class="output-title"><strong>SHELL</strong><span>JSON-Ausdruck</span></div>
+            <button id="run-shell" type="button" title="Shell ausführen (Strg/⌘+Enter)">▶ Ausführen</button>
+          </div>
+          <div class="editor-wrap shell-editor">
+            <pre id="shell-highlight" class="highlight" aria-hidden="true"></pre>
+            <label class="sr-only" for="shell-source">Shell-Ausdruck</label>
+            <textarea id="shell-source" spellcheck="false" autocapitalize="off"
+              autocomplete="off" autocorrect="off"></textarea>
+          </div>
+          <div class="shell-help">Strg/⌘+Enter · gemeinsame Interpreter-Sitzung</div>
+        </section>
+
+        <div id="column-splitter" class="column-splitter" role="separator" tabindex="0"
+          aria-label="Breite von Shell und Ergebnis ändern" aria-orientation="vertical"
+          aria-valuemin="180" aria-valuemax="700" aria-valuenow="380"
+          title="Ziehen oder Pfeiltasten verwenden"><span></span></div>
+
+        <section id="output-pane" class="output-pane" aria-label="Ergebnis und Ausgabe">
+          <div class="output-header">
+            <div class="output-title"><strong>ERGEBNIS</strong><span id="output-count">0 Einträge</span></div>
+            <button id="clear-output" type="button">Ausgabe leeren</button>
+          </div>
+          <div id="output" class="output" role="log" aria-live="polite">
+            <p class="empty-output">Ausführen zeigt Ergebnisse und Fehler hier an.</p>
+          </div>
+        </section>
+      </div>
     </main>
 
     <footer class="statusbar">
@@ -688,6 +724,8 @@ const examples = {
 const byId = id => document.querySelector('#' + id);
 const editor = byId('source');
 const highlight = byId('highlight');
+const shellSource = byId('shell-source');
+const shellHighlight = byId('shell-highlight');
 const tabStrip = byId('tabs');
 const output = byId('output');
 const outputCount = byId('output-count');
@@ -700,8 +738,10 @@ const editorHint = byId('editor-hint');
 const example = byId('example');
 const fileInput = byId('file-input');
 const workarea = byId('workarea');
-const outputPane = byId('output-pane');
+const lowerPane = byId('lower-pane');
+const shellPane = byId('shell-pane');
 const splitter = byId('splitter');
+const columnSplitter = byId('column-splitter');
 
 let interpreter = new Interpreter();
 let tabs = [];
@@ -712,6 +752,8 @@ let dataCount = 0;
 let outputEntries = 0;
 let outputHeight = 230;
 let drag = null;
+let shellWidth = 380;
+let columnDrag = null;
 
 function escapeHtml(value) {
   return value.replace(/[&<>"]/g, char => ({
@@ -749,6 +791,12 @@ function updateEditor() {
     (lines === 1 ? ' Zeile' : ' Zeilen');
 }
 
+function updateShell() {
+  shellHighlight.innerHTML = colorize(shellSource.value);
+  shellHighlight.scrollTop = shellSource.scrollTop;
+  shellHighlight.scrollLeft = shellSource.scrollLeft;
+}
+
 function setStatus(message, failed = false) {
   status.textContent = message;
   statusbar.className = failed ? 'statusbar error' : 'statusbar';
@@ -773,7 +821,7 @@ function renderTabs() {
     select.setAttribute('aria-label', tab.label);
     const icon = document.createElement('span');
     icon.className = 'tab-icon';
-    icon.textContent = tab.kind === 'data' ? '{}' : tab.kind === 'shell' ? '>' : '◇';
+    icon.textContent = tab.kind === 'data' ? '{}' : '◇';
     select.append(icon);
     const label = document.createElement('span');
     label.textContent = tab.label;
@@ -786,15 +834,13 @@ function renderTabs() {
     }
     select.addEventListener('click', () => activateTab(tab));
     slot.append(select);
-    if (tab.kind !== 'shell') {
-      const close = document.createElement('button');
-      close.className = 'tab-close';
-      close.type = 'button';
-      close.textContent = '×';
-      close.setAttribute('aria-label', tab.label + ' schließen');
-      close.addEventListener('click', () => closeTab(tab));
-      slot.append(close);
-    }
+    const close = document.createElement('button');
+    close.className = 'tab-close';
+    close.type = 'button';
+    close.textContent = '×';
+    close.setAttribute('aria-label', tab.label + ' schließen');
+    close.addEventListener('click', () => closeTab(tab));
+    slot.append(close);
     tabStrip.append(slot);
   }
 }
@@ -807,27 +853,23 @@ function activateTab(tab) {
   editorTitle.textContent = tab.label;
   editorHint.textContent = tab.kind === 'data'
     ? 'JSON-Daten · im Programm als ' + tab.binding + ' verfügbar'
-    : tab.kind === 'shell'
-      ? 'Shell · Ausdrücke teilen sich die Interpreter-Sitzung'
-      : 'fjson · Strg/⌘+Enter zum Ausführen';
+    : 'fjson · Strg/⌘+Enter zum Ausführen';
   bindingInfo.textContent = dataBindings();
   renderTabs();
   updateEditor();
 }
 
 function addTab(kind, initial = false) {
-  const number = kind === 'code' ? ++codeCount : kind === 'data' ? ++dataCount : 0;
+  const number = kind === 'code' ? ++codeCount : ++dataCount;
   const tab = {
     id: nextId++,
     kind,
-    label: kind === 'shell' ? 'Shell' :
-      kind === 'data' ? (number === 1 ? 'Daten' : 'Daten ' + number) :
-        (number === 1 ? 'Input' : 'Input ' + number),
+    label: kind === 'data' ? (number === 1 ? 'Daten' : 'Daten ' + number) :
+      (number === 1 ? 'Input' : 'Input ' + number),
     binding: kind === 'data' ? '@data' + (number === 1 ? '' : number) : null,
-    content: kind === 'shell' ? '["@plus", 1, 2]' :
-      kind === 'data' ? (number === 1
-        ? '{\n  "answer": 41,\n  "items": [1, 2, 3]\n}' : '{}') :
-        initial ? JSON.stringify(examples.inc, null, 2) : '["@plus", 1, 2]',
+    content: kind === 'data' ? (number === 1
+      ? '{\n  "answer": 41,\n  "items": [1, 2, 3]\n}' : '{}') :
+      initial ? JSON.stringify(examples.inc, null, 2) : '["@plus", 1, 2]',
     filename: null,
     dirty: false,
   };
@@ -914,11 +956,25 @@ function runActive() {
   }
 }
 
+function runShell() {
+  if (!shellSource.value.trim()) return;
+  const shell = { label: 'Shell', binding: null };
+  try {
+    bindDataTabs();
+    const result = interpreter.run(shellSource.value);
+    appendOutput(shell, format(result), false);
+    setStatus('Shell ausgeführt · ' + interpreter.steps + ' Schritte');
+  } catch (error) {
+    appendOutput(shell, error.name + ': ' + error.message, true);
+    setStatus(error.name + ': ' + error.message, true);
+  }
+}
+
 function saveActive() {
   if (!active) return;
   const filename = active.filename ??
     (active.kind === 'data' ? active.binding.slice(1) + '.json' :
-      active.kind === 'shell' ? 'shell.fjson.json' : 'input' + active.id + '.fjson.json');
+      'input' + active.id + '.fjson.json');
   const url = URL.createObjectURL(new Blob([active.content], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url;
@@ -971,7 +1027,7 @@ function setOutputHeight(height) {
 splitter.addEventListener('pointerdown', event => {
   drag = {
     y: event.clientY,
-    height: outputPane.getBoundingClientRect().height || outputHeight,
+    height: lowerPane.getBoundingClientRect().height || outputHeight,
   };
   splitter.className = 'splitter dragging';
   splitter.setPointerCapture?.(event.pointerId);
@@ -993,9 +1049,43 @@ splitter.addEventListener('keydown', event => {
   }
 });
 
+function setShellWidth(width) {
+  const max = Math.max(120, lowerPane.getBoundingClientRect().width - 127);
+  shellWidth = Math.max(120, Math.min(max, Math.round(width)));
+  lowerPane.style.setProperty('--shell-width', shellWidth + 'px');
+  columnSplitter.setAttribute('aria-valuemax', String(max));
+  columnSplitter.setAttribute('aria-valuenow', String(shellWidth));
+}
+
+columnSplitter.addEventListener('pointerdown', event => {
+  columnDrag = {
+    x: event.clientX,
+    width: shellPane.getBoundingClientRect().width || shellWidth,
+  };
+  columnSplitter.className = 'column-splitter dragging';
+  columnSplitter.setPointerCapture?.(event.pointerId);
+});
+columnSplitter.addEventListener('pointermove', event => {
+  if (columnDrag) setShellWidth(columnDrag.width + event.clientX - columnDrag.x);
+});
+for (const name of ['pointerup', 'pointercancel']) {
+  columnSplitter.addEventListener(name, event => {
+    columnDrag = null;
+    columnSplitter.className = 'column-splitter';
+    columnSplitter.releasePointerCapture?.(event.pointerId);
+  });
+}
+columnSplitter.addEventListener('keydown', event => {
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    event.preventDefault();
+    setShellWidth(shellWidth + (event.key === 'ArrowRight' ? 24 : -24));
+  }
+});
+
 byId('new-code').addEventListener('click', () => addTab('code'));
 byId('new-data').addEventListener('click', () => addTab('data'));
 byId('run').addEventListener('click', runActive);
+byId('run-shell').addEventListener('click', runShell);
 byId('open').addEventListener('click', () => fileInput.click());
 byId('save').addEventListener('click', saveActive);
 byId('clear-output').addEventListener('click', clearOutput);
@@ -1032,10 +1122,21 @@ editor.addEventListener('keydown', event => {
   }
 });
 
+shellSource.addEventListener('input', updateShell);
+shellSource.addEventListener('scroll', updateShell);
+shellSource.addEventListener('keydown', event => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    event.preventDefault();
+    runShell();
+  }
+});
+
 addTab('code', true);
 addTab('data', true);
-addTab('shell', true);
 activateTab(tabs[0]);
+shellSource.value = '["@plus", 1, 2]';
+updateShell();
+setShellWidth(shellPane.getBoundingClientRect().width || shellWidth);
 setStatus('Bereit');
 
 </script>
