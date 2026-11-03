@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import { Interpreter } from './fjson.mjs';
 import { fredData, refsData, lessonSource } from '../web/showcase.mjs';
 import { tutorialGroups, tutorialSteps } from '../web/tutorial.mjs';
+import { ModuleLoader } from './modules.mjs';
+import { jModuleSource } from '../web/j-library.mjs';
 
 test('guided tutorial has substantial explanations and executable steps', () => {
   assert.ok(tutorialGroups.length >= 7);
@@ -16,6 +18,8 @@ test('guided tutorial has substantial explanations and executable steps', () => 
       assert.ok(item.markdown.trim().length > 200, item.id);
       assert.ok(item.markdown.includes('`') || item.markdown.includes('**'), item.id);
       const fj = new Interpreter();
+      if (item.lesson.module === 'j')
+        new ModuleLoader(fj, { j: jModuleSource }).load('["@import","j"]');
       const data = item.lesson.data === 'fred' ? fredData :
         item.lesson.data === 'refs' ? refsData : { answer: 41, items: [1, 2, 3] };
       fj.eval({ '@data': ['@quote', data] });
