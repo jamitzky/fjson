@@ -8,7 +8,9 @@ JavaScript-Code; es gibt keine zweite, abweichende Laufzeit.
 
 Die [JSON-Graphsicht](../GRAPH.md) ist ebenfalls in Python und JavaScript
 implementiert. `@graph`, `@edgeo`, `@matcho`, `@record`, `@some`, `@nodeo`
-und die vierstellige Form von `@patho` sind in beiden Laufzeiten verfügbar.
+und die einheitliche dreistellige Form von `@patho` sind in beiden Laufzeiten
+verfügbar. `@patho` nimmt rohes JSON, eine Graphsicht oder einen Knoten als
+Quelle entgegen.
 
 ## Node und TypeScript
 
