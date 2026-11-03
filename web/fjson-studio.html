@@ -6,288 +6,208 @@
   <title>fjson Studio</title>
   <style>
 :root {
-  color-scheme: light;
-  font-family: system-ui, sans-serif;
-  background: #f6f5f1;
-  color: #1e2d2c;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #17191e;
+  color: #d8dce5;
   font-synthesis: none;
 }
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
+html, body { width: 100%; height: 100%; margin: 0; min-width: 320px; }
 button, select, textarea { font: inherit; }
 button, select { cursor: pointer; }
-a { color: inherit; }
-.shell { min-height: 100vh; display: flex; flex-direction: column; }
-.topbar { display: flex; justify-content: space-between; align-items: center;
-  padding: 1.15rem clamp(1rem, 4vw, 4rem); border-bottom: 1px solid #deded6;
-  background: #fbfaf7; }
-.brand { display: flex; align-items: center; gap: .85rem; }
-.logo { display: grid; place-items: center; width: 2.7rem; height: 2.7rem;
-  border-radius: .65rem; background: #165e59; color: white;
-  font-family: Consolas, monospace; font-weight: 500; }
-.brand strong { display: block; font-size: 1rem; letter-spacing: -.02em; }
-.subtitle { display: block; color: #72807b; font-size: .76rem; margin-top: .1rem; }
-nav { display: flex; gap: 1.2rem; color: #4c645e; font-size: .85rem; }
-nav a { text-decoration: none; border-bottom: 1px solid transparent; }
-nav a:hover { border-color: currentColor; }
-main { width: min(1380px, 100%); margin: 0 auto; padding: 0 clamp(1rem, 4vw, 4rem) 2rem; flex: 1; }
-.intro { max-width: 760px; padding: clamp(2rem, 5vw, 4rem) 0 2rem; }
-.eyebrow { color: #b5683d; font-size: .72rem; font-weight: 700;
-  letter-spacing: .15em; text-transform: uppercase; }
-h1 { margin: .7rem 0 .8rem; font-size: clamp(2rem, 4vw, 3.25rem);
-  letter-spacing: -.055em; line-height: 1.1; }
-.intro > p:last-child { color: #64716c; line-height: 1.65; margin: 0; }
-.workspace { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
-  gap: 1rem; align-items: stretch; }
-.panel { min-width: 0; min-height: 480px; display: flex; flex-direction: column;
-  border: 1px solid #d8ddd7; border-radius: 1rem; overflow: hidden;
-  box-shadow: 0 10px 35px #34453d0b; }
-.editor-panel { background: #fbfaf7; }
-.tabs { display: flex; gap: .25rem; padding: .65rem .8rem 0;
-  border-bottom: 1px solid #dce1dc; background: #f3f5f0; }
-.tab { border: 0; border-radius: .55rem .55rem 0 0; padding: .7rem .95rem;
-  background: transparent; color: #587068; font-size: .83rem; font-weight: 700; }
-.tab:hover { background: #e8eee8; }
-.tab.active { background: #fbfaf7; color: #165e59;
-  box-shadow: 0 -2px 0 #218879 inset; }
-.tab-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.tab-panel[hidden] { display: none; }
-.panel-note { margin: 0; padding: .85rem 1.4rem; color: #66786f;
-  font-size: .8rem; line-height: 1.5; border-bottom: 1px solid #e2e6df; }
-.panel-note code, .intro code { font-family: Consolas, monospace;
-  color: #176b5c; font-weight: 700; }
-.data-status { color: #237361; font-size: .73rem; font-weight: 700; }
-.data-status.error { color: #ae3e43; }
-.tab-actions { display: flex; gap: .6rem; padding: .8rem 1.2rem;
-  border-top: 1px solid #dce1dc; }
-.tab-actions button, #clear-shell { border: 1px solid #ced7d0;
-  border-radius: .5rem; background: white; color: #34534a;
-  padding: .5rem .75rem; font-size: .78rem; font-weight: 700; }
-.tab-actions button:hover, #clear-shell:hover { background: #eff5ef; }
-.editor-wrap { position: relative; flex: 1; min-height: 250px;
-  overflow: hidden; background: #fbfaf7; }
-.editor-wrap textarea, .editor-wrap .highlight { position: absolute; inset: 0;
-  width: 100%; height: 100%; min-height: 0; margin: 0; padding: 1.4rem 1.5rem;
-  border: 0; font: 500 .88rem/1.7 Consolas, monospace;
-  tab-size: 2; letter-spacing: 0; white-space: pre; overflow: auto; }
+button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:focus-visible {
+  outline: 2px solid #82b9ff; outline-offset: -2px;
+}
+.workbench {
+  height: 100dvh; min-height: 420px; display: grid;
+  grid-template-rows: 42px 46px 38px minmax(0, 1fr) 26px;
+  background: #1d2027;
+}
+.titlebar { display: flex; align-items: center; gap: 1.4rem;
+  padding: 0 .85rem; background: #242831; border-bottom: 1px solid #333844; }
+.brand { display: flex; align-items: center; gap: .6rem; white-space: nowrap;
+  color: #edf1f7; font-size: .82rem; letter-spacing: .01em; }
+.brand-mark { color: #83dbb2; font: 700 1.05rem Consolas, monospace; }
+.menu { display: flex; align-items: center; gap: .2rem; }
+.title-note { margin-left: auto; color: #8c96a7; font-size: .7rem; white-space: nowrap; }
+.titlebar button, .toolbar button, .output-header button {
+  border: 0; border-radius: .35rem; background: transparent; color: #c7cfdb;
+  padding: .45rem .7rem; font-size: .76rem;
+}
+.titlebar button:hover, .toolbar button:hover, .output-header button:hover {
+  background: #3a414e; color: white;
+}
+.toolbar { display: flex; align-items: center; gap: .35rem;
+  padding: 0 .75rem; background: #292e38; border-bottom: 1px solid #373d4a; }
+.toolbar .run-button { background: #287f65; color: white; font-weight: 700; }
+.toolbar .run-button:hover { background: #319977; }
+.toolbar-divider { width: 1px; height: 20px; margin: 0 .3rem; background: #49515e; }
+.toolbar label { margin-left: .1rem; color: #aeb6c3; font-size: .72rem; }
+.toolbar select { min-width: 160px; max-width: 200px; border: 1px solid #434b59;
+  border-radius: .3rem; padding: .32rem .5rem; background: #242831;
+  color: #d8dce5; font-size: .73rem; }
+.toolbar-spacer, .status-spacer { flex: 1; }
+.tabs { display: flex; align-items: stretch; overflow-x: auto; scrollbar-width: thin;
+  background: #252a33; border-bottom: 1px solid #343a46; }
+.tab-slot { display: flex; align-items: center; flex: 0 0 auto; min-width: 110px;
+  max-width: 230px; border-right: 1px solid #343a46; color: #9ca6b6; }
+.tab-slot.active { background: #1d2027; color: #ecf0f6;
+  box-shadow: inset 0 2px #56aa88; }
+.tab-select, .tab-close { border: 0; background: transparent; color: inherit; }
+.tab-select { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; text-align: left; padding: .65rem .3rem .65rem .85rem;
+  font-size: .76rem; }
+.tab-icon { color: #78b7ea; margin-right: .5rem; font-family: Consolas, monospace; }
+.tab-slot[data-kind="data"] .tab-icon { color: #d7a96a; }
+.tab-slot[data-kind="shell"] .tab-icon { color: #8ed9b1; }
+.tab-close { margin-right: .35rem; border-radius: .2rem;
+  padding: .15rem .38rem; font-size: .85rem; }
+.tab-close:hover { background: #46505d; }
+.dirty-mark { color: #d6aa75; margin-left: .35rem; }
+.workarea { --output-height: 230px; min-height: 0; display: grid;
+  grid-template-rows: minmax(140px, 1fr) 7px minmax(100px, var(--output-height));
+  overflow: hidden; }
+.editor-pane { min-height: 0; display: flex; flex-direction: column;
+  background: #1d2027; }
+.pane-header { min-height: 34px; display: flex; align-items: center;
+  justify-content: space-between; gap: .8rem; padding: 0 1rem;
+  border-bottom: 1px solid #2d333e; color: #aab4c1; font-size: .72rem; }
+#editor-title { color: #dce5ee; font-weight: 700; }
+#editor-hint { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.editor-wrap { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.editor-wrap textarea, .editor-wrap .highlight {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
+  border: 0; padding: 1rem 1.35rem; font: 500 .91rem/1.65 Consolas, "Cascadia Code", monospace;
+  letter-spacing: 0; tab-size: 2; white-space: pre; overflow: auto;
+}
 .editor-wrap textarea { z-index: 1; resize: none; background: transparent;
-  color: transparent; -webkit-text-fill-color: transparent;
-  caret-color: #154c45; }
-.editor-wrap textarea::selection { background: #9bcfc595; }
-.editor-wrap textarea::placeholder { -webkit-text-fill-color: #899b91; }
-.editor-wrap .highlight { pointer-events: none; color: #263a36;
-  overflow: hidden; white-space: pre; overflow-wrap: normal; }
-.tok-string { color: #a04b29; }
-.tok-name { color: #176c88; font-weight: 700; }
-.tok-logic { color: #7c4f9c; font-weight: 700; }
-.tok-key { color: #315b92; }
-.tok-number { color: #7845aa; }
-.tok-literal { color: #a05d1a; font-weight: 700; }
-.tok-punct { color: #687d75; }
-.shell-history { flex: 1; min-height: 140px; max-height: 290px;
-  overflow: auto; padding: 1rem 1.3rem; background: #eef3ed;
-  font: .82rem/1.55 Consolas, monospace; white-space: pre-wrap; }
-.shell-line { padding: .55rem 0; border-bottom: 1px solid #d9e4dc; }
-.shell-command { color: #235c52; font-weight: 700; }
-.shell-answer { color: #223e38; margin-top: .25rem; }
-.shell-answer.error { color: #a13a40; }
-.shell-entry { display: flex; gap: .6rem; align-items: flex-end;
-  padding: .8rem; border-top: 1px solid #dce1dc; }
-.shell-wrap { flex: 1; min-height: 90px; border: 1px solid #d5ded5;
-  border-radius: .5rem; }
-.shell-wrap textarea, .shell-wrap .highlight { padding: .75rem .9rem; }
-.shell-entry button { border-radius: .5rem; padding: .7rem .85rem;
-  font-size: .8rem; font-weight: 700; }
-.result-panel { background: #1e2b2a; color: #e7f0eb; border-color: #1e2b2a; }
-.panel-head { min-height: 86px; padding: 1.25rem 1.4rem; display: flex;
-  align-items: center; justify-content: space-between; gap: 1rem;
-  border-bottom: 1px solid #dce1dc; }
-.result-panel .panel-head { border-color: #3b4b46; }
-.panel-kicker { display: block; color: #9eaaa3; font-size: .65rem; font-weight: 700;
-  letter-spacing: .15em; }
-.result-panel .panel-kicker { color: #8da79b; }
-h2 { margin: .3rem 0 0; font-size: 1.05rem; letter-spacing: -.02em; }
-.example-picker { display: flex; flex-direction: column; gap: .25rem; color: #76847d;
-  font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
-select { min-width: 164px; border: 1px solid #d5dcd5; border-radius: .5rem;
-  padding: .55rem .65rem; background: white; color: #243b36; font-size: .83rem;
-  font-weight: 600; text-transform: none; letter-spacing: 0; }
-textarea { display: block; width: 100%; border: 0; outline: none; }
-textarea:focus-visible { box-shadow: inset 0 0 0 2px #1b8d82; }
-pre { flex: 1; margin: 0; padding: 1.4rem 1.5rem; overflow: auto;
-  white-space: pre-wrap; overflow-wrap: anywhere;
-  font: 400 .88rem/1.7 Consolas, monospace; color: #c9ebd9; }
-.editor-footer, .result-footer { display: flex; justify-content: space-between;
-  gap: 1rem; padding: .75rem 1.4rem; font-size: .72rem; color: #859089;
-  border-top: 1px solid #dce1dc; }
-.result-footer { border-color: #3b4b46; color: #8da79b; }
-.status { border-radius: 999px; padding: .4rem .7rem; background: #344440;
-  color: #c7d5cc; font-size: .72rem; font-weight: 700; white-space: nowrap; }
-.status.success { background: #1c6e55; color: #d8f8e6; }
-.status.error { background: #744044; color: #ffe4e4; }
-.actions { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; margin: 1.25rem 0 0; }
-.actions button { border-radius: .65rem; padding: .78rem 1.1rem; font-size: .86rem;
-  font-weight: 700; transition: transform .15s, background .15s; }
-.actions button:hover { transform: translateY(-1px); }
-.primary { border: 1px solid #165e59; background: #165e59; color: white; }
-.primary:hover { background: #104c47; }
-.secondary { border: 1px solid #ced7d0; background: #fff; color: #34534a; }
-.secondary:hover { background: #eff5ef; }
-.action-note { margin-left: auto; color: #87918a; font-size: .75rem; }
-footer { display: flex; justify-content: space-between; gap: 1rem;
-  padding: 1.2rem clamp(1rem, 4vw, 4rem); border-top: 1px solid #deded6;
-  color: #8b948c; font-size: .75rem; }
+  color: transparent; -webkit-text-fill-color: transparent; caret-color: #e7edf6; }
+.editor-wrap textarea::selection { background: #55769b8c; }
+.editor-wrap .highlight { pointer-events: none; color: #d5dce5;
+  overflow: hidden; overflow-wrap: normal; }
+.tok-string { color: #d8a56e; }
+.tok-name { color: #82c6f4; font-weight: 700; }
+.tok-logic { color: #c69ce1; font-weight: 700; }
+.tok-key { color: #91c5fa; }
+.tok-number { color: #b8d88b; }
+.tok-literal { color: #c99ee8; font-weight: 700; }
+.tok-punct { color: #a2abb9; }
+.splitter { display: grid; place-items: center; cursor: row-resize;
+  background: #343b47; touch-action: none; }
+.splitter:hover, .splitter.dragging, .splitter:focus-visible { background: #4e8fbe; }
+.splitter span { display: block; width: 42px; height: 2px; border-radius: 3px;
+  background: #8996a9; }
+.output-pane { min-height: 0; display: flex; flex-direction: column;
+  background: #191c22; }
+.output-header { min-height: 34px; display: flex; align-items: center;
+  justify-content: space-between; gap: .8rem; padding: 0 .8rem 0 1rem;
+  border-bottom: 1px solid #343a46; }
+.output-title { display: flex; align-items: center; gap: .9rem;
+  color: #c6cfdb; font-size: .68rem; letter-spacing: .09em; }
+#output-count { color: #8190a4; font-weight: 400; letter-spacing: 0; }
+.output { flex: 1; min-height: 0; overflow: auto; padding: .5rem 1rem 1rem;
+  font: .82rem/1.55 Consolas, "Cascadia Code", monospace; }
+.empty-output { color: #7f8b9d; }
+.output-entry { margin: .55rem 0; padding: .35rem .65rem;
+  border-left: 2px solid #478d76; background: #20262c; }
+.output-entry.error { border-color: #bc6769; }
+.output-label { color: #8fa0b6; font-size: .72rem; margin-bottom: .3rem; }
+.output-value { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere;
+  color: #dce5dd; font: inherit; }
+.output-entry.error .output-value { color: #e5a5a6; }
+.statusbar { display: flex; align-items: center; gap: 1.2rem;
+  padding: 0 .8rem; background: #26634f; color: #e7f8ec; font-size: .68rem; }
+.statusbar.error { background: #813e46; }
+#binding-info { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-@media (max-width: 850px) {
-  .workspace { grid-template-columns: 1fr; }
-  .panel { min-height: 360px; }
-  .result-panel { min-height: 250px; }
-  .action-note { margin-left: 0; width: 100%; }
+@media (max-width: 760px) {
+  .title-note, .toolbar label, .toolbar select { display: none; }
+  .toolbar { gap: .1rem; }
+  .toolbar button { padding: .4rem .45rem; }
+  .pane-header { padding: 0 .6rem; }
+  #editor-hint { max-width: 55%; }
 }
-@media (max-width: 600px) {
-  .topbar { align-items: flex-start; gap: 1rem; }
-  .subtitle, nav a:nth-child(2) { display: none; }
-  h1 { font-size: 2rem; }
-  .panel-head { align-items: flex-start; }
-  select { min-width: 128px; max-width: 150px; }
-  .editor-footer, .result-footer { flex-direction: column; gap: .2rem; }
-  .tab { padding: .65rem .55rem; font-size: .75rem; }
-  .tab-actions { flex-wrap: wrap; }
-  .shell-entry { flex-direction: column; align-items: stretch; }
-  .shell-wrap { width: 100%; }
+@media (max-width: 480px) {
+  .brand strong { display: none; }
+  .titlebar { gap: .4rem; }
+  .toolbar-divider { margin: 0 .1rem; }
+  .statusbar { gap: .5rem; }
+  #binding-info { max-width: 35%; }
 }
 </style>
   
 </head>
 <body>
-  <div class="shell">
-    <header class="topbar">
-      <div class="brand">
-        <span class="logo" aria-hidden="true">fj@</span>
-        <div>
-          <strong>fjson Studio</strong>
-          <span class="subtitle">Ein kleines Labor für den JSON-Sprachkern</span>
-        </div>
-      </div>
+  <div class="workbench">
+    <header class="titlebar">
+      <div class="brand"><span class="brand-mark">fj@</span><strong>fjson Studio</strong></div>
+      <nav class="menu" aria-label="Datei und Tabs">
+        <button id="new-code" type="button" title="Neuer Code-Tab">＋ Code</button>
+        <button id="new-data" type="button" title="Neuer Daten-Tab">＋ Daten</button>
+      </nav>
+      <span class="title-note">JSON-Sprachkern · lokal</span>
     </header>
 
-    <main>
-      <section class="intro" aria-labelledby="heading">
-        <p class="eyebrow">FJ@ · JSON · direkt im Browser</p>
-        <h1 id="heading">Schreibe einen Ausdruck. Sieh, was er tut.</h1>
-        <p>Schreibe ein Programm, lade JSON-Daten als <code>@data</code> und
-          probiere Ausdrücke direkt in der Shell. Alles läuft lokal im Browser.</p>
-      </section>
+    <div class="toolbar" role="toolbar" aria-label="Editoraktionen">
+      <button id="run" class="run-button" type="button" title="Aktiven Tab ausführen (Strg/⌘+Enter)">▶ Ausführen</button>
+      <span class="toolbar-divider" aria-hidden="true"></span>
+      <button id="open" type="button">Datei öffnen</button>
+      <button id="save" type="button" title="Aktiven Tab speichern (Strg/⌘+S)">Speichern</button>
+      <input id="file-input" class="sr-only" type="file" accept=".json,application/json">
+      <span class="toolbar-divider" aria-hidden="true"></span>
+      <label for="example">Beispiel</label>
+      <select id="example">
+        <option value="inc">Funktion · +1</option>
+        <option value="defaults">Standardwert</option>
+        <option value="logic">Logische Suche</option>
+        <option value="recursion">Rekursion</option>
+        <option value="quote">Zitat als Daten</option>
+        <option value="data">Mit @data arbeiten</option>
+      </select>
+      <span class="toolbar-spacer"></span>
+      <button id="reset" type="button" title="Interpreter-Sitzung zurücksetzen">Sitzung zurücksetzen</button>
+    </div>
 
-      <section class="workspace" aria-label="fjson-Editor und Ergebnis">
-        <div class="panel editor-panel">
-          <div class="tabs" role="tablist" aria-label="Arbeitsbereiche">
-            <button id="tab-program" class="tab active" type="button" role="tab"
-              aria-controls="panel-program" aria-selected="true">Programm</button>
-            <button id="tab-data" class="tab" type="button" role="tab"
-              aria-controls="panel-data" aria-selected="false">JSON-Daten</button>
-            <button id="tab-shell" class="tab" type="button" role="tab"
-              aria-controls="panel-shell" aria-selected="false">Shell</button>
-          </div>
+    <div id="tabs" class="tabs" role="tablist" aria-label="Offene Dateien"></div>
 
-          <section id="panel-program" class="tab-panel" role="tabpanel" aria-labelledby="tab-program">
-            <div class="panel-head">
-              <div><span class="panel-kicker">01 / QUELLE</span><h2>Programm</h2></div>
-              <label class="example-picker" for="example">Beispiel
-                <select id="example">
-                  <option value="inc">Funktion · +1</option>
-                  <option value="defaults">Standardwert</option>
-                  <option value="logic">Logische Suche</option>
-                  <option value="recursion">Rekursion</option>
-                  <option value="quote">Zitat als Daten</option>
-                  <option value="data">Mit @data arbeiten</option>
-                </select>
-              </label>
-            </div>
-            <div class="editor-wrap">
-              <pre id="source-highlight" class="highlight" aria-hidden="true"></pre>
-              <label class="sr-only" for="source">fjson-Quelltext</label>
-              <textarea id="source" spellcheck="false" autocapitalize="off"
-                autocomplete="off" autocorrect="off" aria-describedby="editor-help"></textarea>
-            </div>
-            <div class="editor-footer">
-              <span id="editor-help">Gültiges JSON · Strg/⌘ + Enter zum Ausführen</span>
-              <span id="line-count" aria-live="polite">1 Zeile</span>
-            </div>
-            <div class="tab-actions">
-              <button id="load-program" type="button">Datei laden</button>
-              <button id="save-program" type="button">Programm speichern</button>
-              <input id="file-program" class="sr-only" type="file" accept=".json,application/json">
-            </div>
-          </section>
-
-          <section id="panel-data" class="tab-panel" role="tabpanel" aria-labelledby="tab-data" hidden>
-            <div class="panel-head">
-              <div><span class="panel-kicker">02 / EINGABE</span><h2>JSON-Daten</h2></div>
-              <span id="data-status" class="data-status" role="status">Als @data verfügbar</span>
-            </div>
-            <p class="panel-note">Diese Daten werden bei jeder Ausführung als <code>@data</code>
-              gebunden. Alle gültigen JSON-Werte sind erlaubt.</p>
-            <div class="editor-wrap">
-              <pre id="data-highlight" class="highlight" aria-hidden="true"></pre>
-              <label class="sr-only" for="data-source">JSON-Daten</label>
-              <textarea id="data-source" spellcheck="false" autocapitalize="off"
-                autocomplete="off" autocorrect="off"></textarea>
-            </div>
-            <div class="tab-actions">
-              <button id="load-data" type="button">JSON-Datei laden</button>
-              <button id="save-data" type="button">Daten speichern</button>
-              <input id="file-data" class="sr-only" type="file" accept=".json,application/json">
-            </div>
-          </section>
-
-          <section id="panel-shell" class="tab-panel" role="tabpanel" aria-labelledby="tab-shell" hidden>
-            <div class="panel-head">
-              <div><span class="panel-kicker">03 / INTERAKTIV</span><h2>Shell</h2></div>
-              <button id="clear-shell" type="button">Verlauf leeren</button>
-            </div>
-            <p class="panel-note">Ein JSON-Ausdruck pro Aufruf. Deklarationen und
-              <code>@data</code> sind in der aktuellen Sitzung verfügbar.</p>
-            <div id="shell-history" class="shell-history" role="log" aria-live="polite"></div>
-            <div class="shell-entry">
-              <div class="editor-wrap shell-wrap">
-                <pre id="shell-highlight" class="highlight" aria-hidden="true"></pre>
-                <label class="sr-only" for="shell-source">Shell-Ausdruck</label>
-                <textarea id="shell-source" spellcheck="false" autocapitalize="off"
-                  autocomplete="off" autocorrect="off" placeholder='["@plus", 1, 2]'></textarea>
-              </div>
-              <button id="run-shell" class="primary" type="button">Ausführen</button>
-            </div>
-          </section>
+    <main id="workarea" class="workarea">
+      <section id="editor-pane" class="editor-pane" aria-labelledby="editor-title">
+        <div class="pane-header">
+          <span id="editor-title">Input</span>
+          <span id="editor-hint">fjson · Strg/⌘+Enter zum Ausführen</span>
         </div>
-
-        <div class="panel result-panel">
-          <div class="panel-head">
-            <div>
-              <span class="panel-kicker">04 / AUSWERTUNG</span>
-              <h2>Ergebnis</h2>
-            </div>
-            <span id="status" class="status" role="status" aria-live="polite">Bereit</span>
-          </div>
-          <pre id="result" aria-label="Ausgabe">Drücke „Ausführen“, um den Ausdruck auszuwerten.</pre>
-          <div class="result-footer">
-            <span id="steps">Noch nicht ausgeführt</span>
-            <span>Auswertung bleibt lokal</span>
-          </div>
+        <div class="editor-wrap">
+          <pre id="highlight" class="highlight" aria-hidden="true"></pre>
+          <label class="sr-only" for="source">Aktiver JSON-Editor</label>
+          <textarea id="source" spellcheck="false" autocapitalize="off"
+            autocomplete="off" autocorrect="off" aria-describedby="editor-hint"></textarea>
         </div>
       </section>
 
-      <div class="actions">
-        <button id="run" class="primary" type="button">▶ Ausführen</button>
-        <button id="reset" class="secondary" type="button">Sitzung zurücksetzen</button>
-        <span class="action-note">Dateien bleiben lokal · keine Prozess- oder Netzwerk-Capabilities</span>
-      </div>
+      <div id="splitter" class="splitter" role="separator" tabindex="0"
+        aria-label="Größe der Ausgabe ändern" aria-orientation="horizontal"
+        aria-valuemin="100" aria-valuemax="500" aria-valuenow="230"
+        title="Ziehen oder Pfeiltasten verwenden"><span></span></div>
+
+      <section id="output-pane" class="output-pane" aria-label="Ausgabe">
+        <div class="output-header">
+          <div class="output-title"><strong>AUSGABE</strong><span id="output-count">0 Einträge</span></div>
+          <button id="clear-output" type="button">Ausgabe leeren</button>
+        </div>
+        <div id="output" class="output" role="log" aria-live="polite">
+          <p class="empty-output">Ausführen zeigt Ergebnisse und Fehler hier an.</p>
+        </div>
+      </section>
     </main>
 
-    <footer>
-      <span>fjson · Sprachkern 0.3</span>
-      <span>JavaScript-Referenzinterpreter</span>
+    <footer class="statusbar">
+      <span id="status" role="status" aria-live="polite">Bereit</span>
+      <span id="binding-info">@data verfügbar</span>
+      <span class="status-spacer"></span>
+      <span id="line-count">Zeile 1 · 1 Zeile</span>
+      <span>fjson Kern 0.3</span>
     </footer>
   </div>
 <script>
@@ -765,18 +685,33 @@ const examples = {
   data: ['@plus', ['@get', '@data', 'answer'], 1],
 };
 
-const select = id => document.querySelector('#' + id);
-const source = select('source');
-const dataSource = select('data-source');
-const shellSource = select('shell-source');
-const example = select('example');
-const output = select('result');
-const status = select('status');
-const steps = select('steps');
-const lineCount = select('line-count');
-const dataStatus = select('data-status');
-const history = select('shell-history');
+const byId = id => document.querySelector('#' + id);
+const editor = byId('source');
+const highlight = byId('highlight');
+const tabStrip = byId('tabs');
+const output = byId('output');
+const outputCount = byId('output-count');
+const status = byId('status');
+const statusbar = document.querySelector('.statusbar');
+const bindingInfo = byId('binding-info');
+const lineCount = byId('line-count');
+const editorTitle = byId('editor-title');
+const editorHint = byId('editor-hint');
+const example = byId('example');
+const fileInput = byId('file-input');
+const workarea = byId('workarea');
+const outputPane = byId('output-pane');
+const splitter = byId('splitter');
+
 let interpreter = new Interpreter();
+let tabs = [];
+let active = null;
+let nextId = 1;
+let codeCount = 0;
+let dataCount = 0;
+let outputEntries = 0;
+let outputHeight = 230;
+let drag = null;
 
 function escapeHtml(value) {
   return value.replace(/[&<>"]/g, char => ({
@@ -803,46 +738,115 @@ function colorize(value) {
   return result + escapeHtml(value.slice(end)) + '\n';
 }
 
-function updateEditor(textarea, highlight) {
-  highlight.innerHTML = colorize(textarea.value);
-  highlight.scrollTop = textarea.scrollTop;
-  highlight.scrollLeft = textarea.scrollLeft;
-  if (textarea === source) {
-    const count = textarea.value.split(/\r\n|\n|\r/).length;
-    lineCount.textContent = count + (count === 1 ? ' Zeile' : ' Zeilen');
+function updateEditor() {
+  highlight.innerHTML = colorize(editor.value);
+  highlight.scrollTop = editor.scrollTop;
+  highlight.scrollLeft = editor.scrollLeft;
+  const lines = editor.value.split(/\r\n|\n|\r/).length;
+  const currentLine = editor.value.slice(0, editor.selectionStart ?? 0)
+    .split(/\r\n|\n|\r/).length;
+  lineCount.textContent = 'Zeile ' + currentLine + ' · ' + lines +
+    (lines === 1 ? ' Zeile' : ' Zeilen');
+}
+
+function setStatus(message, failed = false) {
+  status.textContent = message;
+  statusbar.className = failed ? 'statusbar error' : 'statusbar';
+}
+
+function dataBindings() {
+  return tabs.filter(tab => tab.kind === 'data')
+    .map(tab => tab.binding).join(', ') || 'Keine Daten-Tabs';
+}
+
+function renderTabs() {
+  tabStrip.replaceChildren();
+  for (const tab of tabs) {
+    const slot = document.createElement('div');
+    slot.className = tab === active ? 'tab-slot active' : 'tab-slot';
+    slot.dataset.kind = tab.kind;
+    const select = document.createElement('button');
+    select.className = 'tab-select';
+    select.type = 'button';
+    select.setAttribute('role', 'tab');
+    select.setAttribute('aria-selected', String(tab === active));
+    select.setAttribute('aria-label', tab.label);
+    const icon = document.createElement('span');
+    icon.className = 'tab-icon';
+    icon.textContent = tab.kind === 'data' ? '{}' : tab.kind === 'shell' ? '>' : '◇';
+    select.append(icon);
+    const label = document.createElement('span');
+    label.textContent = tab.label;
+    select.append(label);
+    if (tab.dirty) {
+      const mark = document.createElement('span');
+      mark.className = 'dirty-mark';
+      mark.textContent = '●';
+      select.append(mark);
+    }
+    select.addEventListener('click', () => activateTab(tab));
+    slot.append(select);
+    if (tab.kind !== 'shell') {
+      const close = document.createElement('button');
+      close.className = 'tab-close';
+      close.type = 'button';
+      close.textContent = '×';
+      close.setAttribute('aria-label', tab.label + ' schließen');
+      close.addEventListener('click', () => closeTab(tab));
+      slot.append(close);
+    }
+    tabStrip.append(slot);
   }
 }
 
-for (const [textarea, highlight] of [
-  [source, select('source-highlight')],
-  [dataSource, select('data-highlight')],
-  [shellSource, select('shell-highlight')],
-]) {
-  textarea.addEventListener('input', () => updateEditor(textarea, highlight));
-  textarea.addEventListener('scroll', () => updateEditor(textarea, highlight));
-  updateEditor(textarea, highlight);
+function activateTab(tab) {
+  active = tab;
+  editor.value = tab.content;
+  editor.scrollTop = 0;
+  editor.scrollLeft = 0;
+  editorTitle.textContent = tab.label;
+  editorHint.textContent = tab.kind === 'data'
+    ? 'JSON-Daten · im Programm als ' + tab.binding + ' verfügbar'
+    : tab.kind === 'shell'
+      ? 'Shell · Ausdrücke teilen sich die Interpreter-Sitzung'
+      : 'fjson · Strg/⌘+Enter zum Ausführen';
+  bindingInfo.textContent = dataBindings();
+  renderTabs();
+  updateEditor();
 }
 
-function chooseTab(name) {
-  for (const tab of ['program', 'data', 'shell']) {
-    const active = tab === name;
-    const button = select('tab-' + tab);
-    button.className = active ? 'tab active' : 'tab';
-    button.setAttribute('aria-selected', String(active));
-    select('panel-' + tab).hidden = !active;
-  }
-}
-for (const name of ['program', 'data', 'shell']) {
-  select('tab-' + name).addEventListener('click', () => chooseTab(name));
+function addTab(kind, initial = false) {
+  const number = kind === 'code' ? ++codeCount : kind === 'data' ? ++dataCount : 0;
+  const tab = {
+    id: nextId++,
+    kind,
+    label: kind === 'shell' ? 'Shell' :
+      kind === 'data' ? (number === 1 ? 'Daten' : 'Daten ' + number) :
+        (number === 1 ? 'Input' : 'Input ' + number),
+    binding: kind === 'data' ? '@data' + (number === 1 ? '' : number) : null,
+    content: kind === 'shell' ? '["@plus", 1, 2]' :
+      kind === 'data' ? (number === 1
+        ? '{\n  "answer": 41,\n  "items": [1, 2, 3]\n}' : '{}') :
+        initial ? JSON.stringify(examples.inc, null, 2) : '["@plus", 1, 2]',
+    filename: null,
+    dirty: false,
+  };
+  tabs.push(tab);
+  activateTab(tab);
+  setStatus(tab.label + ' geöffnet');
+  return tab;
 }
 
-function loadExample(name) {
-  source.value = JSON.stringify(examples[name], null, 2);
-  updateEditor(source, select('source-highlight'));
-  output.textContent = 'Drücke „Ausführen“, um den Ausdruck auszuwerten.';
-  steps.textContent = 'Noch nicht ausgeführt';
-  status.textContent = 'Bereit';
-  status.className = 'status';
+function closeTab(tab) {
+  const index = tabs.indexOf(tab);
+  if (index < 0) return;
+  tabs.splice(index, 1);
+  if (tab.binding) interpreter.global.values.delete(tab.binding);
+  if (tab === active) {
+    activateTab(tabs[Math.min(index, tabs.length - 1)] ??
+      addTab('code'));
+  } else renderTabs();
+  bindingInfo.textContent = dataBindings();
 }
 
 function displayValue(value, seen = new WeakSet()) {
@@ -865,119 +869,174 @@ function format(value) {
   return JSON.stringify(displayValue(value), null, 2) ?? 'undefined';
 }
 
-function validateData() {
+function bindDataTabs() {
+  const values = tabs.filter(tab => tab.kind === 'data').map(tab => {
+    try { return [tab.binding, parseJson(tab.content)]; }
+    catch (error) {
+      throw new SyntaxError(tab.label + ' (' + tab.binding + '): ' + error.message);
+    }
+  });
+  for (const [name, value] of values)
+    interpreter.eval({ [name]: ['@quote', value] });
+  return values;
+}
+
+function appendOutput(tab, result, failed) {
+  if (outputEntries === 0) output.replaceChildren();
+  const entry = document.createElement('div');
+  entry.className = failed ? 'output-entry error' : 'output-entry';
+  const label = document.createElement('div');
+  label.className = 'output-label';
+  label.textContent = tab.label + (tab.binding ? ' · ' + tab.binding : '') +
+    (failed ? ' · Fehler' : ' · Ergebnis');
+  const value = document.createElement('pre');
+  value.className = 'output-value';
+  value.textContent = result;
+  entry.append(label, value);
+  output.append(entry);
+  outputEntries++;
+  outputCount.textContent = outputEntries + (outputEntries === 1 ? ' Eintrag' : ' Einträge');
+  output.scrollTop = output.scrollHeight;
+}
+
+function runActive() {
+  if (!active) return;
   try {
-    const value = parseJson(dataSource.value);
-    dataStatus.textContent = 'Als @data verfügbar';
-    dataStatus.className = 'data-status';
-    return value;
+    const values = bindDataTabs();
+    const result = active.kind === 'data'
+      ? values.find(([name]) => name === active.binding)?.[1]
+      : interpreter.run(active.content);
+    appendOutput(active, format(result), false);
+    setStatus(active.label + ' ausgeführt · ' + interpreter.steps + ' Schritte');
   } catch (error) {
-    dataStatus.textContent = 'Ungültiges JSON';
-    dataStatus.className = 'data-status error';
-    throw error;
+    appendOutput(active, error.name + ': ' + error.message, true);
+    setStatus(error.name + ': ' + error.message, true);
   }
 }
 
-function evaluate(text) {
-  const data = validateData();
-  interpreter.eval({ '@data': ['@quote', data] });
-  return interpreter.run(text);
-}
-
-function run(text = source.value, inShell = false) {
-  if (inShell && !text.trim()) return;
-  let answer;
-  let failed = false;
-  try {
-    answer = format(evaluate(text));
-    status.textContent = 'Erfolgreich';
-    status.className = 'status success';
-    steps.textContent = interpreter.steps + ' Auswertungsschritte';
-  } catch (error) {
-    answer = error.name + ': ' + error.message;
-    failed = true;
-    status.textContent = 'Fehler';
-    status.className = 'status error';
-    steps.textContent = error instanceof SyntaxError ?
-      'JSON wurde nicht ausgewertet' : interpreter.steps + ' Schritte bis zum Fehler';
-  }
-  output.textContent = answer;
-  if (inShell) {
-    const line = document.createElement('div');
-    line.className = 'shell-line';
-    const command = document.createElement('div');
-    command.className = 'shell-command';
-    command.textContent = '› ' + text;
-    const result = document.createElement('div');
-    result.className = failed ? 'shell-answer error' : 'shell-answer';
-    result.textContent = answer;
-    line.append(command, result);
-    history.append(line);
-    history.scrollTop = history.scrollHeight;
-  }
-}
-
-function saveJson(text, filename) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+function saveActive() {
+  if (!active) return;
+  const filename = active.filename ??
+    (active.kind === 'data' ? active.binding.slice(1) + '.json' :
+      active.kind === 'shell' ? 'shell.fjson.json' : 'input' + active.id + '.fjson.json');
+  const url = URL.createObjectURL(new Blob([active.content], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  active.filename = filename;
+  active.dirty = false;
+  renderTabs();
+  setStatus(filename + ' gespeichert');
 }
 
-function wireFile(kind, textarea, filename) {
-  const input = select('file-' + kind);
-  select('load-' + kind).addEventListener('click', () => input.click());
-  select('save-' + kind).addEventListener('click', () => saveJson(textarea.value, filename));
-  input.addEventListener('change', async () => {
-    const file = input.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      parseJson(text);
-      textarea.value = text;
-      updateEditor(textarea, select(kind === 'data' ? 'data-highlight' : 'source-highlight'));
-      if (kind === 'data') validateData();
-      status.textContent = 'Datei geladen';
-      status.className = 'status success';
-    } catch (error) {
-      status.textContent = 'Fehler';
-      status.className = 'status error';
-      output.textContent = error.name + ': ' + error.message;
-    }
-    input.value = '';
-  });
+async function openFile() {
+  const file = fileInput.files?.[0];
+  if (!file || !active) return;
+  try {
+    const text = await file.text();
+    parseJson(text);
+    active.content = text;
+    active.filename = file.name;
+    active.label = file.name;
+    active.dirty = false;
+    activateTab(active);
+    setStatus(file.name + ' geladen');
+  } catch (error) {
+    setStatus(error.name + ': ' + error.message, true);
+    appendOutput(active, error.name + ': ' + error.message, true);
+  }
+  fileInput.value = '';
 }
 
-wireFile('program', source, 'programm.fjson.json');
-wireFile('data', dataSource, 'daten.json');
-select('run').addEventListener('click', () => run());
-select('run-shell').addEventListener('click', () => run(shellSource.value, true));
-select('clear-shell').addEventListener('click', () => history.replaceChildren());
-select('reset').addEventListener('click', () => {
-  interpreter = new Interpreter();
-  history.replaceChildren();
-  output.textContent = 'Sitzung zurückgesetzt. Drücke „Ausführen“ für einen neuen Start.';
-  status.textContent = 'Neue Sitzung';
-  status.className = 'status';
-  steps.textContent = 'Noch nicht ausgeführt';
+function clearOutput() {
+  output.replaceChildren();
+  const empty = document.createElement('p');
+  empty.className = 'empty-output';
+  empty.textContent = 'Ausführen zeigt Ergebnisse und Fehler hier an.';
+  output.append(empty);
+  outputEntries = 0;
+  outputCount.textContent = '0 Einträge';
+}
+
+function setOutputHeight(height) {
+  const max = Math.max(100, workarea.getBoundingClientRect().height - 150);
+  outputHeight = Math.max(100, Math.min(max, Math.round(height)));
+  workarea.style.setProperty('--output-height', outputHeight + 'px');
+  splitter.setAttribute('aria-valuemax', String(max));
+  splitter.setAttribute('aria-valuenow', String(outputHeight));
+}
+
+splitter.addEventListener('pointerdown', event => {
+  drag = {
+    y: event.clientY,
+    height: outputPane.getBoundingClientRect().height || outputHeight,
+  };
+  splitter.className = 'splitter dragging';
+  splitter.setPointerCapture?.(event.pointerId);
 });
-example.addEventListener('change', () => loadExample(example.value));
-for (const textarea of [source, shellSource]) {
-  textarea.addEventListener('keydown', event => {
-    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-      event.preventDefault();
-      run(textarea.value, textarea === shellSource);
-    }
+splitter.addEventListener('pointermove', event => {
+  if (drag) setOutputHeight(drag.height + drag.y - event.clientY);
+});
+for (const name of ['pointerup', 'pointercancel']) {
+  splitter.addEventListener(name, event => {
+    drag = null;
+    splitter.className = 'splitter';
+    splitter.releasePointerCapture?.(event.pointerId);
   });
 }
+splitter.addEventListener('keydown', event => {
+  if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+    event.preventDefault();
+    setOutputHeight(outputHeight + (event.key === 'ArrowUp' ? 24 : -24));
+  }
+});
 
-dataSource.value = '{\n  "answer": 41,\n  "items": [1, 2, 3]\n}';
-updateEditor(dataSource, select('data-highlight'));
-validateData();
-loadExample(example.value);
-chooseTab('program');
+byId('new-code').addEventListener('click', () => addTab('code'));
+byId('new-data').addEventListener('click', () => addTab('data'));
+byId('run').addEventListener('click', runActive);
+byId('open').addEventListener('click', () => fileInput.click());
+byId('save').addEventListener('click', saveActive);
+byId('clear-output').addEventListener('click', clearOutput);
+fileInput.addEventListener('change', openFile);
+byId('reset').addEventListener('click', () => {
+  interpreter = new Interpreter();
+  clearOutput();
+  setStatus('Neue Interpreter-Sitzung');
+});
+example.addEventListener('change', () => {
+  const code = active?.kind === 'code' ? active :
+    tabs.find(tab => tab.kind === 'code') ?? addTab('code');
+  code.content = JSON.stringify(examples[example.value], null, 2);
+  code.dirty = true;
+  activateTab(code);
+  setStatus('Beispiel geladen');
+});
+editor.addEventListener('input', () => {
+  active.content = editor.value;
+  active.dirty = true;
+  updateEditor();
+  renderTabs();
+});
+editor.addEventListener('scroll', updateEditor);
+editor.addEventListener('click', updateEditor);
+editor.addEventListener('keyup', updateEditor);
+editor.addEventListener('keydown', event => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    event.preventDefault();
+    runActive();
+  } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault();
+    saveActive();
+  }
+});
+
+addTab('code', true);
+addTab('data', true);
+addTab('shell', true);
+activateTab(tabs[0]);
+setStatus('Bereit');
 
 </script>
 </body>
