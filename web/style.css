@@ -40,6 +40,24 @@ button:focus-visible, select:focus-visible, textarea:focus-visible, .splitter:fo
 .toolbar select { min-width: 160px; max-width: 200px; border: 1px solid #434b59;
   border-radius: .3rem; padding: .32rem .5rem; background: #242831;
   color: #d8dce5; font-size: .73rem; }
+.showcase-menu { position: relative; flex: 0 0 auto; }
+.showcase-menu > button { border: 1px solid #434b59; background: #242831;
+  color: #dce6f0; font-weight: 600; }
+.showcase-menu > button[aria-expanded="true"] { background: #34414d; }
+.menu-popup { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0;
+  width: min(440px, calc(100vw - 24px)); max-height: min(70vh, 580px);
+  overflow: auto; padding: .35rem; border: 1px solid #4b5867;
+  border-radius: .45rem; background: #252c36; box-shadow: 0 12px 30px #0009; }
+.menu-popup[hidden] { display: none; }
+.menu-popup details { border-bottom: 1px solid #37414e; }
+.menu-popup details:last-child { border-bottom: 0; }
+.menu-popup summary { cursor: pointer; padding: .65rem .55rem;
+  color: #b9d8ec; font-size: .77rem; font-weight: 700; }
+.menu-popup button { display: block; width: 100%; text-align: left;
+  padding: .48rem .7rem .48rem 1.55rem; border-radius: .3rem;
+  color: #d5dce6; font-size: .74rem; line-height: 1.35; }
+.menu-popup button:hover, .menu-popup button:focus-visible {
+  background: #39566a; color: white; }
 .toolbar-spacer, .status-spacer { flex: 1; }
 .tabs { display: flex; align-items: stretch; overflow-x: auto; scrollbar-width: thin;
   background: #252a33; border-bottom: 1px solid #343a46; }
