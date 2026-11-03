@@ -1,7 +1,9 @@
 // fjson core 0.3 and finite logic library for browsers and Node.js.
 // No host I/O functions are installed by this module.
 
-export class FjsonError extends Error {}
+export class FjsonError extends Error {
+  constructor(message) { super(message); this.name = new.target.name; }
+}
 export class EvaluationError extends FjsonError {}
 export class ResolutionError extends EvaluationError {}
 export class ArityError extends EvaluationError {}
