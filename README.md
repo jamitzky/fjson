@@ -2,7 +2,7 @@
 
 **fjson** ist die Grundlage für eine in JSON geschriebene Implementierung von FJ@. Das Python-Modul und das JavaScript-ES-Modul werten denselben definierten Sprachkern aus: Referenzen, Funktionen, Funktionsaufrufe, lexikalische Bindungen und die unten beschriebenen besonderen Formen.
 
-> **Stand:** Das Repository mit Python-Paketversion 0.6 enthält den [eingefrorenen Sprachkern 0.3](CORE.md), die erste [Logikbibliothek](LOGIC.md), die [JSON-Graphsicht](GRAPH.md), [Python-Host-Adapter mit Ressourcenscopes](SECURITY.md) und eine [JavaScript-/TypeScript-Referenz für Browser und Node](js/README.md). Quellformen und Auswertungsregeln stehen in [GRAMMAR.ebnf](GRAMMAR.ebnf) und [SEMANTICS.md](SEMANTICS.md).
+> **Stand:** Das Repository mit Python-Paketversion 0.7 enthält den [eingefrorenen Sprachkern 0.3](CORE.md), die erste [Logikbibliothek](LOGIC.md), die [JSON-Graphsicht](GRAPH.md), [reine Arithmetik und Listenoperationen](SHOWCASE.md), [Python-Host-Adapter mit Ressourcenscopes](SECURITY.md) und eine [JavaScript-/TypeScript-Referenz für Browser und Node](js/README.md). Quellformen und Auswertungsregeln stehen in [GRAMMAR.ebnf](GRAMMAR.ebnf) und [SEMANTICS.md](SEMANTICS.md).
 
 ## Grundidee
 
@@ -90,7 +90,7 @@ Für Bedingungen gilt: `false`, `null`, `0`, `""`, `[]` und `{}` sind falsch; an
 
 `@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. `@try` fängt `EvaluationError` und dessen Unterklassen ab, aber keinen `ResourceLimitError`; ohne Ersatz liefert es `{"error": "Klassenname", "message": "Text"}`. Bereits erfolgte Deklarationen werden durch `@try` nicht zurückgerollt.
 
-Operationen wie `@plus` sowie aus anderen Funktionen zusammensetzbare Operationen wie `@map`, `@filter`, `@compose` und `@curry` sind keine reservierten Sprachformen. Das Paket bietet `@plus`, `@minus`, `@times`, `@divide`, `@eq`, `@le`, `@get` und `@length` sowie die Logikfunktionen `@unify`, `@match`, `@membero`, `@patho`, `@neqo`, `@ge`, `@guard`, `@project`, `@choice`, `@conj` und `@run` als eingebaute Funktionen. `@get` liest einen Objektschlüssel oder einen Arrayindex; `@length` liefert die Zahl der Einträge eines Objekts oder Arrays. Bei fehlendem Schlüssel oder Index entsteht ein Fehler. Die anderen genannten Funktionen sowie `@reduce` sind noch nicht enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
+Operationen wie `@plus`, `@range`, `@map`, `@filter` und `@reduce` sind aufrufbare Bibliotheksfunktionen, keine reservierten Sprachformen. Das Paket bietet Grundarithmetik, Rundung, Zahlenvergleiche, JSON-Zugriff sowie die Logikfunktionen `@unify`, `@match`, `@membero`, `@patho`, `@neqo`, `@ge`, `@guard`, `@project`, `@choice`, `@conj` und `@run`. [SHOWCASE.md](SHOWCASE.md) erklärt die Zahlen- und Listenoperationen und führt durch die 56 Beispiele der IDE. `@get` liest einen Objektschlüssel oder einen Arrayindex; `@length` zählt Einträge. Bei fehlendem Schlüssel oder Index entsteht ein Fehler. `@compose` und `@curry` sind noch nicht als Bibliotheksfunktionen enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
 
 ## Auswertung und Aufrufe
 
@@ -188,8 +188,9 @@ Datei-, Prozess- oder Netzwerk-Adapter.
 Die [fjson-IDE als einzelne HTML-Datei](web/fjson-studio.html) enthält
 Interpreter, Oberfläche und Styles vollständig. **Nur diese Datei
 herunterladen und per Doppelklick im Browser öffnen**; ein Webserver,
-Paketmanager und eine Internetverbindung sind dafür nicht nötig. Der
-**Input** nimmt fjson-Quelltext entgegen. **Daten** nimmt einen JSON-Wert
+Paketmanager und eine Internetverbindung sind dafür nicht nötig. **Code
+links und Daten rechts** sind gleichzeitig sichtbar. Der Code-Editor
+nimmt fjson-Quelltext entgegen. **Daten** nimmt einen JSON-Wert
 auf, der dem Programm und der Shell als `@data` zur Verfügung steht. Über
 das Menü oben lassen sich zusätzliche Code- und Daten-Tabs anlegen;
 weitere Daten-Tabs heißen `@data2`, `@data3` usw. Zum Beispiel liefert
@@ -202,12 +203,14 @@ lässt sich in der Höhe ändern; ein zweiter, senkrechter Trenner verändert
 die Breite von Shell und Ergebnis. Beide Trenner funktionieren per Ziehen
 oder Pfeiltasten. Deklarationen aus Code und Shell bleiben
 in derselben Sitzung. Die Toolbar lädt und speichert lokale JSON-Dateien
-für den aktiven Tab; der Editor hat Syntaxfarben. Neben den sechs
-Grundlagenbeispielen gibt es sieben Fred-Abfragen für partielle Muster,
-Arrays, Pfade und verzögerte Bedingungen. Die Fred-Auswahl lädt den
-vollständigen Datensatz in `@data` und ersetzt dabei dessen bisherigen
-Tab-Inhalt. `Strg+Enter` beziehungsweise `⌘+Enter`
-startet den Ausdruck des aktiven Editors.
+für den aktiven Tab; beide Editoren haben Syntaxfarben. **Beispiele**
+enthält [56 ausführbare Lektionen](SHOWCASE.md) in sieben Untermenüs,
+darunter alle reservierten Sprachformen, Arithmetik, `@range`, `@map`,
+`@filter`, `@reduce`, Logik und Graphabfragen. **Shell-Snippets** fügt
+elf kurze Ausdrücke zum Experimentieren in die Shell ein. Datenbeispiele
+laden Fred oder den Referenz-Datensatz in `@data` und ersetzen dabei
+dessen bisherigen Tab-Inhalt. `Strg+Enter` beziehungsweise `⌘+Enter`
+führt den links sichtbaren Code mit den offenen Daten-Tabs aus.
 
 Die IDE behält globale Deklarationen innerhalb der aktuellen Sitzung.
 „Sitzung zurücksetzen“ erstellt einen neuen Interpreter und leert die
@@ -222,8 +225,9 @@ und die [Browser-Testseite](js/browser-test.html) laden Dateien per
 ES-Modul. Sie lassen sich aus dem Repository mit
 `python -m http.server 8000` unter `http://localhost:8000/web/`
 beziehungsweise `http://localhost:8000/js/browser-test.html` öffnen.
-Die Node-Prüfungen laufen mit `node js/test.mjs` und
-`node js/test-pages.mjs`; der zweite Befehl prüft auch die Offline-IDE.
+Die Node-Prüfungen laufen mit `node js/test.mjs`,
+`node js/test-showcase.mjs` und `node js/test-pages.mjs`; der letzte
+Befehl prüft auch die Offline-IDE.
 
 ### Effekte und Capabilities
 
@@ -274,7 +278,7 @@ Das Kommando gibt das Ergebnis als JSON aus. Closures, logische Variablen und Go
 
 ## Nächste Schritte
 
-1. Bibliotheksfunktionen wie `@map`, `@filter`, `@compose` und `@curry` auf dem Sprachkern aufbauen.
+1. Weitere Funktionskombinatoren wie `@compose` und `@curry` auf dem Sprachkern aufbauen.
 2. Die Logikbibliothek um verzögerte rekursive Regeln und faire Suche erweitern; anonyme Variablen und Klauseldatenbanken gesondert spezifizieren.
 3. Die weitergehenden FJ@-Metafunktionsregeln getrennt vom Präfixkern spezifizieren und testen; syntaktische Varianten für `fj@nice` entwerfen.
 4. Host-Policies um Quoten und Ablaufzeiten erweitern, die Adapter gegen weitere Randfälle prüfen und numerische Kerne getrennt vom reinen Sprachkern ergänzen.
