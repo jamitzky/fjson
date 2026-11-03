@@ -27,42 +27,96 @@
       <section class="intro" aria-labelledby="heading">
         <p class="eyebrow">FJ@ · JSON · direkt im Browser</p>
         <h1 id="heading">Schreibe einen Ausdruck. Sieh, was er tut.</h1>
-        <p>Der Interpreter läuft vollständig in deinem Browser. Wähle ein
-          Beispiel oder bearbeite den JSON-Code selbst. Die Sitzung behält
-          globale Deklarationen, bis du sie zurücksetzt.</p>
+        <p>Schreibe ein Programm, lade JSON-Daten als <code>@data</code> und
+          probiere Ausdrücke direkt in der Shell. Alles läuft lokal im Browser.</p>
       </section>
 
       <section class="workspace" aria-label="fjson-Editor und Ergebnis">
         <div class="panel editor-panel">
-          <div class="panel-head">
-            <div>
-              <span class="panel-kicker">01 / QUELLE</span>
-              <h2>Programm</h2>
+          <div class="tabs" role="tablist" aria-label="Arbeitsbereiche">
+            <button id="tab-program" class="tab active" type="button" role="tab"
+              aria-controls="panel-program" aria-selected="true">Programm</button>
+            <button id="tab-data" class="tab" type="button" role="tab"
+              aria-controls="panel-data" aria-selected="false">JSON-Daten</button>
+            <button id="tab-shell" class="tab" type="button" role="tab"
+              aria-controls="panel-shell" aria-selected="false">Shell</button>
+          </div>
+
+          <section id="panel-program" class="tab-panel" role="tabpanel" aria-labelledby="tab-program">
+            <div class="panel-head">
+              <div><span class="panel-kicker">01 / QUELLE</span><h2>Programm</h2></div>
+              <label class="example-picker" for="example">Beispiel
+                <select id="example">
+                  <option value="inc">Funktion · +1</option>
+                  <option value="defaults">Standardwert</option>
+                  <option value="logic">Logische Suche</option>
+                  <option value="recursion">Rekursion</option>
+                  <option value="quote">Zitat als Daten</option>
+                  <option value="data">Mit @data arbeiten</option>
+                </select>
+              </label>
             </div>
-            <label class="example-picker" for="example">
-              Beispiel
-              <select id="example">
-                <option value="inc">Funktion · +1</option>
-                <option value="defaults">Standardwert</option>
-                <option value="logic">Logische Suche</option>
-                <option value="recursion">Rekursion</option>
-                <option value="quote">Zitat als Daten</option>
-              </select>
-            </label>
-          </div>
-          <label class="sr-only" for="source">fjson-Quelltext</label>
-          <textarea id="source" spellcheck="false" autocapitalize="off"
-            autocomplete="off" autocorrect="off" aria-describedby="editor-help"></textarea>
-          <div class="editor-footer">
-            <span id="editor-help">Gültiges JSON · Strg/⌘ + Enter zum Ausführen</span>
-            <span id="line-count" aria-live="polite">1 Zeile</span>
-          </div>
+            <div class="editor-wrap">
+              <pre id="source-highlight" class="highlight" aria-hidden="true"></pre>
+              <label class="sr-only" for="source">fjson-Quelltext</label>
+              <textarea id="source" spellcheck="false" autocapitalize="off"
+                autocomplete="off" autocorrect="off" aria-describedby="editor-help"></textarea>
+            </div>
+            <div class="editor-footer">
+              <span id="editor-help">Gültiges JSON · Strg/⌘ + Enter zum Ausführen</span>
+              <span id="line-count" aria-live="polite">1 Zeile</span>
+            </div>
+            <div class="tab-actions">
+              <button id="load-program" type="button">Datei laden</button>
+              <button id="save-program" type="button">Programm speichern</button>
+              <input id="file-program" class="sr-only" type="file" accept=".json,application/json">
+            </div>
+          </section>
+
+          <section id="panel-data" class="tab-panel" role="tabpanel" aria-labelledby="tab-data" hidden>
+            <div class="panel-head">
+              <div><span class="panel-kicker">02 / EINGABE</span><h2>JSON-Daten</h2></div>
+              <span id="data-status" class="data-status" role="status">Als @data verfügbar</span>
+            </div>
+            <p class="panel-note">Diese Daten werden bei jeder Ausführung als <code>@data</code>
+              gebunden. Alle gültigen JSON-Werte sind erlaubt.</p>
+            <div class="editor-wrap">
+              <pre id="data-highlight" class="highlight" aria-hidden="true"></pre>
+              <label class="sr-only" for="data-source">JSON-Daten</label>
+              <textarea id="data-source" spellcheck="false" autocapitalize="off"
+                autocomplete="off" autocorrect="off"></textarea>
+            </div>
+            <div class="tab-actions">
+              <button id="load-data" type="button">JSON-Datei laden</button>
+              <button id="save-data" type="button">Daten speichern</button>
+              <input id="file-data" class="sr-only" type="file" accept=".json,application/json">
+            </div>
+          </section>
+
+          <section id="panel-shell" class="tab-panel" role="tabpanel" aria-labelledby="tab-shell" hidden>
+            <div class="panel-head">
+              <div><span class="panel-kicker">03 / INTERAKTIV</span><h2>Shell</h2></div>
+              <button id="clear-shell" type="button">Verlauf leeren</button>
+            </div>
+            <p class="panel-note">Ein JSON-Ausdruck pro Aufruf. Deklarationen und
+              <code>@data</code> sind in der aktuellen Sitzung verfügbar.</p>
+            <div id="shell-history" class="shell-history" role="log" aria-live="polite"></div>
+            <div class="shell-entry">
+              <div class="editor-wrap shell-wrap">
+                <pre id="shell-highlight" class="highlight" aria-hidden="true"></pre>
+                <label class="sr-only" for="shell-source">Shell-Ausdruck</label>
+                <textarea id="shell-source" spellcheck="false" autocapitalize="off"
+                  autocomplete="off" autocorrect="off" placeholder='["@plus", 1, 2]'></textarea>
+              </div>
+              <button id="run-shell" class="primary" type="button">Ausführen</button>
+            </div>
+          </section>
         </div>
 
         <div class="panel result-panel">
           <div class="panel-head">
             <div>
-              <span class="panel-kicker">02 / AUSWERTUNG</span>
+              <span class="panel-kicker">04 / AUSWERTUNG</span>
               <h2>Ergebnis</h2>
             </div>
             <span id="status" class="status" role="status" aria-live="polite">Bereit</span>
@@ -78,7 +132,7 @@
       <div class="actions">
         <button id="run" class="primary" type="button">▶ Ausführen</button>
         <button id="reset" class="secondary" type="button">Sitzung zurücksetzen</button>
-        <span class="action-note">Keine Datei-, Prozess- oder Netzwerk-Capabilities</span>
+        <span class="action-note">Dateien bleiben lokal · keine Prozess- oder Netzwerk-Capabilities</span>
       </div>
     </main>
 
