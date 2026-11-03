@@ -2,7 +2,7 @@
 
 **fjson** ist die Grundlage für eine in JSON geschriebene Implementierung von FJ@. Das Python-Modul und das JavaScript-ES-Modul werten denselben definierten Sprachkern aus: Referenzen, Funktionen, Funktionsaufrufe, lexikalische Bindungen und die unten beschriebenen besonderen Formen.
 
-> **Stand:** Das Repository mit Python-Paketversion 0.7 enthält den [eingefrorenen Sprachkern 0.3](CORE.md), die erste [Logikbibliothek](LOGIC.md), die [JSON-Graphsicht](GRAPH.md), [reine Arithmetik und Listenoperationen](SHOWCASE.md), [Python-Host-Adapter mit Ressourcenscopes](SECURITY.md) und eine [JavaScript-/TypeScript-Referenz für Browser und Node](js/README.md). Quellformen und Auswertungsregeln stehen in [GRAMMAR.ebnf](GRAMMAR.ebnf) und [SEMANTICS.md](SEMANTICS.md).
+> **Stand:** Das Repository mit Python-Paketversion 0.8 enthält den [eingefrorenen Sprachkern 0.3](CORE.md), die erste [Logikbibliothek](LOGIC.md), die [JSON-Graphsicht](GRAPH.md), [reine Arithmetik und Listenoperationen](SHOWCASE.md), einen separaten [Modul-Loader](MODULES.md), [Python-Host-Adapter mit Ressourcenscopes](SECURITY.md) und eine [JavaScript-/TypeScript-Referenz für Browser und Node](js/README.md). Quellformen und Auswertungsregeln stehen in [GRAMMAR.ebnf](GRAMMAR.ebnf) und [SEMANTICS.md](SEMANTICS.md).
 
 ## Grundidee
 
@@ -91,6 +91,12 @@ Für Bedingungen gilt: `false`, `null`, `0`, `""`, `[]` und `{}` sind falsch; an
 `@apply` ist zusätzlich ein **Laufzeit-Primitiv** für `["@apply", funktion, argumentliste]`. Es übergibt die Werte der ausgewerteten Argumentliste direkt an die Funktion, ohne diese Werte nochmals als FJ@-Quelltext zu interpretieren. Das benötigt Unterstützung im Aufrufmechanismus, ist aber keine neue Bindungs- oder Kontrollform. `@try` fängt `EvaluationError` und dessen Unterklassen ab, aber keinen `ResourceLimitError`; ohne Ersatz liefert es `{"error": "Klassenname", "message": "Text"}`. Bereits erfolgte Deklarationen werden durch `@try` nicht zurückgerollt.
 
 Operationen wie `@plus`, `@range`, `@map`, `@filter` und `@reduce` sind aufrufbare Bibliotheksfunktionen, keine reservierten Sprachformen. Das Paket bietet Grundarithmetik, Rundung, Zahlenvergleiche, JSON-Zugriff sowie die Logikfunktionen `@unify`, `@matcho`, `@membero`, `@patho`, `@neqo`, `@ge`, `@project`, `@choice`, `@conj` und `@run`. [SHOWCASE.md](SHOWCASE.md) erklärt die Zahlen- und Listenoperationen und führt durch die 56 Beispiele der IDE. `@get` liest einen Objektschlüssel oder einen Arrayindex; `@length` zählt Einträge. Bei fehlendem Schlüssel oder Index entsteht ein Fehler. `@compose` und `@curry` sind noch nicht als Bibliotheksfunktionen enthalten. Ein später aus Leistungsgründen nativer Rechenkern bleibt eine aufrufbare Funktion statt eines Keywords.
+
+Der separate [Modul-Loader](MODULES.md) verarbeitet JSONL-Direktiven wie
+`["@import", "math"]` und `@namespace`. Er bindet Funktionen bei Bedarf
+unter Namen wie `@plus@math` und `@unify@logic`. Diese Direktiven sind
+keine Formen des Sprachkerns; bestehende unqualifizierte Programme laufen
+weiter.
 
 ## Auswertung und Aufrufe
 
