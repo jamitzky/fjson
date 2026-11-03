@@ -88,8 +88,8 @@ Die reine Zahlen- und Listenbibliothek mit `@range`, `@map`, `@filter`,
 [SHOWCASE.md](../SHOWCASE.md) enthält Semantik und Beispiele. Die
 ausführbaren IDE-Lektionen werden mit `node js/test-showcase.mjs` geprüft.
 
-Die JSON-Logikfunktionen `@match`, `@membero`, `@patho`, `@neqo`,
-`@ge`, `@guard` und `@project` entsprechen der Python-Referenz.
+Die JSON-Logikfunktionen `@matcho`, `@membero`, `@patho`, `@neqo`,
+`@ge` und `@project` entsprechen der Python-Referenz.
 Beispiele und Einschränkungen stehen in [LOGIC_JSON.md](../LOGIC_JSON.md).
 
 ## Sprach- und Zahlenhinweise
