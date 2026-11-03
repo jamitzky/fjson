@@ -52,12 +52,6 @@ class ConjGoal(Goal):
 
 
 @dataclass(frozen=True)
-class MatchGoal(Goal):
-    data: Any
-    pattern: Any
-
-
-@dataclass(frozen=True)
 class MemberGoal(Goal):
     items: Any
     item: Any
@@ -406,10 +400,6 @@ def search(
         head, rest = pending[0], pending[1:]
         if isinstance(head, UnifyGoal):
             next_state = unify(head.left, head.right, state, step)
-            if next_state is not None:
-                work.append((rest, next_state, delayed))
-        elif isinstance(head, MatchGoal):
-            next_state = match(head.data, head.pattern, state, step)
             if next_state is not None:
                 work.append((rest, next_state, delayed))
         elif isinstance(head, MemberGoal):
