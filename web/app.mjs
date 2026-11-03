@@ -1,6 +1,8 @@
 import { Closure, Goal, Interpreter, LogicVar, parseJson } from '../js/fjson.mjs';
 import { fredData, refsData, showcaseGroups, shellGroups, lessonSource } from './showcase.mjs';
 import { tutorialGroups, tutorialSteps } from './tutorial.mjs';
+import { ModuleLoader } from '../js/modules.mjs';
+import { jModuleSource } from './j-library.mjs';
 
 const byId = id => document.querySelector('#' + id);
 const editor = byId('source');
@@ -45,6 +47,7 @@ const splitter = byId('splitter');
 const columnSplitter = byId('column-splitter');
 
 let interpreter = new Interpreter();
+let moduleLoader = new ModuleLoader(interpreter, { j: jModuleSource });
 let tabs = [];
 let active = null;
 let selectedCode = null;
@@ -314,6 +317,8 @@ function appendOutput(tab, result, failed) {
 function runActive() {
   if (!selectedCode) return;
   try {
+    if (selectedCode.module === 'j' && !moduleLoader.loaded.has('j'))
+      moduleLoader.load('["@import","j"]');
     bindDataTabs();
     const result = interpreter.run(selectedCode.content);
     appendOutput(selectedCode, format(result), false);
@@ -493,6 +498,7 @@ byId('clear-output').addEventListener('click', clearOutput);
 fileInput.addEventListener('change', openFile);
 byId('reset').addEventListener('click', () => {
   interpreter = new Interpreter();
+  moduleLoader = new ModuleLoader(interpreter, { j: jModuleSource });
   clearOutput();
   setStatus('Neue Interpreter-Sitzung');
 });
@@ -543,6 +549,7 @@ function loadLesson(item) {
   const code = selectedCode ?? addTab('code');
   loadDemoData(item.data);
   code.content = formatExample(lessonSource(item));
+  code.module = item.module ?? null;
   code.dirty = true;
   activateTab(code);
   closeMenu(codeMenuContent, codeMenuButton);
