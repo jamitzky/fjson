@@ -12,6 +12,7 @@ Aus dem Repository-Verzeichnis:
 
 ```powershell
 node js/test.mjs
+node js/test-pages.mjs
 node js/example.ts
 ```
 
@@ -47,6 +48,12 @@ Website geöffnet werden; viele Browser sperren Modulimporte von
 `file://`-Seiten. Ein einfacher Entwicklungsserver aus dem
 Repository-Verzeichnis ist `python -m http.server 8000`; anschließend
 `http://localhost:8000/js/browser.html` öffnen.
+
+[browser-test.html](browser-test.html) zeigt 13 gemeinsame
+Konformitätsfälle und fünf zusätzliche Browser-Checks mit Pass/Fail-
+Ergebnissen. Unter `http://localhost:8000/js/browser-test.html` laufen
+die Tests automatisch; der Knopf startet sie erneut. Die kleine
+[fjson-IDE](../web/README.md) liegt unter `http://localhost:8000/web/`.
 
 Die Referenzimplementierung installiert keinerlei Datei-, Prozess-
 oder Netzwerkfunktionen. Die [Python-Host-Adapter](../SECURITY.md) sind
