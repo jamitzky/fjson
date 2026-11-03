@@ -77,7 +77,9 @@ assert.equal(browser.get('#results').children.length, browserCount);
 const ideIds = [
   '#tabs', '#output', '#output-count', '#status', '.statusbar', '#binding-info',
   '#line-count', '#editor-title', '#editor-hint', '#data-title', '#data-hint',
-  '#example', '#file-input', '#data-source', '#data-highlight', '#data-pane',
+  '#code-menu', '#code-menu-button', '#code-menu-content',
+  '#shell-menu', '#shell-menu-button', '#shell-menu-content',
+  '#file-input', '#data-source', '#data-highlight', '#data-pane',
   '#editor-pane', '#top-pane', '#editor-splitter',
   '#workarea', '#output-pane', '#splitter', '#source', '#highlight',
   '#lower-pane', '#shell-pane', '#column-splitter', '#shell-source',
@@ -88,11 +90,8 @@ const pageSource = readFileSync(new URL('../web/index.html', import.meta.url), '
 const styleSource = readFileSync(new URL('../web/style.css', import.meta.url), 'utf8');
 assert.match(pageSource, /id="top-pane"[\s\S]*id="source"[\s\S]*id="editor-splitter"[\s\S]*id="data-source"/);
 assert.match(styleSource, /\.top-pane\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:/);
-for (const name of [
-  'fred_match', 'fred_phone', 'fred_email', 'fred_path',
-  'fred_adult', 'fred_cities', 'fred_project', 'fred_graph_city',
-  'fred_graph_edges', 'fred_graph_phone', 'fred_graph_rule',
-]) assert.ok(pageSource.includes('value="' + name + '"'), name + ' fehlt in der Auswahl');
+assert.match(pageSource, /id="code-menu-content"/);
+assert.match(pageSource, /id="shell-menu-content"/);
 
 async function checkIde(elements) {
   const get = id => elements.get('#' + id);
@@ -110,6 +109,19 @@ async function checkIde(elements) {
     source.listeners.get('input')();
   };
   const selectTab = index => tabs.children[index].children[0].click();
+  const choose = (menu, id) => {
+    get(menu + '-menu-button').click();
+    const content = get(menu + '-menu-content');
+    assert.equal(content.hidden, false);
+    const button = content.children.flatMap(section => section.children)
+      .find(child => child.dataset.example === id);
+    assert.ok(button, id);
+    button.click();
+    assert.equal(content.hidden, true);
+  };
+
+  assert.ok(get('code-menu-content').children.length >= 7);
+  assert.ok(get('shell-menu-content').children.length >= 3);
 
   assert.equal(tabs.children.length, 2);
   assert.equal(tabs.children[0].children[0].children[1].textContent, 'Input');
@@ -133,8 +145,7 @@ async function checkIde(elements) {
   assert.match(tabs.children[2].children[0].children[2].textContent, /●/);
 
   selectTab(0);
-  get('example').value = 'data';
-  get('example').listeners.get('change')();
+  choose('code', 'get_data');
   get('run').click();
   assert.equal(result(), '42');
   edit('["@plus", ["@get", "@data2", "answer"], 1]');
@@ -215,35 +226,27 @@ async function checkIde(elements) {
   assert.match(get('status').textContent, /Daten/);
 
   const fred = JSON.parse(readFileSync(new URL('../examples/fred.json', import.meta.url), 'utf8'));
-  const fredCases = [
-    ['fred_match', [{ name: 'Fred', surname: 'Smith' }]],
-    ['fred_phone', ['01962 001234', '01962 001235']],
-    ['fred_email', ['fred.smith@my-work.com', 'fsmith@my-work.com']],
-    ['fred_path', [['Other', 'Alternative.Address', 'City']]],
-    ['fred_adult', [28]],
-    ['fred_cities', [{
-      person: 'Fred', main_city: 'Winchester', alternative_city: 'London',
-    }]],
-    ['fred_project', [29]],
-    ['fred_graph_city', ['Winchester']],
-    ['fred_graph_edges', ['Winchester']],
-    ['fred_graph_phone', ['01962 001234', '01962 001235']],
-    ['fred_graph_rule', [28]],
-  ];
-  for (const [name, expected] of fredCases) {
-    get('example').value = name;
-    get('example').listeners.get('change')();
-    assert.match(get('status').textContent, /@data ersetzt/);
-    get('run').click();
-    assert.deepEqual(JSON.parse(result()), expected, name);
-    assert.deepEqual(JSON.parse(dataEditor.value), fred);
-    assert.match(dataEditor.value, /\{"type":"office","number":"01962 001234"\}/);
-    assert.match(editor.value, /@run/);
-    assert.match(editor.value, /\["@patho"|\["@match"|\["@matcho"|\["@conj"|\["@let"/);
-    assert.doesNotMatch(editor.value, /\[\s*\n\s*"@(?:patho|match|run)"/);
-  }
-  selectTab(1);
+  choose('code', 'logic_match');
+  get('run').click();
+  assert.deepEqual(JSON.parse(result()), ['Fred']);
   assert.deepEqual(JSON.parse(dataEditor.value), fred);
+  assert.match(dataEditor.value, /\{"type":"office","number":"01962 001234"\}/);
+  assert.match(editor.value, /"@kommentar": "Hinweis:/);
+  assert.match(editor.value, /\["@run",/);
+  assert.doesNotMatch(editor.value, /\[\s*\n\s*"@run"/);
+  choose('code', 'graph_refs');
+  get('run').click();
+  assert.deepEqual(JSON.parse(result()), ['Winchester']);
+  assert.equal(JSON.parse(dataEditor.value).companies[0].name, 'ACME');
+  choose('code', 'map_squares');
+  get('run').click();
+  assert.deepEqual(JSON.parse(result()), [1, 4, 9, 16, 25]);
+  choose('shell', 'Quadratwurzel');
+  assert.equal(get('shell-source').value, '["@sqrt",144]');
+  get('run-shell').click();
+  assert.equal(result(), '12');
+  selectTab(1);
+  assert.equal(JSON.parse(dataEditor.value).companies[0].name, 'ACME');
   assert.equal(get('data-hint').textContent.includes('@data'), true);
 }
 
