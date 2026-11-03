@@ -48,6 +48,7 @@ class SecurityTests(unittest.TestCase):
             ["@host.write", "data"],
             ["@wrapper", "data"],
             ["@apply", "@host.write", ["data"]],
+            ["@run", 1, "!Y", ["@project", "@host.write", ["data"], "!Y"]],
             ["@try", ["@wrapper", "data"], "ignored"],
         ):
             with self.assertRaises(SecurityError):
@@ -59,6 +60,11 @@ class SecurityTests(unittest.TestCase):
         )
         self.assertEqual(fj(["@wrapper", "data"]), "data")
         self.assertEqual(calls, ["data"])
+        self.assertEqual(
+            fj(["@run", 1, "!Y", ["@project", "@host.write", ["more"], "!Y"]]),
+            ["more"],
+        )
+        self.assertEqual(calls, ["data", "more"])
 
     def test_register_rejects_invalid_metadata(self):
         fj = Interpreter()
