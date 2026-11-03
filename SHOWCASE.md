@@ -1,6 +1,6 @@
 # fjson lernen: interaktiver Showcase
 
-Die [fjson Studio Einzeldatei](web/fjson-studio.html) enthält 56 ausführbare
+Die [fjson Studio Einzeldatei](web/fjson-studio.html) enthält 58 ausführbare
 Beispiele in sieben Themenmenüs und 11 kurze Ausdrücke im Menü
 **Shell-Snippets**. Sie läuft nach dem Herunterladen ohne Webserver. Code
 steht links, JSON-Daten rechts; **Code ausführen** verwendet beide. Die
@@ -107,7 +107,7 @@ Bausteine als auch ihre Zusammensetzung.
 1. **Einstieg und JSON:** Literale, Arrays, Deklarationen, `@let`,
    `@quote`, `@get` und `@length`.
 2. **Funktionen und Bindungen:** `@function`, Standardwerte, Closures,
-   Funktionen als Argumente, `@apply` und zwei Arten von `@letrec`.
+   Funktionen als Argumente, `@list`, `@apply` und zwei Arten von `@letrec`.
 3. **Entscheidungen und Fehler:** beide Zweige von `@if`, Kurzschluss
    und Ergebniswerte von `@and` und `@or`, `@not` sowie `@try`.
 4. **Arithmetik:** Grundrechenarten, Potenzen, Wurzel, Modulo, Runden,
