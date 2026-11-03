@@ -55,7 +55,7 @@ Website geöffnet werden; viele Browser sperren Modulimporte von
 Repository-Verzeichnis ist `python -m http.server 8000`; anschließend
 `http://localhost:8000/js/browser.html` öffnen.
 
-[browser-test.html](browser-test.html) zeigt 25 gemeinsame
+[browser-test.html](browser-test.html) zeigt die gemeinsamen
 Konformitätsfälle und fünf zusätzliche Browser-Checks mit Pass/Fail-
 Ergebnissen. Unter `http://localhost:8000/js/browser-test.html` laufen
 die Tests automatisch; der Knopf startet sie erneut. Die kleine
@@ -82,6 +82,11 @@ Verarbeiten von JSON-Daten. `@get` akzeptiert ein Objekt und einen
 String-Schlüssel oder ein Array und einen nichtnegativen ganzzahligen
 Index. `@length` akzeptiert ein Objekt oder Array. Fehlende Schlüssel,
 Indizes und falsche Typen verursachen einen `EvaluationError`.
+
+Die reine Zahlen- und Listenbibliothek mit `@range`, `@map`, `@filter`,
+`@reduce`, Rundung und Vergleichen entspricht der Python-Implementierung.
+[SHOWCASE.md](../SHOWCASE.md) enthält Semantik und Beispiele. Die
+ausführbaren IDE-Lektionen werden mit `node js/test-showcase.mjs` geprüft.
 
 Die JSON-Logikfunktionen `@match`, `@membero`, `@patho`, `@neqo`,
 `@ge`, `@guard` und `@project` entsprechen der Python-Referenz.
