@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<title>fjson im Browser</title>
+<pre id="result"></pre>
+<script type="module">
+  import { Interpreter } from './fjson.mjs';
+  const fjson = new Interpreter();
+  document.querySelector('#result').textContent = String(fjson.eval([
+    '@let',
+    { '@inc': ['@function', ['@x'], ['@plus', '@x', 1]] },
+    ['@inc', 41],
+  ]));
+</script>
+</html>
