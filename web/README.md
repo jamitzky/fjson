@@ -41,7 +41,11 @@ Das Menü **Beispiele** enthält 56 Lektionen in sieben aufklappbaren
 Themenbereichen: JSON-Grundlagen, Funktionen, Kontrollfluss, Arithmetik,
 Bereiche und Listen, Logik sowie Graphabfragen. Das getrennte Menü
 **Shell-Snippets** fügt elf kurze Ausdrücke in die Shell ein, ohne sie
-sofort auszuführen. [SHOWCASE.md](../SHOWCASE.md) führt durch die Themen
+sofort auszuführen. **Tutorial** führt mit 27 Schritten durch Grundlagen,
+Funktionen, Daten, relationale Abfragen, Graphen und Module. Jeder Schritt
+zeigt eine Erklärung mit Navigation und kann sein Beispiel direkt laden und
+ausführen. Die Texte sind auch in der Offline-Datei enthalten.
+[SHOWCASE.md](../SHOWCASE.md) führt durch die Themen
 und erklärt die neuen Rechen- und Listenoperationen. Jedes längere
 Beispiel enthält eine `@kommentar`-Deklaration direkt im ausführbaren
 fjson-Quelltext. Einfache Listen und Objekte stehen jeweils auf einer
@@ -69,7 +73,7 @@ Browseroberfläche; fjson selbst erhält dadurch keine Datei-Capability.
 ## Quelldateien und Entwicklung
 
 [`index.html`](index.html), [`app.mjs`](app.mjs),
-[`showcase.mjs`](showcase.mjs) und
+[`showcase.mjs`](showcase.mjs), [`tutorial.mjs`](tutorial.mjs) und
 [`style.css`](style.css) sind die modulare Variante. Sie verwenden
 [`../js/fjson.mjs`](../js/fjson.mjs). Nach Änderungen am Interpreter,
 an der App oder am CSS wird die Einzeldatei neu erzeugt:
