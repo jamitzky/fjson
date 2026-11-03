@@ -11,5 +11,8 @@
   {"name":"occurs_check","program":["@run",1,"!X",["@unify","!X",["node","!X"]]],"expected":[]},
   {"name":"record_unify","program":["@run",1,["!X","!Y"],["@unify",{"left":"!X","right":"!Y"},{"right":2,"left":1}]],"expected":[[1,2]]},
   {"name":"unbound_markers","program":["@run",1,["!X","!X","!Y"],["@unify",1,1]],"expected":[[{"var":"X","index":0},{"var":"X","index":0},{"var":"Y","index":1}]]},
-  {"name":"try_fallback","program":["@try","@unknown",42],"expected":42}
+  {"name":"try_fallback","program":["@try","@unknown",42],"expected":42},
+  {"name":"get_object","program":["@get",{"answer":42},"answer"],"expected":42},
+  {"name":"get_array","program":["@get",[40,42],1],"expected":42},
+  {"name":"length","program":["@length",{"first":1,"second":2}],"expected":2}
 ]
