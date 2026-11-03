@@ -2,7 +2,7 @@
 
 **fjson** ist die Grundlage für eine in JSON geschriebene Implementierung von FJ@. Das Python-Modul und das JavaScript-ES-Modul werten denselben definierten Sprachkern aus: Referenzen, Funktionen, Funktionsaufrufe, lexikalische Bindungen und die unten beschriebenen besonderen Formen.
 
-> **Stand:** Das Repository mit Python-Paketversion 0.6 enthält den [eingefrorenen Sprachkern 0.3](CORE.md), die erste [Logikbibliothek](LOGIC.md), [Python-Host-Adapter mit Ressourcenscopes](SECURITY.md) und eine [JavaScript-/TypeScript-Referenz für Browser und Node](js/README.md). Quellformen und Auswertungsregeln stehen in [GRAMMAR.ebnf](GRAMMAR.ebnf) und [SEMANTICS.md](SEMANTICS.md).
+> **Stand:** Das Repository mit Python-Paketversion 0.6 enthält den [eingefrorenen Sprachkern 0.3](CORE.md), die erste [Logikbibliothek](LOGIC.md), die [JSON-Graphsicht](GRAPH.md), [Python-Host-Adapter mit Ressourcenscopes](SECURITY.md) und eine [JavaScript-/TypeScript-Referenz für Browser und Node](js/README.md). Quellformen und Auswertungsregeln stehen in [GRAMMAR.ebnf](GRAMMAR.ebnf) und [SEMANTICS.md](SEMANTICS.md).
 
 ## Grundidee
 
