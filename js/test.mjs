@@ -98,3 +98,20 @@ test('shared Python and JavaScript conformance cases', () => {
     assert.deepEqual(new Interpreter().eval(program), JSON.parse(JSON.stringify(expected)), name);
   }
 });
+
+test('graph reference errors, options and bounded traversal', () => {
+  const fj = new Interpreter();
+  fj.eval({ '@broken': ['@graph', { link: { '$ref': 'missing' } }, { refs: true }] });
+  assert.throws(() => fj.eval(['@run', 1, '!Target',
+    ['@edgeo', '@broken', 'link', '!Target']]),
+  /unknown graph reference/);
+  fj.eval({ '@duplicate': ['@graph', { a: { id: 'same' }, b: { id: 'same' } }] });
+  assert.throws(() => fj.eval(['@run', 1, '!Node',
+    ['@nodeo', '@duplicate', 'same', '!Node']]),
+  /duplicate graph id/);
+  assert.throws(() => fj.eval(['@graph', {}, { refs: 1 }]), EvaluationError);
+  const bounded = new Interpreter({ maxSteps: 40 });
+  bounded.eval({ '@g': ['@graph', { a: [1, 2, 3, 4, 5] }] });
+  assert.throws(() => bounded.eval(['@run', 10, '!Path',
+    ['@patho', '@g', '@g', '!Path', '!Value']]), ResourceLimitError);
+});
