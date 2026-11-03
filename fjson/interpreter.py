@@ -172,6 +172,30 @@ def _json_equal(a: Any, b: Any) -> bool:
     return a == b
 
 
+def _get(container: Any, key: Any) -> Any:
+    if isinstance(container, list):
+        if type(key) is not int and not (
+            type(key) is float and key.is_integer()
+        ):
+            raise EvaluationError("@get expects an array and index or object and key")
+        if 0 <= key < len(container):
+            return container[int(key)]
+    elif isinstance(container, dict):
+        if type(key) is not str:
+            raise EvaluationError("@get expects an array and index or object and key")
+        if key in container:
+            return container[key]
+    else:
+        raise EvaluationError("@get expects an array and index or object and key")
+    raise EvaluationError("@get key or index does not exist")
+
+
+def _length(value: Any) -> int:
+    if not isinstance(value, (list, dict)):
+        raise EvaluationError("@length expects an array or object")
+    return len(value)
+
+
 def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
@@ -208,6 +232,8 @@ class Interpreter:
             "@divide": _binary_number("@divide", lambda a, b: a / b),
             "@le": _binary_number("@le", lambda a, b: a <= b),
             "@eq": Native("@eq", 2, _json_equal),
+            "@get": Native("@get", 2, _get),
+            "@length": Native("@length", 1, _length),
             "@unify": Native("@unify", 2, UnifyGoal),
             "@choice": Native("@choice", 2, self._logic_choice),
             "@conj": Native("@conj", 2, self._logic_conj),
