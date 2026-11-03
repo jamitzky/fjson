@@ -1,0 +1,16 @@
+{
+  "people": [
+    {
+      "id": "person:fred",
+      "name": "Fred Smith",
+      "employer": {"$ref": "company:acme"}
+    }
+  ],
+  "companies": [
+    {
+      "id": "company:acme",
+      "name": "ACME",
+      "office": {"City": "Winchester", "Postcode": "SO21 2JN"}
+    }
+  ]
+}
