@@ -1,0 +1,8 @@
+["@namespace","j",{"identity":["@function",["@y"],"@y"]}]
+["@namespace","j",{"atop":["@function",["@f","@g"],["@function",["@y"],["@f",["@g","@y"]]]]}]
+["@namespace","j",{"hook":["@function",["@f","@g"],["@function",["@y"],["@f","@y",["@g","@y"]]]]}]
+["@namespace","j",{"fork":["@function",["@f","@g","@h"],["@function",["@y"],["@g",["@f","@y"],["@h","@y"]]]]}]
+["@namespace","j",{"fork2":["@function",["@f","@g","@h"],["@function",["@x","@y"],["@g",["@f","@x","@y"],["@h","@x","@y"]]]]}]
+["@namespace","j",{"each":["@function",["@f"],["@function",["@xs"],["@map","@f","@xs"]]]}]
+["@namespace","j",{"insert":["@function",["@f"],["@function",["@xs"],["@reduce","@f",["@map",["@function",["@i"],["@get","@xs","@i"]],["@range",1,["@length","@xs"]]],["@get","@xs",0]]]]}]
+["@namespace","j",{"curry":["@function",["@f","@side","@value"],["@if",["@eq","@side","left"],["@function",["@x"],["@f","@value","@x"]],["@if",["@eq","@side","right"],["@function",["@x"],["@f","@x","@value"]],["@get",{},"invalid curry side"]]]]}]
