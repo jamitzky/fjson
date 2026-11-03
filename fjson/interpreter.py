@@ -16,9 +16,15 @@ from typing import Any, Callable
 from .logic import (
     ChoiceGoal,
     ConjGoal,
+    GeGoal,
     Goal,
     LogicScope,
     LogicVar,
+    MatchGoal,
+    MemberGoal,
+    NeqGoal,
+    PathGoal,
+    ProjectGoal,
     UnifyGoal,
     search,
 )
@@ -235,6 +241,13 @@ class Interpreter:
             "@get": Native("@get", 2, _get),
             "@length": Native("@length", 1, _length),
             "@unify": Native("@unify", 2, UnifyGoal),
+            "@match": Native("@match", 2, MatchGoal),
+            "@membero": Native("@membero", 2, MemberGoal),
+            "@patho": Native("@patho", 3, PathGoal),
+            "@neqo": Native("@neqo", 2, NeqGoal),
+            "@ge": Native("@ge", 2, GeGoal),
+            "@guard": Native("@guard", 1, self._logic_guard),
+            "@project": Native("@project", 3, self._logic_project),
             "@choice": Native("@choice", 2, self._logic_choice),
             "@conj": Native("@conj", 2, self._logic_conj),
             "@run": Native("@run", 3, self._logic_run),
@@ -459,4 +472,19 @@ class Interpreter:
             raise EvaluationError("@run expects a nonnegative integer limit")
         if not isinstance(goal, Goal):
             raise EvaluationError("@run expects a goal")
-        return search(goal, query, limit, lambda: self._tick(0))
+        return search(
+            goal, query, limit, lambda: self._tick(0),
+            lambda function, args: self._invoke(function, args, 0),
+        )
+
+    @staticmethod
+    def _logic_guard(goal: Any) -> Goal:
+        if not isinstance(goal, Goal):
+            raise EvaluationError("@guard expects a goal")
+        return goal
+
+    @staticmethod
+    def _logic_project(function: Any, arguments: Any, result: Any) -> Goal:
+        if not isinstance(function, (Native, Closure)) or not isinstance(arguments, list):
+            raise EvaluationError("@project expects a function and argument array")
+        return ProjectGoal(function, arguments, result)
