@@ -163,6 +163,18 @@ typisierte Schnittstelle. Die gemeinsamen Konformitätsfälle werden in
 beiden Laufzeiten ausgeführt. Die plattformspezifischen Python-Host-Adapter
 gehören nicht zu diesem reinen JavaScript-Modul.
 
+Für den Browser gibt es eine [HTML-Testseite](js/browser-test.html) mit
+sichtbaren Ergebnissen und in [web/](web/README.md) eine kleine IDE zum
+Bearbeiten und Ausführen von fjson-Programmen. Beide Seiten sind statisch
+und verwenden das ES-Modul direkt. Aus dem Repository-Verzeichnis:
+
+```powershell
+python -m http.server 8000
+```
+
+Dann `http://localhost:8000/js/browser-test.html` beziehungsweise
+`http://localhost:8000/web/` öffnen.
+
 ### Effekte und Capabilities
 
 Die Python-Anwendung kann native Funktionen mit einer Operations-ID und
