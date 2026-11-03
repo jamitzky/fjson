@@ -10,6 +10,7 @@ from .interpreter import (
     SecurityError,
 )
 from .logic import LogicVar
+from .graph import GraphNode, JsonGraph, RecordPattern, SomePattern
 from .adapters import HttpsScope, PathScope, ProcessScope, install_host_adapters
 from .security import CapabilityGrant, CapabilityPolicy, Effect
 
@@ -21,12 +22,16 @@ __all__ = [
     "HttpsScope",
     "EvaluationError",
     "FjsonError",
+    "GraphNode",
     "Interpreter",
+    "JsonGraph",
     "LogicVar",
     "PathScope",
     "ProcessScope",
     "ResolutionError",
+    "RecordPattern",
     "ResourceLimitError",
     "SecurityError",
+    "SomePattern",
     "install_host_adapters",
 ]
