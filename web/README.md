@@ -30,9 +30,10 @@ und `@patho` zur Verfügung. Die Beispiele in
 [LOGIC_JSON.md](../LOGIC_JSON.md) lassen sich mit einem geladenen
 Daten-Tab ausführen; dessen Bindung heißt standardmäßig `@data`.
 
-Die Beispielauswahl enthält sieben direkt ausführbare Abfragen mit Freds
+Die Beispielauswahl enthält elf direkt ausführbare Abfragen mit Freds
 vollständigem Datensatz: Teilmuster, Büronummern, Arbeits-E-Mails,
-Rückwärtspfad, Volljährigkeit, verschiedene Städte und Projektion.
+Rückwärtspfad, Volljährigkeit, verschiedene Städte, Projektion sowie
+[Graphpfad, Kanten, Graphmuster und eine Regel](../GRAPH.md).
 Beim Auswählen eines Fred-Beispiels wird der Inhalt des `@data`-Tabs
 durch [examples/fred.json](../examples/fred.json) ersetzt. Der Datensatz
 ist auch in der Offline-HTML-Datei enthalten; dafür ist kein Laden über
