@@ -35,7 +35,7 @@ der folgenden Regeln braucht eine ausdrücklich benannte neue Kernversion.
 
 ## Erweiterungsgrenze
 
-Aufrufbare Namen wie `@plus`, `@unify`, `@choice`, `@conj` und `@run` sind
+Aufrufbare Namen wie `@plus`, `@unify`, `@match`, `@patho`, `@choice`, `@conj` und `@run` sind
 Bibliotheks- oder Host-Funktionen, keine neuen Quellformen. Zusätzliche
 Funktionen können ergänzt werden, ohne die Grammatik zu ändern. Die
 Logikbibliothek ist in [LOGIC.md](LOGIC.md) spezifiziert; ihre Suche ist
