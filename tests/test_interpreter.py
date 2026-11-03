@@ -213,7 +213,18 @@ class InterpreterTests(unittest.TestCase):
         )
         self.assertEqual(self.fj("@kept"), 7)
 
+    def test_json_data_access(self):
+        self.assertEqual(self.fj(["@get", {"answer": 42}, "answer"]), 42)
+        self.assertEqual(self.fj(["@get", [40, 42], 1]), 42)
+        self.assertEqual(self.fj(["@get", [40, 42], 1.0]), 42)
+        self.assertEqual(self.fj(["@length", {"a": 1, "b": 2}]), 2)
+        with self.assertRaises(EvaluationError):
+            self.fj(["@get", [1], 1])
+        with self.assertRaises(EvaluationError):
+            self.fj(["@get", {"a": 1}, "b"])
+        with self.assertRaises(EvaluationError):
+            self.fj(["@length", 42])
+
 
 if __name__ == "__main__":
     unittest.main()
-
