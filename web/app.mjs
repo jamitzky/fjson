@@ -61,6 +61,21 @@ const examples = {
   fred_project: ['@run', 1, '!Next', ['@conj',
     ['@project', '@plus', ['!Age', 1], '!Next'],
     ['@match', '@data', { Age: '!Age' }]]],
+  fred_graph_city: ['@let', { '@g': ['@graph', '@data'] },
+    ['@run', 1, '!City', ['@patho', '@g', '@g', ['Address', 'City'], '!City']]],
+  fred_graph_edges: ['@let', { '@g': ['@graph', '@data'] },
+    ['@run', 1, '!City', ['@conj',
+      ['@edgeo', '@g', 'Address', '!Address'],
+      ['@edgeo', '!Address', 'City', '!City']]]],
+  fred_graph_phone: ['@let', { '@g': ['@graph', '@data'] },
+    ['@run', 10, '!Number', ['@matcho', '@g',
+      ['@record', { Phone: ['@some',
+        ['@record', { type: 'office', number: '!Number' }]] }]]]],
+  fred_graph_rule: ['@let', {
+    '@adult': ['@function', ['@person', '@age'],
+      ['@conj', ['@edgeo', '@person', 'Age', '@age'], ['@ge', '@age', 18]]],
+    '@g': ['@graph', '@data'],
+  }, ['@run', 1, '!Age', ['@adult', '@g', '!Age']]],
 };
 
 const byId = id => document.querySelector('#' + id);
