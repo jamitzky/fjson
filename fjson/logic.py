@@ -97,14 +97,6 @@ class EdgeGoal(Goal):
 
 
 @dataclass(frozen=True)
-class GraphPathGoal(Goal):
-    graph: Any
-    start: Any
-    path: Any
-    value: Any
-
-
-@dataclass(frozen=True)
 class MatchoGoal(Goal):
     data: Any
     pattern: Any
@@ -431,7 +423,15 @@ def search(
             data = walk(head.data, state, step)
             if not isinstance(data, LogicVar):
                 known, path = _resolved(head.path, state, step)
-                if known:
+                if isinstance(data, (JsonGraph, GraphNode)):
+                    graph = data if isinstance(data, JsonGraph) else data.graph
+                    start = graph.root if isinstance(data, JsonGraph) else data
+                    if known:
+                        found, value = _graph_at_path(graph, start, path, step)
+                        candidates = [(path, value)] if found else []
+                    else:
+                        candidates = list(_graph_paths(graph, start, step))
+                elif known:
                     found, value = _at_path(data, path, step)
                     candidates = [(path, value)] if found else []
                 else:
@@ -469,23 +469,6 @@ def search(
                         next_state = unify(head.node, node, next_state, step)
                     if next_state is not None:
                         work.append((rest, next_state, delayed))
-        elif isinstance(head, GraphPathGoal):
-            graph = walk(head.graph, state, step)
-            if isinstance(graph, JsonGraph):
-                start = graph.start(walk(head.start, state, step), step)
-                if start is not None:
-                    known, path = _resolved(head.path, state, step)
-                    if known:
-                        found, value = _graph_at_path(graph, start, path, step)
-                        candidates = [(path, value)] if found else []
-                    else:
-                        candidates = list(_graph_paths(graph, start, step))
-                    for path, value in reversed(candidates):
-                        next_state = unify(head.path, path, state, step)
-                        if next_state is not None:
-                            next_state = unify(head.value, value, next_state, step)
-                        if next_state is not None:
-                            work.append((rest, next_state, delayed))
         elif isinstance(head, (NeqGoal, GeGoal, ProjectGoal)):
             work.append((rest, state, (*delayed, head)))
         elif isinstance(head, ChoiceGoal):
