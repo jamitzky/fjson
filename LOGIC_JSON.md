@@ -19,7 +19,7 @@ fj({"@person": ["@quote", person]})
 
 ## Partielle Muster und Arrayelemente
 
-`@match(Data, Pattern)` prüft ein rekursives Teilmuster. Musterobjekte
+`@matcho(Data, Pattern)` prüft ein rekursives Teilmuster. Musterobjekte
 dürfen Schlüssel weglassen; bei Arrays müssen Länge und Positionen
 übereinstimmen. Wiederholte logische Variablen müssen denselben Wert
 annehmen. Fehlende Schlüssel und vorhandene Schlüssel mit `null` sind
@@ -27,7 +27,7 @@ verschieden. Ein ungebundener Datenwert wird nicht konstruiert.
 
 ```json
 ["@run", 1, {"name": "!First", "surname": "!Last"},
-  ["@match", "@person",
+  ["@matcho", "@person",
     {"FirstName": "!First", "Surname": "!Last",
      "Address": {"City": "Winchester"}}]]
 ```
@@ -37,7 +37,7 @@ Ergebnis: `[{"name": "Fred", "surname": "Smith"}]`.
 `@membero(Array, Term)` vereinigt jedes Element eines vorhandenen
 Arrays exakt mit dem Term. Die Lösungen folgen der Arrayreihenfolge.
 Für partielle Elementmuster bindet man zunächst ein Element und
-verwendet danach `@match`.
+verwendet danach `@matcho`.
 
 ```json
 ["@run", 10, "!Number",
@@ -49,6 +49,23 @@ verwendet danach `@match`.
 Ergebnis: `["01962 001234", "01962 001235"]`. Mit einer weiteren
 `@membero`-Ebene lassen sich auch die Arbeitsadressen in Freds
 verschachteltem `Email`-Array abfragen.
+
+`@membero` vereinigt ein Element exakt und kann dabei auch eine noch
+ungebundene Variable im Array binden. `@some` ist dagegen ein Musterkonstruktor
+innerhalb von `@matcho`: Er durchsucht ein vorhandenes Array und kann mit
+`@record` Felder eines Elements auslassen.
+
+```json
+["@run", 10, "!Number",
+  ["@matcho", "@person",
+    ["@record", {"Phone":
+      ["@some", ["@record", {"type": "office", "number": "!Number"}]]}]]]
+```
+
+Das liefert dieselben beiden Büronummern, auch wenn Telefonobjekte weitere
+Felder enthalten. `@some` erzeugt keine Arrayelemente aus einem ungebundenen
+Datenwert. Für verschachtelte `@some`-Muster muss die umgebende Objektstufe
+mit `@record` markiert sein.
 
 ## Pfade in beide Richtungen
 
@@ -82,14 +99,13 @@ keine scheinbar vollständige Lösung.
 Ergebnis: `[2]`. Ohne die Bindung an `2` wäre das Ergebnis `[]`.
 
 `@ge(A, B)` ist ein verzögertes numerisches Goal für `A >= B`.
-`@guard(Goal)` akzeptiert ein Goal als Bedingung. Beide Operanden
-von `@ge` müssen am Ende endliche Zahlen sein:
+Beide Operanden müssen am Ende endliche Zahlen sein:
 
 ```json
 ["@run", 1, "!Age",
   ["@conj",
-    ["@guard", ["@ge", "!Age", 18]],
-    ["@match", "@person", {"Age": "!Age"}]]]
+    ["@ge", "!Age", 18],
+    ["@matcho", "@person", {"Age": "!Age"}]]]
 ```
 
 Ergebnis: `[28]`. `@ge` liefert ein Goal, keinen sofortigen booleschen
@@ -103,7 +119,7 @@ vereinigt ihren Rückgabewert mit `Ergebnis`:
 ["@run", 1, "!Next",
   ["@conj",
     ["@project", "@plus", ["!Age", 1], "!Next"],
-    ["@match", "@person", {"Age": "!Age"}]]]
+    ["@matcho", "@person", {"Age": "!Age"}]]]
 ```
 
 Ergebnis: `[29]`. Der Funktionsaufruf durchläuft dieselbe
