@@ -1,8 +1,8 @@
 # fjson
 
-**fjson** ist die Grundlage für eine in JSON geschriebene Implementierung von FJ@. Das reine Python-Modul wertet einen definierten Sprachkern aus: Referenzen, Funktionen, Funktionsaufrufe, lexikalische Bindungen und die unten beschriebenen besonderen Formen.
+**fjson** ist die Grundlage für eine in JSON geschriebene Implementierung von FJ@. Das Python-Modul und das JavaScript-ES-Modul werten denselben definierten Sprachkern aus: Referenzen, Funktionen, Funktionsaufrufe, lexikalische Bindungen und die unten beschriebenen besonderen Formen.
 
-> **Stand:** Paketversion 0.5 enthält den [eingefrorenen Sprachkern 0.3](CORE.md), die erste [Logikbibliothek](LOGIC.md) und [Host-Adapter mit Ressourcenscopes](SECURITY.md). Quellformen und Auswertungsregeln stehen in [GRAMMAR.ebnf](GRAMMAR.ebnf) und [SEMANTICS.md](SEMANTICS.md).
+> **Stand:** Das Repository mit Python-Paketversion 0.6 enthält den [eingefrorenen Sprachkern 0.3](CORE.md), die erste [Logikbibliothek](LOGIC.md), [Python-Host-Adapter mit Ressourcenscopes](SECURITY.md) und eine [JavaScript-/TypeScript-Referenz für Browser und Node](js/README.md). Quellformen und Auswertungsregeln stehen in [GRAMMAR.ebnf](GRAMMAR.ebnf) und [SEMANTICS.md](SEMANTICS.md).
 
 ## Grundidee
 
@@ -153,6 +153,15 @@ Erwartetes Ergebnis: `42`.
 Der [eingefrorene Sprachkern](CORE.md) orientiert sich am bisherigen FJ@-Entwurf. Funktionen können übergeben und zurückgegeben werden; Aufrufe haben genau eine kanonische Präfixform. `fj@nice` kann später Pipeline-, Infix- und Postfixschreibweisen in diese Form übersetzen. Diese Schreibweisen werden vom Basisinterpreter nicht erkannt. Weitergehende Metafunktionsregeln, externe Effekte, Tensoroperationen und die größere FJ@-Standardbibliothek gehören nicht zum Sprachkern 0.3. Externe Funktionen werden über die [Host-Policy](SECURITY.md) registriert und geprüft, ohne neue Sprachformen einzuführen.
 
 `@plus` ist der Name für die Addition, wie im bisherigen FJ@-Entwurf. `@add` ist kein eingebauter Alias.
+
+### JavaScript und TypeScript
+
+Der eingefrorene Kern und die Logikbibliothek sind auch als
+[ES-Modul](js/README.md) verfügbar. Es ist derselbe JavaScript-Code für
+Browser und Node; [TypeScript-Deklarationen](js/fjson.d.mts) geben ihm eine
+typisierte Schnittstelle. Die gemeinsamen Konformitätsfälle werden in
+beiden Laufzeiten ausgeführt. Die plattformspezifischen Python-Host-Adapter
+gehören nicht zu diesem reinen JavaScript-Modul.
 
 ### Effekte und Capabilities
 
