@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
-  Interpreter, LogicVar, EvaluationError, ResolutionError,
+  Interpreter, LogicVar, ArityError, EvaluationError, ResolutionError,
   ResourceLimitError, parseJson,
 } from './fjson.mjs';
 
@@ -101,6 +101,7 @@ test('shared Python and JavaScript conformance cases', () => {
 
 test('graph reference errors, options and bounded traversal', () => {
   const fj = new Interpreter();
+  assert.throws(() => fj.eval(['@patho', { a: 1 }, { a: 1 }, ['a'], '!X']), ArityError);
   fj.eval({ '@broken': ['@graph', { link: { '$ref': 'missing' } }, { refs: true }] });
   assert.throws(() => fj.eval(['@run', 1, '!Target',
     ['@edgeo', '@broken', 'link', '!Target']]),
@@ -113,5 +114,5 @@ test('graph reference errors, options and bounded traversal', () => {
   const bounded = new Interpreter({ maxSteps: 40 });
   bounded.eval({ '@g': ['@graph', { a: [1, 2, 3, 4, 5] }] });
   assert.throws(() => bounded.eval(['@run', 10, '!Path',
-    ['@patho', '@g', '@g', '!Path', '!Value']]), ResourceLimitError);
+    ['@patho', '@g', '!Path', '!Value']]), ResourceLimitError);
 });
