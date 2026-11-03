@@ -98,15 +98,6 @@ class JsonGraph:
     def identities(self, step: Callable[[], None]) -> Iterator[tuple[str, GraphNode]]:
         return iter(self._index_ids(step).items())
 
-    def start(self, value: Any, step: Callable[[], None]) -> GraphNode | None:
-        if value is self:
-            return self.root
-        if isinstance(value, GraphNode) and value.graph is self:
-            return value
-        if isinstance(value, str):
-            return self.by_id(value, step)
-        return None
-
     def edges(
         self, node: GraphNode, step: Callable[[], None]
     ) -> Iterator[tuple[str | int, Any]]:
