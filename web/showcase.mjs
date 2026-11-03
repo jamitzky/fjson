@@ -27,6 +27,8 @@ export const refsData = {
 
 const lesson = (id, title, note, program, expected, data = null, tip = null) =>
   ({ id, title, note, program, expected, data, tip });
+const jLesson = (id, title, note, program, expected) =>
+  ({ ...lesson(id, title, note, program, expected), module: 'j' });
 const fizzLabel = ['@if', ['@eq', ['@mod', '@n', 15], 0], 'FizzBuzz',
   ['@if', ['@eq', ['@mod', '@n', 3], 0], 'Fizz',
     ['@if', ['@eq', ['@mod', '@n', 5], 0], 'Buzz', '@n']]];
@@ -111,6 +113,23 @@ export const showcaseGroups = [
     lesson('graph_matcho', '@matcho · mehrere Büronummern', '@record prüft Teilobjekte; @some liefert für jedes passende Arrayelement eine Lösung.', ['@run', 10, '!Number', ['@matcho', '@data', ['@record', { Phone: ['@some', ['@record', { type: 'office', number: '!Number' }]] }]]], ['01962 001234', '01962 001235'], 'fred'),
     lesson('graph_node', '@nodeo · ID nachschlagen', '@nodeo findet einen Knoten anhand seines id-Feldes.', ['@let', { '@g': ['@graph', '@data'] }, ['@run', 1, '!Name', ['@conj', ['@nodeo', '@g', 'company:acme', '!Company'], ['@edgeo', '!Company', 'name', '!Name']]]], ['ACME'], 'refs'),
     lesson('graph_refs', '@graph · Referenzen folgen', 'Nur {"refs":true} macht aus $ref eine Kante zum Zielobjekt.', ['@let', { '@g': ['@graph', '@data', { refs: true }] }, ['@run', 1, '!City', ['@conj', ['@nodeo', '@g', 'person:fred', '!Person'], ['@patho', '!Person', ['employer', 'office', 'City'], '!City']]]], ['Winchester'], 'refs'),
+  ] },
+  { title: '08 · J: Funktionen komponieren', lessons: [
+    jLesson('j_identity', 'J · Identität', 'Die Identität gibt den ganzen Wert unverändert zurück; sie ist ein nützlicher Fork-Zweig.', ['@identity@j', [1, 2, 3]], [1, 2, 3]),
+    jLesson('j_atop', 'J · Atop', 'Atop erzeugt aus zwei monadischen Funktionen f und g die Funktion f(g(y)).', ['@let', { '@sq': ['@function', ['@x'], ['@times', '@x', '@x']], '@inc': ['@function', ['@x'], ['@plus', '@x', 1]], '@f': ['@atop@j', '@sq', '@inc'] }, ['@f', 3]], 16),
+    jLesson('j_hook', 'J · Hook', 'Ein monadischer Hook kombiniert den Originalwert y mit g(y) durch die dyadische Funktion f.', ['@let', { '@sq': ['@function', ['@x'], ['@times', '@x', '@x']], '@f': ['@hook@j', '@minus', '@sq'] }, ['@f', 3]], -6),
+    jLesson('j_fork', 'J · monadischer Fork', 'Ein Fork berechnet f(y) und h(y) und übergibt beide Ergebnisse an g.', ['@let', { '@sq': ['@function', ['@x'], ['@times', '@x', '@x']], '@double': ['@function', ['@x'], ['@times', 2, '@x']], '@f': ['@fork@j', '@sq', '@plus', '@double'] }, ['@f', 5]], 35),
+    jLesson('j_fork_order', 'J · Reihenfolge im Fork', 'Bei @minus als Mittelfunktion ist die Reihenfolge der beiden Fork-Zweige sichtbar: 5 minus 25.', ['@let', { '@sq': ['@function', ['@x'], ['@times', '@x', '@x']], '@f': ['@fork@j', '@identity@j', '@minus', '@sq'] }, ['@f', 5]], -20),
+    jLesson('j_fork2', 'J · dyadischer Fork', 'Fork2 gibt x und y an beide dyadischen Zweige; g kombiniert deren Ergebnisse.', ['@let', { '@f': ['@fork2@j', '@plus', '@minus', '@times'] }, ['@f', 5, 3]], -7),
+    jLesson('j_each', 'J · Each', 'Each leitet aus einer monadischen Funktion eine neue Funktion für jedes Arrayelement ab.', ['@let', { '@sq': ['@function', ['@x'], ['@times', '@x', '@x']], '@all': ['@each@j', '@sq'] }, ['@all', [1, 2, 3]]], [1, 4, 9]),
+    jLesson('j_insert_sum', 'J · Insert als Summe', 'Insert faltet ein nichtleeres Array von links; mit @plus entsteht die Summe.', ['@let', { '@sum': ['@insert@j', '@plus'] }, ['@sum', [1, 2, 3, 4]]], 10),
+    jLesson('j_insert_order', 'J · Faltungsrichtung', 'Mit @minus zeigt sich die Linksassoziativität: (10 − 3) − 2 = 5.', ['@let', { '@f': ['@insert@j', '@minus'] }, ['@f', [10, 3, 2]]], 5),
+    jLesson('j_curry_left', 'J · linkes Argument binden', 'Curry mit left erzeugt aus @minus die Funktion 10 − x.', ['@let', { '@f': ['@curry@j', '@minus', 'left', 10] }, ['@f', 3]], 7),
+    jLesson('j_curry_right', 'J · rechtes Argument binden', 'Curry mit right erzeugt aus @minus die Funktion x − 10.', ['@let', { '@f': ['@curry@j', '@minus', 'right', 10] }, ['@f', 3]], -7),
+    jLesson('j_mean', 'J · Mittelwert als Fork', 'Die Summe entsteht durch Insert; ein Fork teilt sie durch die Länge der Liste.', ['@let', { '@sum': ['@insert@j', '@plus'], '@mean': ['@fork@j', '@sum', '@divide', '@length'] }, ['@mean', [2, 4, 6]]], 4),
+    jLesson('j_each_compose', 'J · Each und Atop kombinieren', 'Zuerst wird x erhöht und quadriert, dann wendet Each die neue Funktion auf alle Werte an.', ['@let', { '@sq': ['@function', ['@x'], ['@times', '@x', '@x']], '@inc': ['@function', ['@x'], ['@plus', '@x', 1]], '@after': ['@atop@j', '@sq', '@inc'], '@all': ['@each@j', '@after'] }, ['@all', [1, 2, 3]]], [4, 9, 16]),
+    jLesson('j_identity_branch', 'J · Identität als Fork-Zweig', 'Der linke Zweig reicht y unverändert weiter; rechts wird sein Betrag berechnet.', ['@let', { '@f': ['@fork@j', '@identity@j', '@plus', '@abs'] }, ['@f', -3]], 0),
+    jLesson('j_atop_array', 'J · Atop mit Listenwert', 'Atop komponiert Funktionen ohne automatische Array-Arithmetik: erst die Länge, dann die Wurzel.', ['@let', { '@f': ['@atop@j', '@sqrt', '@length'] }, ['@f', [1, 2, 3, 4]]], 2),
   ] },
 ];
 
