@@ -9,11 +9,26 @@ skalare JSON-Werte bleiben skalare Werte. Der Graph verändert die Daten nicht.
 ```json
 ["@let", {"@g": ["@graph", {"Address": {"City": "Winchester"}}]},
   ["@run", 1, "!City",
-    ["@patho", "@g", "@g", ["Address", "City"], "!City"]]]
+    ["@patho", "@g", ["Address", "City"], "!City"]]]
 ```
 
-Ergebnis: `["Winchester"]`. `@g` als Startknoten bezeichnet die Wurzel.
-`@graph` ist ein Bibliotheksaufruf und kein neues Sprachkonstrukt.
+Ergebnis: `["Winchester"]`. `@g` bezeichnet die Wurzel. Für diesen
+Baumpfad genügt sogar `@data` direkt als Quelle; `@graph` wird erst für
+Knotenidentität oder Referenzkanten gebraucht. Es ist ein Bibliotheksaufruf
+und kein neues Sprachkonstrukt.
+
+Für denselben Datensatz kann man auch ohne Graphsicht fragen:
+
+```json
+["@run", 1, "!City",
+  ["@patho", "@data", ["Address", "City"], "!City"]]
+```
+
+Das Ergebnis ist identisch. Ebenso kann `!Path` statt `!City` unbekannt
+sein: `@patho` kann einen Wert aus einem bekannten Pfad lesen oder den
+Pfad zu einem bekannten Wert suchen. Die Graphsicht ändert die
+**Navigation**, nicht die Form des Operators: Sie kann `$ref`-Kanten
+verfolgen und liefert Handles für zusammengesetzte Knoten.
 
 ## Operatoren
 
@@ -22,15 +37,16 @@ Ergebnis: `["Winchester"]`. `@g` als Startknoten bezeichnet die Wurzel.
 | `["@graph", data]` | Erstellt eine Sicht auf `data`. |
 | `["@graph", data, {"refs": true}]` | Folgt expliziten `$ref`-Kanten. |
 | `["@edgeo", source, key, target]` | Sucht direkte Kanten eines Graphknotens oder eines rohen Objekts/Arrays. |
-| `["@patho", graph, start, path, value]` | Sucht Pfade in der Graphsicht; Pfad oder Wert können logische Variablen sein. |
+| `["@patho", source, path, value]` | Sucht Pfade in rohem JSON, einer Graphsicht oder ab einem Graphknoten. Pfad oder Wert können logische Variablen sein. |
 | `["@nodeo", graph, id, node]` | Findet Knoten über ein String-Feld `id`; auch die ID kann unbekannt sein. |
 | `["@matcho", data, pattern]` | Sucht Lösungen eines Musters. |
 | `["@record", fields]` | Partielle Objektstruktur im Muster. |
 | `["@some", item]` | Jedes passende Arrayelement liefert eine Lösung. |
 
-`@patho` mit drei Argumenten bleibt die bisherige Operation auf rohen
-JSON-Daten. Die vierstellige Form navigiert über Graphkanten und beachtet
-optional Referenzen. Ein Pfad ist immer ein Array von Schlüsseln und
+`@patho` hat immer drei Argumente. Bei rohem JSON folgt es der Baumstruktur;
+bei einer Graphsicht oder einem Graphknoten folgt es den Graphkanten und
+damit optional Referenzen. Für eine ID als Startpunkt bindet `@nodeo`
+zuerst den Knoten. Ein Pfad ist immer ein Array von Schlüsseln und
 ganzzahligen Indizes. `"Alternative.Address"` ist dabei ein einzelner
 Schlüssel. Bei unbekanntem Pfad werden alle erreichbaren Pfad-Wert-Paare in
 Tiefensuche und Quellreihenfolge erzeugt. Zyklen durch Referenzen werden bei
@@ -103,12 +119,13 @@ oder die Referenz benutzt wird. Fehlende Felder bleiben von explizitem
 ["@let", {
   "@g": ["@graph", "@data", {"refs": true}]
 }, ["@run", 1, "!City",
-  ["@patho", "@g", "person:fred",
-    ["employer", "office", "City"], "!City"]]]
+  ["@conj",
+    ["@nodeo", "@g", "person:fred", "!Person"],
+    ["@patho", "!Person", ["employer", "office", "City"], "!City"]]]]
 ```
 
 Ergebnis mit `graph_refs.json` als `@data`: `["Winchester"]`.
-`@nodeo` kann stattdessen einen Knoten über seine ID binden:
+`@nodeo` kann auch den Firmenknoten direkt abfragen:
 
 ```json
 ["@run", 1, "!Node", ["@nodeo", "@g", "company:acme", "!Node"]]
