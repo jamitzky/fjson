@@ -1,82 +1,5 @@
 import { Closure, Goal, Interpreter, LogicVar, parseJson } from '../js/fjson.mjs';
-
-const fredData = {
-  FirstName: 'Fred',
-  Surname: 'Smith',
-  Age: 28,
-  Address: {
-    Street: 'Hursley Park', City: 'Winchester', Postcode: 'SO21 2JN',
-  },
-  Phone: [
-    { type: 'home', number: '0203 544 1234' },
-    { type: 'office', number: '01962 001234' },
-    { type: 'office', number: '01962 001235' },
-    { type: 'mobile', number: '077 7700 1234' },
-  ],
-  Email: [
-    { type: 'work', address: ['fred.smith@my-work.com', 'fsmith@my-work.com'] },
-    { type: 'home', address: ['freddy@my-social.com', 'frederic.smith@very-serious.com'] },
-  ],
-  Other: {
-    'Over 18 ?': true,
-    Misc: null,
-    'Alternative.Address': {
-      Street: 'Brick Lane', City: 'London', Postcode: 'E1 6RF',
-    },
-  },
-};
-
-const examples = {
-  inc: ['@let', { '@inc': ['@function', ['@x'], ['@plus', '@x', 1]] }, ['@inc', 41]],
-  defaults: ['@let', { '@inc': ['@function', { '@x': 1 }, ['@plus', '@x', 1]] },
-    ['@plus', ['@inc'], ['@inc', 41]]],
-  logic: ['@run', 2, '!X', ['@choice',
-    ['@unify', '!X', 'alice'], ['@unify', '!X', 'bob']]],
-  recursion: ['@letrec', { '@factorial': ['@function', ['@n'],
-    ['@if', ['@le', '@n', 1], 1,
-      ['@times', '@n', ['@factorial', ['@minus', '@n', 1]]]]] },
-  ['@factorial', 5]],
-  quote: ['@quote', { '@message': ['@plus', 40, 2], symbol: '!X' }],
-  data: ['@plus', ['@get', '@data', 'answer'], 1],
-  fred_match: ['@run', 1, { name: '!First', surname: '!Last' },
-    ['@match', '@data', { FirstName: '!First', Surname: '!Last',
-      Address: { City: 'Winchester' } }]],
-  fred_phone: ['@run', 10, '!Number', ['@conj',
-    ['@patho', '@data', ['Phone'], '!Phones'],
-    ['@membero', '!Phones', { type: 'office', number: '!Number' }]]],
-  fred_email: ['@run', 10, '!Address', ['@conj',
-    ['@patho', '@data', ['Email'], '!Emails'],
-    ['@conj', ['@membero', '!Emails', { type: 'work', address: '!Addresses' }],
-      ['@membero', '!Addresses', '!Address']]]],
-  fred_path: ['@run', 1, '!Path', ['@patho', '@data', '!Path', 'London']],
-  fred_adult: ['@run', 1, '!Age', ['@conj',
-    ['@guard', ['@ge', '!Age', 18]],
-    ['@match', '@data', { Age: '!Age' }]]],
-  fred_cities: ['@run', 1,
-    { person: '!Name', main_city: '!City1', alternative_city: '!City2' },
-    ['@conj', ['@neqo', '!City1', '!City2'],
-      ['@match', '@data', { FirstName: '!Name',
-        Address: { City: '!City1' },
-        Other: { 'Alternative.Address': { City: '!City2' } } }]]],
-  fred_project: ['@run', 1, '!Next', ['@conj',
-    ['@project', '@plus', ['!Age', 1], '!Next'],
-    ['@match', '@data', { Age: '!Age' }]]],
-  fred_graph_city: ['@let', { '@g': ['@graph', '@data'] },
-    ['@run', 1, '!City', ['@patho', '@g', ['Address', 'City'], '!City']]],
-  fred_graph_edges: ['@let', { '@g': ['@graph', '@data'] },
-    ['@run', 1, '!City', ['@conj',
-      ['@edgeo', '@g', 'Address', '!Address'],
-      ['@edgeo', '!Address', 'City', '!City']]]],
-  fred_graph_phone: ['@let', { '@g': ['@graph', '@data'] },
-    ['@run', 10, '!Number', ['@matcho', '@g',
-      ['@record', { Phone: ['@some',
-        ['@record', { type: 'office', number: '!Number' }]] }]]]],
-  fred_graph_rule: ['@let', {
-    '@adult': ['@function', ['@person', '@age'],
-      ['@conj', ['@edgeo', '@person', 'Age', '@age'], ['@ge', '@age', 18]]],
-    '@g': ['@graph', '@data'],
-  }, ['@run', 1, '!Age', ['@adult', '@g', '!Age']]],
-};
+import { fredData, refsData, showcaseGroups, shellGroups, lessonSource } from './showcase.mjs';
 
 const byId = id => document.querySelector('#' + id);
 const editor = byId('source');
@@ -98,7 +21,12 @@ const editorTitle = byId('editor-title');
 const editorHint = byId('editor-hint');
 const dataTitle = byId('data-title');
 const dataHint = byId('data-hint');
-const example = byId('example');
+const codeMenu = byId('code-menu');
+const codeMenuButton = byId('code-menu-button');
+const codeMenuContent = byId('code-menu-content');
+const shellMenu = byId('shell-menu');
+const shellMenuButton = byId('shell-menu-button');
+const shellMenuContent = byId('shell-menu-content');
 const fileInput = byId('file-input');
 const workarea = byId('workarea');
 const lowerPane = byId('lower-pane');
@@ -291,7 +219,7 @@ function addTab(kind, initial = false) {
     binding: kind === 'data' ? '@data' + (number === 1 ? '' : number) : null,
     content: kind === 'data' ? (number === 1
       ? '{\n  "answer": 41,\n  "items": [1, 2, 3]\n}' : '{}') :
-      initial ? formatExample(examples.inc) : '["@plus", 1, 2]',
+      initial ? formatExample(lessonSource(showcaseGroups[1].lessons[0])) : '["@plus", 1, 2]',
     filename: null,
     dirty: false,
   };
@@ -550,22 +478,85 @@ byId('reset').addEventListener('click', () => {
   clearOutput();
   setStatus('Neue Interpreter-Sitzung');
 });
-example.addEventListener('change', () => {
+function closeMenu(content, button) {
+  content.hidden = true;
+  button.setAttribute('aria-expanded', 'false');
+}
+
+function toggleMenu(content, button, otherContent, otherButton) {
+  const opening = content.hidden;
+  closeMenu(otherContent, otherButton);
+  content.hidden = !opening;
+  button.setAttribute('aria-expanded', String(opening));
+}
+
+function loadDemoData(preset) {
+  if (!preset) return;
+  const data = tabs.find(tab => tab.binding === '@data') ?? addTab('data');
+  data.binding = '@data';
+  data.label = preset === 'fred' ? 'Fred · Daten' : 'Referenzen · Daten';
+  data.filename = preset === 'fred' ? 'fred.json' : 'graph_refs.json';
+  data.content = formatExample(preset === 'fred' ? fredData : refsData);
+  data.dirty = true;
+  activateTab(data);
+}
+
+function loadLesson(item) {
   const code = selectedCode ?? addTab('code');
-  if (example.value.startsWith('fred_')) {
-    const data = tabs.find(tab => tab.binding === '@data') ?? addTab('data');
-    data.binding = '@data';
-    data.label = 'Fred · Daten';
-    data.filename = 'fred.json';
-    data.content = formatExample(fredData);
-    data.dirty = true;
-    activateTab(data);
-  }
-  code.content = formatExample(examples[example.value]);
+  loadDemoData(item.data);
+  code.content = formatExample(lessonSource(item));
   code.dirty = true;
   activateTab(code);
-  setStatus(example.value.startsWith('fred_') ?
-    'Fred-Beispiel geladen · @data ersetzt' : 'Beispiel geladen');
+  closeMenu(codeMenuContent, codeMenuButton);
+  setStatus(item.title + ' geladen' + (item.data ? ' · @data ersetzt' : ''));
+}
+
+function loadSnippet(item) {
+  loadDemoData(item.data);
+  shellSource.value = formatExample(item.source);
+  updateShell();
+  closeMenu(shellMenuContent, shellMenuButton);
+  setStatus(item.title + ' in die Shell eingefügt' +
+    (item.data ? ' · @data ersetzt' : ''));
+  shellSource.focus?.();
+}
+
+function fillMenu(content, groups, itemsKey, onChoose) {
+  content.replaceChildren();
+  content.hidden = true;
+  for (const group of groups) {
+    const section = document.createElement('details');
+    const heading = document.createElement('summary');
+    heading.textContent = group.title;
+    section.append(heading);
+    for (const item of group[itemsKey]) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = item.title;
+      button.title = item.note ?? item.title;
+      button.dataset.example = item.id ?? item.title;
+      button.addEventListener('click', () => onChoose(item));
+      section.append(button);
+    }
+    content.append(section);
+  }
+}
+
+fillMenu(codeMenuContent, showcaseGroups, 'lessons', loadLesson);
+fillMenu(shellMenuContent, shellGroups, 'snippets', loadSnippet);
+codeMenuButton.addEventListener('click', () => toggleMenu(
+  codeMenuContent, codeMenuButton, shellMenuContent, shellMenuButton));
+shellMenuButton.addEventListener('click', () => toggleMenu(
+  shellMenuContent, shellMenuButton, codeMenuContent, codeMenuButton));
+document.addEventListener?.('click', event => {
+  if (!codeMenu.contains(event.target)) closeMenu(codeMenuContent, codeMenuButton);
+  if (!shellMenu.contains(event.target)) closeMenu(shellMenuContent, shellMenuButton);
+});
+document.addEventListener?.('keydown', event => {
+  if (event.key === 'Escape') {
+    closeMenu(codeMenuContent, codeMenuButton);
+    closeMenu(shellMenuContent, shellMenuButton);
+  }
 });
 editor.addEventListener('input', () => {
   selectedCode.content = editor.value;
