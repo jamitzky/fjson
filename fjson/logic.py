@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from .graph import GraphNode, JsonGraph, RecordPattern, SomePattern, raw_edges
+
 
 @dataclass(eq=False, frozen=True)
 class LogicVar:
@@ -85,6 +87,34 @@ class ProjectGoal(Goal):
     function: Any
     arguments: Any
     result: Any
+
+
+@dataclass(frozen=True)
+class EdgeGoal(Goal):
+    source: Any
+    key: Any
+    target: Any
+
+
+@dataclass(frozen=True)
+class GraphPathGoal(Goal):
+    graph: Any
+    start: Any
+    path: Any
+    value: Any
+
+
+@dataclass(frozen=True)
+class MatchoGoal(Goal):
+    data: Any
+    pattern: Any
+
+
+@dataclass(frozen=True)
+class NodeGoal(Goal):
+    graph: Any
+    identifier: Any
+    node: Any
 
 
 Substitution = dict[LogicVar, Any]
@@ -273,6 +303,10 @@ def reify(
             if value not in free:
                 free[value] = len(free)
             return {"var": value.name, "index": free[value]}
+        if isinstance(value, GraphNode):
+            return {"node": list(value.path)}
+        if isinstance(value, JsonGraph):
+            return {"node": []}
         if isinstance(value, list):
             return [visit(item) for item in value]
         if isinstance(value, dict):
@@ -280,6 +314,79 @@ def reify(
         return value
 
     return visit(term)
+
+
+def _edge_candidates(source: Any, step: Step):
+    if isinstance(source, JsonGraph):
+        yield from source.edges(source.root, step)
+    elif isinstance(source, GraphNode):
+        yield from source.graph.edges(source, step)
+    else:
+        yield from raw_edges(source)
+
+
+def _matcho(
+    data: Any, pattern: Any, state: Substitution, step: Step
+) -> list[Substitution]:
+    step()
+    data = walk(data, state, step)
+    if isinstance(data, GraphNode):
+        data = data.value
+    elif isinstance(data, JsonGraph):
+        data = data.data
+    if isinstance(pattern, RecordPattern):
+        if not isinstance(data, dict) or not pattern.fields.keys() <= data.keys():
+            return []
+        states = [state]
+        for key, item in pattern.fields.items():
+            states = [
+                next_state for current in states
+                for next_state in _matcho(data[key], item, current, step)
+            ]
+            if not states:
+                break
+        return states
+    if isinstance(pattern, SomePattern):
+        if not isinstance(data, list):
+            return []
+        return [
+            next_state for item in data
+            for next_state in _matcho(item, pattern.item, state, step)
+        ]
+    next_state = match(data, pattern, state, step)
+    return [] if next_state is None else [next_state]
+
+
+def _graph_at_path(
+    graph: JsonGraph, start: GraphNode, path: Any, step: Step
+) -> tuple[bool, Any]:
+    if not isinstance(path, list):
+        return False, None
+    current: Any = start
+    for key in path:
+        step()
+        if not isinstance(current, GraphNode):
+            return False, None
+        for label, target in graph.edges(current, step):
+            if _scalar_equal(label, key):
+                current = target
+                break
+        else:
+            return False, None
+    return True, current
+
+
+def _graph_paths(graph: JsonGraph, start: GraphNode, step: Step):
+    work = [([], start, frozenset())]
+    while work:
+        step()
+        path, node, ancestors = work.pop()
+        yield path, node
+        if not isinstance(node, GraphNode) or node in ancestors:
+            continue
+        next_ancestors = ancestors | {node}
+        for key, target in reversed(list(graph.edges(node, step))):
+            work.append(([*path, key], target, next_ancestors))
 
 
 def search(
@@ -335,6 +442,50 @@ def search(
                         next_state = unify(head.value, value, next_state, step)
                     if next_state is not None:
                         work.append((rest, next_state, delayed))
+        elif isinstance(head, EdgeGoal):
+            source = walk(head.source, state, step)
+            if not isinstance(source, LogicVar):
+                for key, target in reversed(list(_edge_candidates(source, step))):
+                    next_state = unify(head.key, key, state, step)
+                    if next_state is not None:
+                        next_state = unify(head.target, target, next_state, step)
+                    if next_state is not None:
+                        work.append((rest, next_state, delayed))
+        elif isinstance(head, MatchoGoal):
+            for next_state in reversed(_matcho(head.data, head.pattern, state, step)):
+                work.append((rest, next_state, delayed))
+        elif isinstance(head, NodeGoal):
+            graph = walk(head.graph, state, step)
+            if isinstance(graph, JsonGraph):
+                identifier = walk(head.identifier, state, step)
+                entries = (graph.identities(step) if isinstance(identifier, LogicVar)
+                           else [(identifier, graph.by_id(identifier, step))]
+                           if isinstance(identifier, str) else ())
+                for key, node in reversed(list(entries)):
+                    if node is None:
+                        continue
+                    next_state = unify(head.identifier, key, state, step)
+                    if next_state is not None:
+                        next_state = unify(head.node, node, next_state, step)
+                    if next_state is not None:
+                        work.append((rest, next_state, delayed))
+        elif isinstance(head, GraphPathGoal):
+            graph = walk(head.graph, state, step)
+            if isinstance(graph, JsonGraph):
+                start = graph.start(walk(head.start, state, step), step)
+                if start is not None:
+                    known, path = _resolved(head.path, state, step)
+                    if known:
+                        found, value = _graph_at_path(graph, start, path, step)
+                        candidates = [(path, value)] if found else []
+                    else:
+                        candidates = list(_graph_paths(graph, start, step))
+                    for path, value in reversed(candidates):
+                        next_state = unify(head.path, path, state, step)
+                        if next_state is not None:
+                            next_state = unify(head.value, value, next_state, step)
+                        if next_state is not None:
+                            work.append((rest, next_state, delayed))
         elif isinstance(head, (NeqGoal, GeGoal, ProjectGoal)):
             work.append((rest, state, (*delayed, head)))
         elif isinstance(head, ChoiceGoal):
