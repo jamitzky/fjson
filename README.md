@@ -202,9 +202,11 @@ lässt sich in der Höhe ändern; ein zweiter, senkrechter Trenner verändert
 die Breite von Shell und Ergebnis. Beide Trenner funktionieren per Ziehen
 oder Pfeiltasten. Deklarationen aus Code und Shell bleiben
 in derselben Sitzung. Die Toolbar lädt und speichert lokale JSON-Dateien
-für den aktiven Tab; der Editor hat Syntaxfarben. Sechs Beispiele
-decken Funktionen, Standardwerte, logische Suche, Rekursion, `@quote`
-und den Datenzugriff ab. `Strg+Enter` beziehungsweise `⌘+Enter`
+für den aktiven Tab; der Editor hat Syntaxfarben. Neben den sechs
+Grundlagenbeispielen gibt es sieben Fred-Abfragen für partielle Muster,
+Arrays, Pfade und verzögerte Bedingungen. Die Fred-Auswahl lädt den
+vollständigen Datensatz in `@data` und ersetzt dabei dessen bisherigen
+Tab-Inhalt. `Strg+Enter` beziehungsweise `⌘+Enter`
 startet den Ausdruck des aktiven Editors.
 
 Die IDE behält globale Deklarationen innerhalb der aktuellen Sitzung.
