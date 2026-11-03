@@ -5,6 +5,9 @@ Die Logikbibliothek benutzt die in [SEMANTICS.md](SEMANTICS.md) beschriebenen
 es gibt dafür keine neuen Special Forms. Ein Term kann aus JSON-Skalaren,
 Listen, Objekten und logischen Variablen bestehen.
 
+Partielle JSON-Muster, relationale Array- und Pfadsuche sowie verzögerte
+Bedingungen sind in [LOGIC_JSON.md](LOGIC_JSON.md) beschrieben.
+
 ## Erste Anfrage
 
 ```json
@@ -106,8 +109,8 @@ Lösung neu vergeben und ist keine dauerhafte Objektkennung.
 - `["@quote", "!X"]` ist der wörtliche String `"!X"`. Ein vollständig
   zitierter Term enthält deshalb keine logische Variable. Der unzitierte
   Term `["parent", "alice", "!X"]` tut es.
-- Die Bibliothek ist reines Python. `fjson.logic.unify`, `reify` und
-  `search` können auch direkt aus Python verwendet werden.
+- Die Goals laufen in Python und JavaScript. `fjson.logic.unify`, `match`,
+  `reify` und `search` können auch direkt aus Python verwendet werden.
 
 Die ausführbaren Tests in [tests/test_logic.py](tests/test_logic.py) decken
 die Beispiele, getrennte Suchzweige, Variablenidentität und Occurs-Check ab.
