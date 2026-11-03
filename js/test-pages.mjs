@@ -32,7 +32,8 @@ class Element {
   click() { this.clicked = true; return this.listeners.get('click')?.(); }
   getBoundingClientRect() {
     return { height: this.tag === 'workarea' ? 600 : 230,
-      width: this.tag === 'lower-pane' ? 800 : this.tag === 'shell-pane' ? 380 : 500 };
+      width: this.tag === 'top-pane' ? 1000 : this.tag === 'lower-pane' ? 800 :
+        this.tag === 'shell-pane' ? 380 : 500 };
   }
   setPointerCapture() {}
   releasePointerCapture() {}
@@ -41,6 +42,7 @@ class Element {
 function documentFor(ids) {
   const elements = new Map(ids.map(id => [id, new Element(
     id === '#workarea' ? 'workarea' :
+      id === '#top-pane' ? 'top-pane' :
       id === '#lower-pane' ? 'lower-pane' :
         id === '#shell-pane' ? 'shell-pane' : 'div')]));
   elements.created = [];
@@ -74,13 +76,18 @@ assert.equal(browser.get('#results').children.length, browserCount);
 
 const ideIds = [
   '#tabs', '#output', '#output-count', '#status', '.statusbar', '#binding-info',
-  '#line-count', '#editor-title', '#editor-hint', '#example', '#file-input',
+  '#line-count', '#editor-title', '#editor-hint', '#data-title', '#data-hint',
+  '#example', '#file-input', '#data-source', '#data-highlight', '#data-pane',
+  '#editor-pane', '#top-pane', '#editor-splitter',
   '#workarea', '#output-pane', '#splitter', '#source', '#highlight',
   '#lower-pane', '#shell-pane', '#column-splitter', '#shell-source',
   '#shell-highlight', '#run-shell',
   '#new-code', '#new-data', '#run', '#open', '#save', '#reset', '#clear-output',
 ];
 const pageSource = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+const styleSource = readFileSync(new URL('../web/style.css', import.meta.url), 'utf8');
+assert.match(pageSource, /id="top-pane"[\s\S]*id="source"[\s\S]*id="editor-splitter"[\s\S]*id="data-source"/);
+assert.match(styleSource, /\.top-pane\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:/);
 for (const name of [
   'fred_match', 'fred_phone', 'fred_email', 'fred_path',
   'fred_adult', 'fred_cities', 'fred_project', 'fred_graph_city',
@@ -91,11 +98,16 @@ async function checkIde(elements) {
   const get = id => elements.get('#' + id);
   const tabs = get('tabs');
   const editor = get('source');
+  const dataEditor = get('data-source');
   const output = get('output');
   const result = () => output.children.at(-1).children[1].textContent;
+  const currentEditor = () => tabs.children.find(slot =>
+    slot.children[0].attributes.get('aria-selected') === 'true')?.dataset.kind === 'data'
+    ? dataEditor : editor;
   const edit = text => {
-    editor.value = text;
-    editor.listeners.get('input')();
+    const source = currentEditor();
+    source.value = text;
+    source.listeners.get('input')();
   };
   const selectTab = index => tabs.children[index].children[0].click();
 
@@ -112,9 +124,12 @@ async function checkIde(elements) {
 
   get('new-data').click();
   assert.equal(tabs.children.length, 3);
-  assert.equal(get('editor-hint').textContent.includes('@data2'), true);
+  assert.equal(get('data-hint').textContent.includes('@data2'), true);
   edit('{"answer":7}');
-  assert.match(get('highlight').innerHTML, /tok-key/);
+  assert.match(get('data-highlight').innerHTML, /tok-key/);
+  assert.match(editor.value, /@inc/);
+  get('run').click();
+  assert.equal(result(), '42');
   assert.match(tabs.children[2].children[0].children[2].textContent, /●/);
 
   selectTab(0);
@@ -139,8 +154,8 @@ async function checkIde(elements) {
   selectTab(2);
   get('file-input').files = [{ name: 'extra.json', text: async () => '{"answer":12}' }];
   await get('file-input').listeners.get('change')();
-  assert.equal(editor.value, '{"answer":12}');
-  assert.equal(get('editor-title').textContent, 'extra.json');
+  assert.equal(dataEditor.value, '{"answer":12}');
+  assert.equal(get('data-title').textContent, 'extra.json');
   get('shell-source').value = '["@get","@data2","answer"]';
   get('shell-source').listeners.get('keydown')({
     key: 'Enter', ctrlKey: true, preventDefault() {},
@@ -168,6 +183,14 @@ async function checkIde(elements) {
   columnSplitter.listeners.get('keydown')({ key: 'ArrowLeft', preventDefault() {} });
   assert.equal(get('lower-pane').style.values.get('--shell-width'), '406px');
   assert.equal(columnSplitter.attributes.get('aria-valuenow'), '406');
+
+  const editorSplitter = get('editor-splitter');
+  editorSplitter.listeners.get('pointerdown')({ clientX: 300, pointerId: 3 });
+  editorSplitter.listeners.get('pointermove')({ clientX: 350, pointerId: 3 });
+  assert.equal(get('top-pane').style.values.get('--code-width'), '550px');
+  editorSplitter.listeners.get('pointerup')({ pointerId: 3 });
+  editorSplitter.listeners.get('keydown')({ key: 'ArrowLeft', preventDefault() {} });
+  assert.equal(get('top-pane').style.values.get('--code-width'), '526px');
 
   tabs.children[2].children[1].click();
   assert.equal(tabs.children.length, 3);
@@ -213,10 +236,15 @@ async function checkIde(elements) {
     assert.match(get('status').textContent, /@data ersetzt/);
     get('run').click();
     assert.deepEqual(JSON.parse(result()), expected, name);
+    assert.deepEqual(JSON.parse(dataEditor.value), fred);
+    assert.match(dataEditor.value, /\{"type":"office","number":"01962 001234"\}/);
+    assert.match(editor.value, /@run/);
+    assert.match(editor.value, /\["@patho"|\["@match"|\["@matcho"|\["@conj"|\["@let"/);
+    assert.doesNotMatch(editor.value, /\[\s*\n\s*"@(?:patho|match|run)"/);
   }
   selectTab(1);
-  assert.deepEqual(JSON.parse(editor.value), fred);
-  assert.equal(get('editor-hint').textContent.includes('@data'), true);
+  assert.deepEqual(JSON.parse(dataEditor.value), fred);
+  assert.equal(get('data-hint').textContent.includes('@data'), true);
 }
 
 const modular = documentFor(ideIds);
