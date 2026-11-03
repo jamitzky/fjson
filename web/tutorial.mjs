@@ -148,6 +148,72 @@ Außerhalb der IDE verarbeitet der separate JSONL-Modul-Loader Direktiven wie \`
 
 Der Loader liest keine Dateien oder Netzwerke selbst. Eine Host-Anwendung gibt ihm Modultexte ausdrücklich. Datei-, Prozess- und Netzwerkzugriffe des Python-Interpreters unterliegen weiterhin der Capability-Policy.` },
   ] },
+  { title: '08 · J: Grundformen', steps: [
+    step('tour_j_identity', 'J beginnt mit Funktionen', 'j_identity', `
+**J in fjson ist eine Bibliothek, keine neue Syntax.** Die IDE lädt das Modul beim Ausführen eines J-Beispiels. Namen wie @identity@j sind gewöhnliche qualifizierte Funktionsnamen. Die Identität gibt ihren Eingabewert unverändert zurück, auch wenn er ein ganzes Array ist.
+
+Im alten FJAT gab es verschiedene Laufzeittypen und implizite Aufrufpositionen. Hier bleibt jeder Aufruf in Präfixform. Die Identität ist besonders nützlich, wenn ein Zweig einer Komposition den ursprünglichen Wert weiterreichen soll.`),
+    step('tour_j_atop', 'Atop: erst g, dann f', 'j_atop', `
+**Atop komponiert zwei monadische Funktionen.** Aus f und g entsteht eine neue Funktion, die für y zuerst g(y) und danach f auf dieses Ergebnis anwendet. Im Beispiel wird 3 erst zu 4 erhöht und dann quadriert: 16.
+
+Die abgeleitete Funktion wird als Wert an @f gebunden. Ihr Körper wird erst beim Aufruf ausgewertet. Vertausche Quadrat und Inkrement: Dann wird zuerst 3 quadriert und das Ergebnis erhöht, also 10.`),
+    step('tour_j_hook', 'Hook: Original und Ableitung', 'j_hook', `
+**Ein Hook kombiniert den Eingabewert mit seiner Ableitung.** Die monadische Funktion g berechnet g(y); die dyadische Funktion f erhält anschließend y und g(y). Im Beispiel ist f die Subtraktion und g das Quadrat: 3 minus 9 ergibt -6.
+
+Das unterscheidet sich von Atop: Bei Atop sieht f nur g(y). Beim Hook bleiben beide Werte verfügbar. Diese Rollen sind ausdrücklich festgelegt; der Interpreter muss keine Valenz aus der Position im Array erraten.`),
+    step('tour_j_fork', 'Fork: zwei Wege, ein Ergebnis', 'j_fork', `
+**Der monadische Fork verzweigt über denselben Wert y.** Der linke Zweig f berechnet f(y), der rechte h berechnet h(y), und die dyadische Mitte g verbindet beide Ergebnisse als g(f(y), h(y)).
+
+Im Beispiel wird 5 links quadriert zu 25 und rechts verdoppelt zu 10. @plus verbindet beide zu 35. Die drei übergebenen Funktionen werden beim Erzeugen des Forks gespeichert; spätere Aufrufe können dieselbe abgeleitete Funktion wiederverwenden.`),
+    step('tour_j_order', 'Fork-Zweige haben eine Reihenfolge', 'j_fork_order', `
+**Links und rechts sind nicht austauschbar.** Mit @minus in der Mitte wird f(y) minus h(y) berechnet. Der Identitätszweig liefert hier 5, der Quadratzweig 25. Das Ergebnis ist daher -20.
+
+Ein Fork wertet beide Zweige aus, bevor die Mitte aufgerufen wird. Für Funktionen mit externen Effekten wäre diese Reihenfolge wichtig; diese erste J-Bibliothek demonstriert reine Berechnungen und führt keine neue Effektberechtigung ein.`),
+  ] },
+  { title: '09 · J: Dyaden und Modifikatoren', steps: [
+    step('tour_j_fork2', 'Dyadischer Fork mit x und y', 'j_fork2', `
+**Fork2 ist ausdrücklich zweistellig.** Beide äußeren Zweige erhalten x und y. Ihre Ergebnisse werden in dieser Reihenfolge an die dyadische Mitte übergeben. Hier ist f die Addition, h die Multiplikation und g die Subtraktion.
+
+Bei x=5 und y=3 berechnet der linke Zweig 8, der rechte 15; die Mitte liefert 8 minus 15 = -7. Anders als im alten FJAT gibt es keine automatische Wahl zwischen monadischem und dyadischem Fork: Der Name @fork2@j macht die Valenz sichtbar.`),
+    step('tour_j_each', 'Each hebt eine Funktion über ein Array', 'j_each', `
+**Each macht aus einer monadischen Funktion eine Arrayfunktion.** Intern verwendet es die vorhandene Bibliotheksfunktion @map. Das Quadrat wird für jedes Element von [1,2,3] berechnet; das Ergebnis ist [1,4,9].
+
+Das ist eine ausdrückliche Transformation. @times selbst erhält in fjson nicht automatisch ein Array mit Broadcasting-Semantik. Für verschachtelte Arrays, Rank und Cells sind später eigene Regeln nötig.`),
+    step('tour_j_insert_sum', 'Insert faltet ein nichtleeres Array', 'j_insert_sum', `
+**Insert leitet eine Faltungsfunktion aus einer dyadischen Funktion ab.** Das erste Arrayelement ist der Anfangswert; die übrigen Elemente werden der Reihe nach kombiniert. Mit @plus entsteht die Summe 1+2+3+4 = 10.
+
+Ein leeres Array hat in dieser ersten Bibliothek keine allgemeine Identität und führt zu einem Fehler. Für eine gewünschte Identität, etwa 0 bei Addition, kann man stattdessen die vorhandene @reduce-Funktion mit explizitem Anfangswert verwenden.`),
+    step('tour_j_insert_order', 'Insert faltet von links', 'j_insert_order', `
+**Die Faltungsrichtung ist Teil der Semantik.** Bei @minus ergibt die linksassoziative Folge (10−3)−2 den Wert 5. Eine rechtsassoziative Auswertung 10−(3−2) ergäbe 9 und wäre eine andere Operation.
+
+Dieses Beispiel ist absichtlich nicht kommutativ. So prüfst du eine Kompositionsregel besser als nur mit Addition: Die Testdaten machen eine vertauschte Reihenfolge sofort sichtbar.`),
+    step('tour_j_curry_left', 'Curry bindet das linke Argument', 'j_curry_left', `
+**Curry speichert ein Argument einer dyadischen Funktion.** Mit der Seite left und dem Wert 10 entsteht aus @minus eine monadische Funktion für 10−x. Beim Aufruf mit 3 liefert sie 7.
+
+Der gebundene Wert wird einmal beim Erzeugen der Closure ausgewertet. Die neue Funktion hält ihn in ihrer lexikalischen Umgebung fest. Die Seitenauswahl ist ein gewöhnlicher Datenstring, keine neue fjson-Form.`),
+    step('tour_j_curry_right', 'Curry bindet das rechte Argument', 'j_curry_right', `
+**Die andere Seite ändert die Bedeutung.** Mit right und 10 entsteht die Funktion x−10. Für x=3 ist das Ergebnis -7. Bei @plus wäre der Unterschied unsichtbar; die Subtraktion zeigt ihn direkt.
+
+Die Bibliothek akzeptiert nur left und right. Ein anderer Seitenname ist ein Fehler. Das Beispiel demonstriert, warum partielle Anwendung einer dyadischen Funktion die gebundene Position ausdrücklich benennen sollte.`),
+  ] },
+  { title: '10 · J: Programme zusammensetzen', steps: [
+    step('tour_j_mean', 'Mittelwert ohne neue Syntax', 'j_mean', `
+**Kleine Kombinatoren lassen sich zusammensetzen.** Insert mit @plus erzeugt zuerst eine Summenfunktion. Ein Fork verwendet sie als linken Zweig, @length als rechten und @divide als Mitte. Auf [2,4,6] entstehen 12 und 3, also der Mittelwert 4.
+
+Die Datenliste muss nichtleer sein, weil Insert ein erstes Element braucht. Die Division bleibt die gewöhnliche fjson-Bibliotheksfunktion. Es gibt keine versteckte J-Array-Arithmetik oder besondere Mittelwert-Operation im Interpreter.`),
+    step('tour_j_compose', 'Atop innerhalb von Each', 'j_each_compose', `
+**Modifikatoren können abgeleitete Funktionen weiterverarbeiten.** Atop erzeugt zuerst eine Funktion, die x erhöht und dann quadriert. Each wendet diese neue Funktion auf alle Elemente des Arrays an.
+
+Für [1,2,3] entsteht [4,9,16]. Beachte die Reihenfolge der lokalen Bindungen: @after wird nach @sq und @inc definiert, @all danach. Das nutzt nur die bestehenden lexikalischen Bindungen von @let.`),
+    step('tour_j_projection', 'Identität als Fork-Zweig', 'j_identity_branch', `
+**Die Identität ist eine Projektion des ganzen Werts.** Links reicht sie y unverändert weiter, rechts berechnet @abs seinen Betrag. @plus kombiniert beide. Für -3 entsteht -3+3 = 0.
+
+Bei einem Array würde die Identität das ganze Array liefern und es nicht elementweise behandeln. Diese Unterscheidung ist für ein späteres Rank- und Cell-Modell wichtig: Solche Regeln gehören nicht automatisch zur heutigen Funktionskomposition.`),
+    step('tour_j_array', 'Komposition mit einem Listenwert', 'j_atop_array', `
+**Listen können durch Funktionen fließen, ohne automatische Vektorarithmetik.** Atop ruft zuerst @length auf dem ganzen Array auf und übergibt die Zahl 4 an @sqrt. Das Ergebnis ist 2.
+
+Die J-Erweiterung übernimmt hier die Idee der taciten Komposition. Sie übernimmt noch nicht die alte Infix- oder Postfix-Syntax, implizite Trains, Broadcasting oder numerische Tensoroperationen. Diese Grenzen sind bewusst sichtbar, damit Beispiele eindeutig bleiben.`),
+  ] },
 ];
 
 export const tutorialSteps = tutorialGroups.flatMap(group => group.steps);
