@@ -13,6 +13,7 @@ from .logic import LogicVar
 from .graph import GraphNode, JsonGraph, RecordPattern, SomePattern
 from .adapters import HttpsScope, PathScope, ProcessScope, install_host_adapters
 from .security import CapabilityGrant, CapabilityPolicy, Effect
+from .modules import ModuleError, ModuleLoader
 
 __all__ = [
     "ArityError",
@@ -26,6 +27,8 @@ __all__ = [
     "Interpreter",
     "JsonGraph",
     "LogicVar",
+    "ModuleError",
+    "ModuleLoader",
     "PathScope",
     "ProcessScope",
     "ResolutionError",
