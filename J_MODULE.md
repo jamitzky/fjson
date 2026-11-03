@@ -35,7 +35,7 @@ console.log(fj.eval(['@identity@j', 42])); // 42
 ```
 
 Für einen Browser kann die Host-Anwendung denselben JSONL-Text bereitstellen.
-Die aktuelle Einzeldatei-IDE lädt das J-Modul noch nicht automatisch.
+Die IDE lädt das J-Modul beim Ausführen eines J-Beispiels automatisch; die Einzeldatei enthält denselben Modultext offline.
 
 ## Erste API
 
