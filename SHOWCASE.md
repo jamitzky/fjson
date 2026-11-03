@@ -114,7 +114,7 @@ Bausteine als auch ihre Zusammensetzung.
    Grenzen und Vergleiche.
 5. **Bereiche und Listen:** `@range`, `@map`, `@filter`, `@reduce` und
    zusammengesetzte Beispiele.
-6. **Logik und JSON-Daten:** `@run`, `@unify`, `@choice`, `@match`,
+6. **Logik und JSON-Daten:** `@run`, `@unify`, `@choice`, `@matcho`,
    `@membero`, `@patho`, verzögerte Constraints und `@project`.
 7. **JSON als Graph:** `@graph`, `@edgeo`, `@matcho`, `@record`, `@some`,
    `@nodeo` und explizite `$ref`-Kanten.
