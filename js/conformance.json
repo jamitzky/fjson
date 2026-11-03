@@ -23,5 +23,11 @@
   {"name":"guard_delayed","program":["@run",1,"!Age",["@conj",["@guard",["@ge","!Age",18]],["@match",{"Age":28},{"Age":"!Age"}]]],"expected":[28]},
   {"name":"project_delayed","program":["@run",1,"!Next",["@conj",["@project","@plus",["!Age",1],"!Next"],["@match",{"Age":28},{"Age":"!Age"}]]],"expected":[29]},
   {"name":"patho_all_paths","program":["@run",3,"!Path",["@patho",{"a":1,"b":2},"!Path","!Value"]],"expected":[[],["a"],["b"]]},
-  {"name":"neqo_unresolved","program":["@run",1,"!X",["@neqo","!X",1]],"expected":[]}
+  {"name":"neqo_unresolved","program":["@run",1,"!X",["@neqo","!X",1]],"expected":[]},
+  {"name":"edgeo_raw","program":["@run",2,["!Key","!Value"],["@edgeo",{"a":1,"b":null},"!Key","!Value"]],"expected":[["a",1],["b",null]]},
+  {"name":"graph_edge","program":["@let",{"@g":["@graph",{"Address":{"City":"Winchester"}}]},["@run",1,"!City",["@conj",["@edgeo","@g","Address","!Address"],["@edgeo","!Address","City","!City"]]]],"expected":["Winchester"]},
+  {"name":"graph_matcho_some","program":["@let",{"@g":["@graph",{"Phone":[{"type":"office","number":"123"},{"type":"home","number":"456"},{"type":"office","number":"789"}]}]},["@run",10,"!Number",["@matcho","@g",["@record",{"Phone":["@some",["@record",{"type":"office","number":"!Number"}]]}]]]],"expected":["123","789"]},
+  {"name":"graph_ref_path","program":["@let",{"@g":["@graph",{"people":[{"id":"person:fred","employer":{"$ref":"company:acme"}}],"companies":[{"id":"company:acme","office":{"City":"Winchester"}}]},{"refs":true}]},["@run",1,"!City",["@patho","@g","person:fred",["employer","office","City"],"!City"]]],"expected":["Winchester"]},
+  {"name":"graph_node_identity","program":["@let",{"@g":["@graph",{"people":[{"id":"person:fred","name":"Fred"}]}]},["@run",1,"!Name",["@conj",["@nodeo","@g","person:fred","!Node"],["@edgeo","!Node","name","!Name"]]]],"expected":["Fred"]},
+  {"name":"graph_path_reverse","program":["@let",{"@g":["@graph",{"Other":{"Alternative.Address":{"City":"London"}}}]},["@run",1,"!Path",["@patho","@g","@g","!Path","London"]]],"expected":[["Other","Alternative.Address","City"]]}
 ]
