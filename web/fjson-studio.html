@@ -1210,6 +1210,117 @@ class Interpreter {
   }
 }
 
+// JSONL module directives; the evaluator in fjson.mjs remains unchanged.
+
+class ModuleError extends EvaluationError {}
+
+const simple = value => typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_]*$/.test(value);
+const standard = new Map([
+  ['math', [
+    'plus', 'minus', 'times', 'divide', 'pow', 'mod', 'negate', 'abs',
+    'floor', 'ceil', 'trunc', 'round', 'sqrt', 'min', 'max',
+    'lt', 'le', 'gt', 'gte',
+  ]],
+  ['logic', [
+    'unify', 'membero', 'patho', 'graph', 'edgeo', 'matcho', 'nodeo',
+    'record', 'some', 'neqo', 'ge', 'project', 'choice', 'conj', 'run',
+  ]],
+]);
+
+function documents(source) {
+  if (typeof source !== 'string') throw new TypeError('JSONL source must be a string');
+  const result = [];
+  source.split(/\r?\n/).forEach((line, index) => {
+    if (!line.trim()) return;
+    try { result.push(parseJson(line)); }
+    catch (error) { throw new ModuleError(`invalid JSONL line ${index + 1}: ${error.message}`); }
+  });
+  return result;
+}
+
+class ModuleLoader {
+  constructor(interpreter, modules = {}) {
+    if (!(interpreter instanceof Interpreter)) throw new TypeError('interpreter must be an Interpreter');
+    if (modules === null || typeof modules !== 'object' || Array.isArray(modules))
+      throw new ModuleError('module registry must be an object');
+    if (Object.entries(modules).some(([name, source]) =>
+      !simple(name) || typeof source !== 'string' || standard.has(name)))
+      throw new ModuleError('module registry requires simple names and JSONL strings');
+    this.interpreter = interpreter;
+    this.modules = { ...modules };
+    this.loaded = new Set();
+    this.loading = new Set();
+  }
+
+  load(source) {
+    const directives = [], expressions = [];
+    for (const doc of documents(source)) {
+      if (Array.isArray(doc) && ['@import', '@namespace'].includes(doc[0]))
+        directives.push(doc);
+      else expressions.push(doc);
+    }
+    const values = this.interpreter.global.values;
+    const before = new Map(values), loadedBefore = new Set(this.loaded);
+    try { directives.forEach(doc => this.directive(doc)); }
+    catch (error) {
+      values.clear();
+      for (const [key, value] of before) values.set(key, value);
+      this.loaded = loadedBefore;
+      this.loading.clear();
+      throw error;
+    }
+    let result = null;
+    for (const expression of expressions) result = this.interpreter.eval(expression);
+    return result;
+  }
+
+  directive(doc) {
+    if (doc[0] === '@import') {
+      if (doc.length !== 2 || !simple(doc[1]))
+        throw new ModuleError('@import expects a simple module name');
+      this.import(doc[1]);
+      return;
+    }
+    if (doc.length !== 3 || !simple(doc[1]) || doc[2] === null ||
+        typeof doc[2] !== 'object' || Array.isArray(doc[2]))
+      throw new ModuleError('@namespace expects a simple name and definition object');
+    const values = this.interpreter.global.values;
+    for (const name of Object.keys(doc[2])) {
+      if (!simple(name)) throw new ModuleError('namespace exports require simple names');
+      const qualified = `@${name}@${doc[1]}`;
+      if (values.has(qualified)) throw new ModuleError(`duplicate binding: ${qualified}`);
+    }
+    for (const [name, expression] of Object.entries(doc[2]))
+      this.interpreter.eval({ [`@${name}@${doc[1]}`]: expression });
+  }
+
+  import(name) {
+    if (this.loaded.has(name)) return;
+    if (this.loading.has(name)) throw new ModuleError(`import cycle: ${name}`);
+    this.loading.add(name);
+    try {
+      if (standard.has(name)) {
+        const values = this.interpreter.global.values;
+        for (const exportName of standard.get(name)) {
+          const qualified = `@${exportName}@${name}`;
+          if (values.has(qualified)) throw new ModuleError(`duplicate binding: ${qualified}`);
+          values.set(qualified, values.get(`@${exportName}`));
+        }
+      } else if (Object.hasOwn(this.modules, name)) {
+        for (const doc of documents(this.modules[name])) {
+          if (!Array.isArray(doc) || !['@import', '@namespace'].includes(doc[0]))
+            throw new ModuleError(`module ${name} may contain only directives`);
+          this.directive(doc);
+        }
+      } else throw new ModuleError(`unknown module: ${name}`);
+      this.loaded.add(name);
+    } finally { this.loading.delete(name); }
+  }
+}
+
+// Kept byte-for-byte in sync with modules/j.fjsonl by js/test-j.mjs.
+const jModuleSource = "[\"@namespace\",\"j\",{\"identity\":[\"@function\",[\"@y\"],\"@y\"]}]\n[\"@namespace\",\"j\",{\"atop\":[\"@function\",[\"@f\",\"@g\"],[\"@function\",[\"@y\"],[\"@f\",[\"@g\",\"@y\"]]]]}]\n[\"@namespace\",\"j\",{\"hook\":[\"@function\",[\"@f\",\"@g\"],[\"@function\",[\"@y\"],[\"@f\",\"@y\",[\"@g\",\"@y\"]]]]}]\n[\"@namespace\",\"j\",{\"fork\":[\"@function\",[\"@f\",\"@g\",\"@h\"],[\"@function\",[\"@y\"],[\"@g\",[\"@f\",\"@y\"],[\"@h\",\"@y\"]]]]}]\n[\"@namespace\",\"j\",{\"fork2\":[\"@function\",[\"@f\",\"@g\",\"@h\"],[\"@function\",[\"@x\",\"@y\"],[\"@g\",[\"@f\",\"@x\",\"@y\"],[\"@h\",\"@x\",\"@y\"]]]]}]\n[\"@namespace\",\"j\",{\"each\":[\"@function\",[\"@f\"],[\"@function\",[\"@xs\"],[\"@map\",\"@f\",\"@xs\"]]]}]\n[\"@namespace\",\"j\",{\"insert\":[\"@function\",[\"@f\"],[\"@function\",[\"@xs\"],[\"@reduce\",\"@f\",[\"@map\",[\"@function\",[\"@i\"],[\"@get\",\"@xs\",\"@i\"]],[\"@range\",1,[\"@length\",\"@xs\"]]],[\"@get\",\"@xs\",0]]]]}]\n[\"@namespace\",\"j\",{\"curry\":[\"@function\",[\"@f\",\"@side\",\"@value\"],[\"@if\",[\"@eq\",\"@side\",\"left\"],[\"@function\",[\"@x\"],[\"@f\",\"@value\",\"@x\"]],[\"@if\",[\"@eq\",\"@side\",\"right\"],[\"@function\",[\"@x\"],[\"@f\",\"@x\",\"@value\"]],[\"@get\",{},\"invalid curry side\"]]]]}]\n";
+
 // Every lesson is executable fjson. @kommentar and @tipp are ordinary
 // declarations, so the source remains valid JSON without a comment syntax.
 
@@ -1239,6 +1350,8 @@ const refsData = {
 
 const lesson = (id, title, note, program, expected, data = null, tip = null) =>
   ({ id, title, note, program, expected, data, tip });
+const jLesson = (id, title, note, program, expected) =>
+  ({ ...lesson(id, title, note, program, expected), module: 'j' });
 const fizzLabel = ['@if', ['@eq', ['@mod', '@n', 15], 0], 'FizzBuzz',
   ['@if', ['@eq', ['@mod', '@n', 3], 0], 'Fizz',
     ['@if', ['@eq', ['@mod', '@n', 5], 0], 'Buzz', '@n']]];
@@ -1323,6 +1436,23 @@ const showcaseGroups = [
     lesson('graph_matcho', '@matcho · mehrere Büronummern', '@record prüft Teilobjekte; @some liefert für jedes passende Arrayelement eine Lösung.', ['@run', 10, '!Number', ['@matcho', '@data', ['@record', { Phone: ['@some', ['@record', { type: 'office', number: '!Number' }]] }]]], ['01962 001234', '01962 001235'], 'fred'),
     lesson('graph_node', '@nodeo · ID nachschlagen', '@nodeo findet einen Knoten anhand seines id-Feldes.', ['@let', { '@g': ['@graph', '@data'] }, ['@run', 1, '!Name', ['@conj', ['@nodeo', '@g', 'company:acme', '!Company'], ['@edgeo', '!Company', 'name', '!Name']]]], ['ACME'], 'refs'),
     lesson('graph_refs', '@graph · Referenzen folgen', 'Nur {"refs":true} macht aus $ref eine Kante zum Zielobjekt.', ['@let', { '@g': ['@graph', '@data', { refs: true }] }, ['@run', 1, '!City', ['@conj', ['@nodeo', '@g', 'person:fred', '!Person'], ['@patho', '!Person', ['employer', 'office', 'City'], '!City']]]], ['Winchester'], 'refs'),
+  ] },
+  { title: '08 · J: Funktionen komponieren', lessons: [
+    jLesson('j_identity', 'J · Identität', 'Die Identität gibt den ganzen Wert unverändert zurück; sie ist ein nützlicher Fork-Zweig.', ['@identity@j', [1, 2, 3]], [1, 2, 3]),
+    jLesson('j_atop', 'J · Atop', 'Atop erzeugt aus zwei monadischen Funktionen f und g die Funktion f(g(y)).', ['@let', { '@sq': ['@function', ['@x'], ['@times', '@x', '@x']], '@inc': ['@function', ['@x'], ['@plus', '@x', 1]], '@f': ['@atop@j', '@sq', '@inc'] }, ['@f', 3]], 16),
+    jLesson('j_hook', 'J · Hook', 'Ein monadischer Hook kombiniert den Originalwert y mit g(y) durch die dyadische Funktion f.', ['@let', { '@sq': ['@function', ['@x'], ['@times', '@x', '@x']], '@f': ['@hook@j', '@minus', '@sq'] }, ['@f', 3]], -6),
+    jLesson('j_fork', 'J · monadischer Fork', 'Ein Fork berechnet f(y) und h(y) und übergibt beide Ergebnisse an g.', ['@let', { '@sq': ['@function', ['@x'], ['@times', '@x', '@x']], '@double': ['@function', ['@x'], ['@times', 2, '@x']], '@f': ['@fork@j', '@sq', '@plus', '@double'] }, ['@f', 5]], 35),
+    jLesson('j_fork_order', 'J · Reihenfolge im Fork', 'Bei @minus als Mittelfunktion ist die Reihenfolge der beiden Fork-Zweige sichtbar: 5 minus 25.', ['@let', { '@sq': ['@function', ['@x'], ['@times', '@x', '@x']], '@f': ['@fork@j', '@identity@j', '@minus', '@sq'] }, ['@f', 5]], -20),
+    jLesson('j_fork2', 'J · dyadischer Fork', 'Fork2 gibt x und y an beide dyadischen Zweige; g kombiniert deren Ergebnisse.', ['@let', { '@f': ['@fork2@j', '@plus', '@minus', '@times'] }, ['@f', 5, 3]], -7),
+    jLesson('j_each', 'J · Each', 'Each leitet aus einer monadischen Funktion eine neue Funktion für jedes Arrayelement ab.', ['@let', { '@sq': ['@function', ['@x'], ['@times', '@x', '@x']], '@all': ['@each@j', '@sq'] }, ['@all', [1, 2, 3]]], [1, 4, 9]),
+    jLesson('j_insert_sum', 'J · Insert als Summe', 'Insert faltet ein nichtleeres Array von links; mit @plus entsteht die Summe.', ['@let', { '@sum': ['@insert@j', '@plus'] }, ['@sum', [1, 2, 3, 4]]], 10),
+    jLesson('j_insert_order', 'J · Faltungsrichtung', 'Mit @minus zeigt sich die Linksassoziativität: (10 − 3) − 2 = 5.', ['@let', { '@f': ['@insert@j', '@minus'] }, ['@f', [10, 3, 2]]], 5),
+    jLesson('j_curry_left', 'J · linkes Argument binden', 'Curry mit left erzeugt aus @minus die Funktion 10 − x.', ['@let', { '@f': ['@curry@j', '@minus', 'left', 10] }, ['@f', 3]], 7),
+    jLesson('j_curry_right', 'J · rechtes Argument binden', 'Curry mit right erzeugt aus @minus die Funktion x − 10.', ['@let', { '@f': ['@curry@j', '@minus', 'right', 10] }, ['@f', 3]], -7),
+    jLesson('j_mean', 'J · Mittelwert als Fork', 'Die Summe entsteht durch Insert; ein Fork teilt sie durch die Länge der Liste.', ['@let', { '@sum': ['@insert@j', '@plus'], '@mean': ['@fork@j', '@sum', '@divide', '@length'] }, ['@mean', [2, 4, 6]]], 4),
+    jLesson('j_each_compose', 'J · Each und Atop kombinieren', 'Zuerst wird x erhöht und quadriert, dann wendet Each die neue Funktion auf alle Werte an.', ['@let', { '@sq': ['@function', ['@x'], ['@times', '@x', '@x']], '@inc': ['@function', ['@x'], ['@plus', '@x', 1]], '@after': ['@atop@j', '@sq', '@inc'], '@all': ['@each@j', '@after'] }, ['@all', [1, 2, 3]]], [4, 9, 16]),
+    jLesson('j_identity_branch', 'J · Identität als Fork-Zweig', 'Der linke Zweig reicht y unverändert weiter; rechts wird sein Betrag berechnet.', ['@let', { '@f': ['@fork@j', '@identity@j', '@plus', '@abs'] }, ['@f', -3]], 0),
+    jLesson('j_atop_array', 'J · Atop mit Listenwert', 'Atop komponiert Funktionen ohne automatische Array-Arithmetik: erst die Länge, dann die Wurzel.', ['@let', { '@f': ['@atop@j', '@sqrt', '@length'] }, ['@f', [1, 2, 3, 4]]], 2),
   ] },
 ];
 
@@ -1502,6 +1632,72 @@ Außerhalb der IDE verarbeitet der separate JSONL-Modul-Loader Direktiven wie \`
 
 Der Loader liest keine Dateien oder Netzwerke selbst. Eine Host-Anwendung gibt ihm Modultexte ausdrücklich. Datei-, Prozess- und Netzwerkzugriffe des Python-Interpreters unterliegen weiterhin der Capability-Policy.` },
   ] },
+  { title: '08 · J: Grundformen', steps: [
+    step('tour_j_identity', 'J beginnt mit Funktionen', 'j_identity', `
+**J in fjson ist eine Bibliothek, keine neue Syntax.** Die IDE lädt das Modul beim Ausführen eines J-Beispiels. Namen wie @identity@j sind gewöhnliche qualifizierte Funktionsnamen. Die Identität gibt ihren Eingabewert unverändert zurück, auch wenn er ein ganzes Array ist.
+
+Im alten FJAT gab es verschiedene Laufzeittypen und implizite Aufrufpositionen. Hier bleibt jeder Aufruf in Präfixform. Die Identität ist besonders nützlich, wenn ein Zweig einer Komposition den ursprünglichen Wert weiterreichen soll.`),
+    step('tour_j_atop', 'Atop: erst g, dann f', 'j_atop', `
+**Atop komponiert zwei monadische Funktionen.** Aus f und g entsteht eine neue Funktion, die für y zuerst g(y) und danach f auf dieses Ergebnis anwendet. Im Beispiel wird 3 erst zu 4 erhöht und dann quadriert: 16.
+
+Die abgeleitete Funktion wird als Wert an @f gebunden. Ihr Körper wird erst beim Aufruf ausgewertet. Vertausche Quadrat und Inkrement: Dann wird zuerst 3 quadriert und das Ergebnis erhöht, also 10.`),
+    step('tour_j_hook', 'Hook: Original und Ableitung', 'j_hook', `
+**Ein Hook kombiniert den Eingabewert mit seiner Ableitung.** Die monadische Funktion g berechnet g(y); die dyadische Funktion f erhält anschließend y und g(y). Im Beispiel ist f die Subtraktion und g das Quadrat: 3 minus 9 ergibt -6.
+
+Das unterscheidet sich von Atop: Bei Atop sieht f nur g(y). Beim Hook bleiben beide Werte verfügbar. Diese Rollen sind ausdrücklich festgelegt; der Interpreter muss keine Valenz aus der Position im Array erraten.`),
+    step('tour_j_fork', 'Fork: zwei Wege, ein Ergebnis', 'j_fork', `
+**Der monadische Fork verzweigt über denselben Wert y.** Der linke Zweig f berechnet f(y), der rechte h berechnet h(y), und die dyadische Mitte g verbindet beide Ergebnisse als g(f(y), h(y)).
+
+Im Beispiel wird 5 links quadriert zu 25 und rechts verdoppelt zu 10. @plus verbindet beide zu 35. Die drei übergebenen Funktionen werden beim Erzeugen des Forks gespeichert; spätere Aufrufe können dieselbe abgeleitete Funktion wiederverwenden.`),
+    step('tour_j_order', 'Fork-Zweige haben eine Reihenfolge', 'j_fork_order', `
+**Links und rechts sind nicht austauschbar.** Mit @minus in der Mitte wird f(y) minus h(y) berechnet. Der Identitätszweig liefert hier 5, der Quadratzweig 25. Das Ergebnis ist daher -20.
+
+Ein Fork wertet beide Zweige aus, bevor die Mitte aufgerufen wird. Für Funktionen mit externen Effekten wäre diese Reihenfolge wichtig; diese erste J-Bibliothek demonstriert reine Berechnungen und führt keine neue Effektberechtigung ein.`),
+  ] },
+  { title: '09 · J: Dyaden und Modifikatoren', steps: [
+    step('tour_j_fork2', 'Dyadischer Fork mit x und y', 'j_fork2', `
+**Fork2 ist ausdrücklich zweistellig.** Beide äußeren Zweige erhalten x und y. Ihre Ergebnisse werden in dieser Reihenfolge an die dyadische Mitte übergeben. Hier ist f die Addition, h die Multiplikation und g die Subtraktion.
+
+Bei x=5 und y=3 berechnet der linke Zweig 8, der rechte 15; die Mitte liefert 8 minus 15 = -7. Anders als im alten FJAT gibt es keine automatische Wahl zwischen monadischem und dyadischem Fork: Der Name @fork2@j macht die Valenz sichtbar.`),
+    step('tour_j_each', 'Each hebt eine Funktion über ein Array', 'j_each', `
+**Each macht aus einer monadischen Funktion eine Arrayfunktion.** Intern verwendet es die vorhandene Bibliotheksfunktion @map. Das Quadrat wird für jedes Element von [1,2,3] berechnet; das Ergebnis ist [1,4,9].
+
+Das ist eine ausdrückliche Transformation. @times selbst erhält in fjson nicht automatisch ein Array mit Broadcasting-Semantik. Für verschachtelte Arrays, Rank und Cells sind später eigene Regeln nötig.`),
+    step('tour_j_insert_sum', 'Insert faltet ein nichtleeres Array', 'j_insert_sum', `
+**Insert leitet eine Faltungsfunktion aus einer dyadischen Funktion ab.** Das erste Arrayelement ist der Anfangswert; die übrigen Elemente werden der Reihe nach kombiniert. Mit @plus entsteht die Summe 1+2+3+4 = 10.
+
+Ein leeres Array hat in dieser ersten Bibliothek keine allgemeine Identität und führt zu einem Fehler. Für eine gewünschte Identität, etwa 0 bei Addition, kann man stattdessen die vorhandene @reduce-Funktion mit explizitem Anfangswert verwenden.`),
+    step('tour_j_insert_order', 'Insert faltet von links', 'j_insert_order', `
+**Die Faltungsrichtung ist Teil der Semantik.** Bei @minus ergibt die linksassoziative Folge (10−3)−2 den Wert 5. Eine rechtsassoziative Auswertung 10−(3−2) ergäbe 9 und wäre eine andere Operation.
+
+Dieses Beispiel ist absichtlich nicht kommutativ. So prüfst du eine Kompositionsregel besser als nur mit Addition: Die Testdaten machen eine vertauschte Reihenfolge sofort sichtbar.`),
+    step('tour_j_curry_left', 'Curry bindet das linke Argument', 'j_curry_left', `
+**Curry speichert ein Argument einer dyadischen Funktion.** Mit der Seite left und dem Wert 10 entsteht aus @minus eine monadische Funktion für 10−x. Beim Aufruf mit 3 liefert sie 7.
+
+Der gebundene Wert wird einmal beim Erzeugen der Closure ausgewertet. Die neue Funktion hält ihn in ihrer lexikalischen Umgebung fest. Die Seitenauswahl ist ein gewöhnlicher Datenstring, keine neue fjson-Form.`),
+    step('tour_j_curry_right', 'Curry bindet das rechte Argument', 'j_curry_right', `
+**Die andere Seite ändert die Bedeutung.** Mit right und 10 entsteht die Funktion x−10. Für x=3 ist das Ergebnis -7. Bei @plus wäre der Unterschied unsichtbar; die Subtraktion zeigt ihn direkt.
+
+Die Bibliothek akzeptiert nur left und right. Ein anderer Seitenname ist ein Fehler. Das Beispiel demonstriert, warum partielle Anwendung einer dyadischen Funktion die gebundene Position ausdrücklich benennen sollte.`),
+  ] },
+  { title: '10 · J: Programme zusammensetzen', steps: [
+    step('tour_j_mean', 'Mittelwert ohne neue Syntax', 'j_mean', `
+**Kleine Kombinatoren lassen sich zusammensetzen.** Insert mit @plus erzeugt zuerst eine Summenfunktion. Ein Fork verwendet sie als linken Zweig, @length als rechten und @divide als Mitte. Auf [2,4,6] entstehen 12 und 3, also der Mittelwert 4.
+
+Die Datenliste muss nichtleer sein, weil Insert ein erstes Element braucht. Die Division bleibt die gewöhnliche fjson-Bibliotheksfunktion. Es gibt keine versteckte J-Array-Arithmetik oder besondere Mittelwert-Operation im Interpreter.`),
+    step('tour_j_compose', 'Atop innerhalb von Each', 'j_each_compose', `
+**Modifikatoren können abgeleitete Funktionen weiterverarbeiten.** Atop erzeugt zuerst eine Funktion, die x erhöht und dann quadriert. Each wendet diese neue Funktion auf alle Elemente des Arrays an.
+
+Für [1,2,3] entsteht [4,9,16]. Beachte die Reihenfolge der lokalen Bindungen: @after wird nach @sq und @inc definiert, @all danach. Das nutzt nur die bestehenden lexikalischen Bindungen von @let.`),
+    step('tour_j_projection', 'Identität als Fork-Zweig', 'j_identity_branch', `
+**Die Identität ist eine Projektion des ganzen Werts.** Links reicht sie y unverändert weiter, rechts berechnet @abs seinen Betrag. @plus kombiniert beide. Für -3 entsteht -3+3 = 0.
+
+Bei einem Array würde die Identität das ganze Array liefern und es nicht elementweise behandeln. Diese Unterscheidung ist für ein späteres Rank- und Cell-Modell wichtig: Solche Regeln gehören nicht automatisch zur heutigen Funktionskomposition.`),
+    step('tour_j_array', 'Komposition mit einem Listenwert', 'j_atop_array', `
+**Listen können durch Funktionen fließen, ohne automatische Vektorarithmetik.** Atop ruft zuerst @length auf dem ganzen Array auf und übergibt die Zahl 4 an @sqrt. Das Ergebnis ist 2.
+
+Die J-Erweiterung übernimmt hier die Idee der taciten Komposition. Sie übernimmt noch nicht die alte Infix- oder Postfix-Syntax, implizite Trains, Broadcasting oder numerische Tensoroperationen. Diese Grenzen sind bewusst sichtbar, damit Beispiele eindeutig bleiben.`),
+  ] },
 ];
 
 const tutorialSteps = tutorialGroups.flatMap(group => group.steps);
@@ -1550,6 +1746,7 @@ const splitter = byId('splitter');
 const columnSplitter = byId('column-splitter');
 
 let interpreter = new Interpreter();
+let moduleLoader = new ModuleLoader(interpreter, { j: jModuleSource });
 let tabs = [];
 let active = null;
 let selectedCode = null;
@@ -1819,6 +2016,8 @@ function appendOutput(tab, result, failed) {
 function runActive() {
   if (!selectedCode) return;
   try {
+    if (selectedCode.module === 'j' && !moduleLoader.loaded.has('j'))
+      moduleLoader.load('["@import","j"]');
     bindDataTabs();
     const result = interpreter.run(selectedCode.content);
     appendOutput(selectedCode, format(result), false);
@@ -1998,6 +2197,7 @@ byId('clear-output').addEventListener('click', clearOutput);
 fileInput.addEventListener('change', openFile);
 byId('reset').addEventListener('click', () => {
   interpreter = new Interpreter();
+  moduleLoader = new ModuleLoader(interpreter, { j: jModuleSource });
   clearOutput();
   setStatus('Neue Interpreter-Sitzung');
 });
@@ -2048,6 +2248,7 @@ function loadLesson(item) {
   const code = selectedCode ?? addTab('code');
   loadDemoData(item.data);
   code.content = formatExample(lessonSource(item));
+  code.module = item.module ?? null;
   code.dirty = true;
   activateTab(code);
   closeMenu(codeMenuContent, codeMenuButton);
