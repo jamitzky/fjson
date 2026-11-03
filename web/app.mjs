@@ -62,7 +62,7 @@ const examples = {
     ['@project', '@plus', ['!Age', 1], '!Next'],
     ['@match', '@data', { Age: '!Age' }]]],
   fred_graph_city: ['@let', { '@g': ['@graph', '@data'] },
-    ['@run', 1, '!City', ['@patho', '@g', '@g', ['Address', 'City'], '!City']]],
+    ['@run', 1, '!City', ['@patho', '@g', ['Address', 'City'], '!City']]],
   fred_graph_edges: ['@let', { '@g': ['@graph', '@data'] },
     ['@run', 1, '!City', ['@conj',
       ['@edgeo', '@g', 'Address', '!Address'],
