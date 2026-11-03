@@ -156,24 +156,58 @@ Der [eingefrorene Sprachkern](CORE.md) orientiert sich am bisherigen FJ@-Entwurf
 
 ### JavaScript und TypeScript
 
-Der eingefrorene Kern und die Logikbibliothek sind auch als
-[ES-Modul](js/README.md) verfügbar. Es ist derselbe JavaScript-Code für
-Browser und Node; [TypeScript-Deklarationen](js/fjson.d.mts) geben ihm eine
-typisierte Schnittstelle. Die gemeinsamen Konformitätsfälle werden in
-beiden Laufzeiten ausgeführt. Die plattformspezifischen Python-Host-Adapter
-gehören nicht zu diesem reinen JavaScript-Modul.
+Der eingefrorene Kern und die Logikbibliothek liegen auch als
+[ES-Modul](js/fjson.mjs) für Node.js und Browser vor. Die
+[TypeScript-Deklarationen](js/fjson.d.mts) beschreiben dieselbe JavaScript-
+Implementierung; ein zweiter TypeScript-Interpreter ist nicht nötig.
+Die [JavaScript-Dokumentation](js/README.md) erklärt Parser, Zahlenbereich
+und die Unterschiede zwischen JSON-Text und direkt übergebenen Objekten.
 
-Für den Browser gibt es eine [HTML-Testseite](js/browser-test.html) mit
-sichtbaren Ergebnissen und in [web/](web/README.md) eine kleine IDE zum
-Bearbeiten und Ausführen von fjson-Programmen. Beide Seiten sind statisch
-und verwenden das ES-Modul direkt. Aus dem Repository-Verzeichnis:
+Ein Node-Programm kann einen bereits vorhandenen JavaScript-Wert direkt
+auswerten:
 
-```powershell
-python -m http.server 8000
+```js
+import { Interpreter } from './js/fjson.mjs';
+
+const fjson = new Interpreter();
+console.log(fjson.eval([
+  '@let',
+  { '@inc': ['@function', ['@x'], ['@plus', '@x', 1]] },
+  ['@inc', 41],
+])); // 42
 ```
 
-Dann `http://localhost:8000/js/browser-test.html` beziehungsweise
-`http://localhost:8000/web/` öffnen.
+Für JSON-Text gibt es `fjson.run(source)`. Deklarationen bleiben für
+weitere Aufrufe derselben Instanz erhalten. Die gemeinsamen Testfälle
+stehen in [js/conformance.json](js/conformance.json) und werden von
+Python und JavaScript ausgeführt. Die JavaScript-Version enthält keine
+Datei-, Prozess- oder Netzwerk-Adapter.
+
+### IDE: herunterladen und offline benutzen
+
+Die [fjson-IDE als einzelne HTML-Datei](web/fjson-studio.html) enthält
+Interpreter, Oberfläche und Styles vollständig. **Nur diese Datei
+herunterladen und per Doppelklick im Browser öffnen**; ein Webserver,
+Paketmanager und eine Internetverbindung sind dafür nicht nötig. Der
+Editor nimmt JSON-Text entgegen und zeigt Ergebnis oder Fehlermeldung.
+Fünf Beispiele decken Funktionen, Standardwerte, logische Suche,
+Rekursion und `@quote` ab. `Strg+Enter` beziehungsweise `⌘+Enter`
+startet die Auswertung.
+
+Die IDE behält globale Deklarationen innerhalb der aktuellen Sitzung.
+„Sitzung zurücksetzen“ erstellt einen neuen Interpreter. Der Code läuft
+lokal im Browser; die IDE stellt keine externen Capabilities bereit.
+Änderungen an den Quelldateien lassen sich mit
+`node web/build-standalone.mjs` in die Einzeldatei übernehmen. Die
+[Web-Dokumentation](web/README.md) erklärt beide IDE-Varianten.
+
+Die modulare Entwicklungsvariante unter [web/index.html](web/index.html)
+und die [Browser-Testseite](js/browser-test.html) laden Dateien per
+ES-Modul. Sie lassen sich aus dem Repository mit
+`python -m http.server 8000` unter `http://localhost:8000/web/`
+beziehungsweise `http://localhost:8000/js/browser-test.html` öffnen.
+Die Node-Prüfungen laufen mit `node js/test.mjs` und
+`node js/test-pages.mjs`; der zweite Befehl prüft auch die Offline-IDE.
 
 ### Effekte und Capabilities
 
